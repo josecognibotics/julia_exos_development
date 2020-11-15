@@ -3,6 +3,75 @@
 const header = require('./exos_header');
 const fs = require('fs');
 
+function generatePackage(typName, libName) {
+    let out = "";
+
+    out += `<?xml version="1.0" encoding="utf-8"?>\n`;
+    out += `<?AutomationStudio Version=4.9.1.69?>\n`;
+    out += `<Package xmlns="http://br-automation.co.at/AS/Package">\n`;
+    out += `  <Objects>\n`;
+    out += `    <Object Type="File">${typName}.exospkg</Object>\n`;
+    out += `    <Object Type="File">exar-${typName.toLowerCase()}-1.0.0.deb</Object>\n`;
+    out += `    <Object Type="Program" Language="IEC">${libName}_0</Object>\n`;
+    out += `    <Object Type="Library" Language="ANSIC">${libName}</Object>\n`;
+    out += `  </Objects>\n`;
+    out += `</Package>\n`;
+
+    return out;
+}
+
+function generateIECProgram(typName) {
+    let out = "";
+
+    out += `<?xml version="1.0" encoding="utf-8"?>\n`;
+    out += `<?AutomationStudio Version=4.9.1.69?>\n`;
+    out += `<Program SubType="IEC" xmlns="http://br-automation.co.at/AS/Program">\n`;
+    out += `  <Files>\n`;
+    out += `    <File Description="Init, cyclic, exit code">${typName}.st</File>\n`;
+    out += `    <File Description="Local variables" Private="true">${typName}.var</File>\n`;
+    out += `  </Files>\n`;
+    out += `</Program>\n`;
+
+    return out;
+}
+
+function generateIECProgramVar(typName) {
+    let out = "";
+
+    out += `VAR\n`;
+    out += `    ${typName}Init_0 : ${typName}Init;\n`;
+    out += `    ${typName}Cyclic_0 : ${typName}Cyclic;\n`;
+    out += `    ${typName}Exit_0 : ${typName}Exit;\n`;
+    out += `END_VAR\n`;
+
+    return out;
+}
+
+function generateIECProgramST(typName) {
+    let out = "";
+
+    out += `\n`;
+    out += `PROGRAM _INIT\n`;
+    out += `\n`;
+    out += `    ${typName}Init_0();\n`;
+    out += `\n`;
+    out += `END_PROGRAM\n`;
+    out += `\n`;
+    out += `PROGRAM _CYCLIC\n`;
+    out += `\n`;
+    out += `    ${typName}Cyclic_0(Handle := ${typName}Init_0.Handle);\n`;
+    out += `\n`;
+    out += `END_PROGRAM\n`;
+    out += `\n`;
+    out += `PROGRAM _EXIT\n`;
+    out += `\n`;
+    out += `    ${typName}Exit_0(Handle := ${typName}Init_0.Handle);\n`;
+    out += `\n`;
+    out += `END_PROGRAM\n`;
+
+    return out;
+}
+
 function generateFun(typName) {
     let out = "";
 
@@ -63,7 +132,6 @@ function generateCLibrary(fileName, typName) {
     out += `<?AutomationStudio Version=4.6.3.55 SP?>\n`;
     out += `<Library SubType="ANSIC" xmlns="http://br-automation.co.at/AS/Library">\n`;
     out += `  <Files>\n`;
-    out += `    <File Description="Artefact Interface">${typfile}</File>\n`;
     out += `    <File Description="Exported functions and function blocks">${typName.substring(0, 10)}.fun</File>\n`;
     out += `    <File Description="Generated exos headerfile">exos_${typName.toLowerCase()}.h</File>\n`;
     out += `    <File Description="Implementation">${typName.toLowerCase()}.c</File>\n`;
@@ -534,6 +602,10 @@ if (require.main === module) {
 }
 
 module.exports = {
+    generatePackage,
+    generateIECProgram,
+    generateIECProgramVar,
+    generateIECProgramST,
     generateTemplate,
     generateCLibrary,
     generateFun

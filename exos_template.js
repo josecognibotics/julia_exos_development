@@ -16,39 +16,55 @@ function generateTemplate(fileName, structName, outPath) {
     }
 
     fs.mkdirSync(`${outPath}/${structName}`);
-    fs.mkdirSync(`${outPath}/${structName}/linux`);
-    fs.mkdirSync(`${outPath}/${structName}/ar`);
-    fs.mkdirSync(`${outPath}/${structName}/ar/${libName}`);
+    fs.mkdirSync(`${outPath}/${structName}/${libName}`);
+    fs.mkdirSync(`${outPath}/${structName}/${libName}_0`);
+    fs.mkdirSync(`${outPath}/${structName}/${libName}/SG4`);
+    fs.mkdirSync(`${outPath}/${structName}/${libName}/SG4/linux`);
+    fs.mkdirSync(`${outPath}/${structName}/${libName}/SG4/linux/build`);
 
     let out = header.generateHeader(fileName, structName);
 
-    fs.writeFileSync(`${outPath}/${structName}/linux/exos_${structName.toLowerCase()}.h`, out);
-    fs.writeFileSync(`${outPath}/${structName}/ar/${libName}/exos_${structName.toLowerCase()}.h`, out);
-
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/SG4/linux/exos_${structName.toLowerCase()}.h`, out);
+    
     out = template_linux.generateTemplate(fileName, structName);
-    fs.writeFileSync(`${outPath}/${structName}/linux/${structName.toLowerCase()}.c`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/SG4/linux/${structName.toLowerCase()}.c`, out);
 
     out = template_linux.generateTerminationHeader();
-    fs.writeFileSync(`${outPath}/${structName}/linux/termination.h`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/SG4/linux/termination.h`, out);
 
     out = template_linux.generateTermination();
-    fs.writeFileSync(`${outPath}/${structName}/linux/termination.c`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/SG4/linux/termination.c`, out);
 
     out = template_linux.generateCMakeLists(structName);
-    fs.writeFileSync(`${outPath}/${structName}/linux/CMakeLists.txt`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/SG4/linux/CMakeLists.txt`, out);
+
+
+    out = template_ar.generatePackage(structName,libName);
+    fs.writeFileSync(`${outPath}/${structName}/Package.pkg`, out);
+
+    out = template_ar.generateIECProgram(libName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}_0/IEC.prg`, out);
+    
+    out = template_ar.generateIECProgramVar(libName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}_0/${libName}.var`, out);
+    
+    out = template_ar.generateIECProgramST(libName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}_0/${libName}.st`, out);
+
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.h`, out);
 
     out = template_ar.generateTemplate(fileName, structName);
-    fs.writeFileSync(`${outPath}/${structName}/ar/${libName}/${structName.toLowerCase()}.c`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName.toLowerCase()}.c`, out);
 
     out = template_ar.generateFun(structName);
-    fs.writeFileSync(`${outPath}/${structName}/ar/${libName}/${libName}.fun`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/${libName}.fun`, out);
 
     out = template_ar.generateCLibrary(fileName, structName);
-    fs.writeFileSync(`${outPath}/${structName}/ar/${libName}/ANSIC.lby`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/ANSIC.lby`, out);
 
-    fs.writeFileSync(`${outPath}/${structName}/ar/${libName}/dynamic_heap.cpp`, "unsigned long bur_heap_size = 100000;\n");
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/dynamic_heap.cpp`, "unsigned long bur_heap_size = 100000;\n");
 
-    fs.copyFileSync(fileName, `${outPath}/${structName}/ar/${libName}/${path.basename(fileName)}`);
+    // fs.copyFileSync(fileName, `${outPath}/${structName}/ar/${libName}/${path.basename(fileName)}`);
 }
 
 if (require.main === module) {

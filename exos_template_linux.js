@@ -3,6 +3,20 @@
 const header = require('./exos_header');
 const fs = require('fs');
 
+function generateExosPkg(typname) {
+    let out = "";
+
+    out += `<?xml version="1.0" encoding="utf-8"?>\n`;
+    out += `<ArtefactPackage ErrorHandling="Ignore" StartupTimeout="0">\n`;
+    out += `    <File Name="exar-${typname.toLowerCase()}" FileName="exar-${typname.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
+    out += `    <Service Name="${typname} Runtime Service" Executable="/home/user/${typname.toLowerCase()}" Arguments=""/>\n`;
+    out += `    <Interface Name="${typname}"/>\n`;
+    out += `</ArtefactPackage>\n`;
+    out += ``;
+
+    return out;
+}
+
 function generateTerminationHeader() {
     let out = "";
 
@@ -78,10 +92,29 @@ function generateCMakeLists(typName) {
     out += `project(${typName.toLowerCase()} C)\n`;
     out += `\n`;
     out += `add_executable(${typName.toLowerCase()} ${typName.toLowerCase()}.c termination.c)\n`;
-    out += `\n`;
     out += `target_include_directories(${typName.toLowerCase()} PUBLIC ..)\n`;
-    out += `\n`;
     out += `target_link_libraries(${typName.toLowerCase()} zmq exos-api)\n`;
+    out += `\n`;
+    out += `install(TARGETS ${typName.toLowerCase()} RUNTIME DESTINATION /home/user)\n`;
+    out += `\n`;
+    out += `set(CPACK_GENERATOR "DEB")\n`;
+    out += `set(CPACK_PACKAGE_NAME exar-"${typName.toLowerCase()}")\n`;
+    out += `set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${typName.toLowerCase()} summary")\n`;
+    out += `set(CPACK_PACKAGE_DESCRIPTION "Some description")\n`;
+    out += `set(CPACK_PACKAGE_VENDOR "Your Organization")\n`;
+    out += `\n`;
+    out += `set(CPACK_PACKAGE_VERSION_MAJOR 1)\n`;
+    out += `set(CPACK_PACKAGE_VERSION_MINOR 0)\n`;
+    out += `set(CPACK_PACKAGE_VERSION_PATCH 0)\n`;
+
+    out += `set(CPACK_PACKAGE_FILE_NAME exar-${typName.toLowerCase()}-`;
+    out += '${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})\n';
+    
+    out += `set(CPACK_DEBIAN_PACKAGE_MAINTAINER "your name")\n`;
+    out += `\n`;
+    out += `set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)\n`;
+    out += `\n`;
+    out += `include(CPack)\n`;
     out += `\n`;
 
     return out;
@@ -407,6 +440,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+    generateExosPkg,
     generateTemplate,
     generateTerminationHeader,
     generateTermination,
