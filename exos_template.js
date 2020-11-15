@@ -38,6 +38,8 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_linux.generateCMakeLists(structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/SG4/linux/CMakeLists.txt`, out);
 
+    out = template_linux.generateWSLBuild(structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/SG4/linux/WSLBuild.ps1`, out);
 
     out = template_ar.generatePackage(structName,libName);
     fs.writeFileSync(`${outPath}/${structName}/Package.pkg`, out);

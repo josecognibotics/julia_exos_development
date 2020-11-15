@@ -3,14 +3,72 @@
 const header = require('./exos_header');
 const fs = require('fs');
 
-function generateExosPkg(typname) {
+function generateWSLBuild(typName) {
+    let out = "";
+
+    out += `[CmdletBinding()]\n`;
+    out += `param (\n`;
+    out += `    [Parameter()][switch]$Rebuild = $false,\n`;
+    out += `    [Parameter()][switch]$Pack = $false\n`;
+    out += `)\n`;
+    out += `\n`;
+    out += `$wsli = New-Object System.Diagnostics.ProcessStartInfo\n`;
+    out += `$wsli.FileName = "wsl.exe"\n`;
+    out += `$wsli.UseShellExecute = $false \n`;
+    out += `$wsli.RedirectStandardInput = $true\n`;
+    out += `$wsli.RedirectStandardOutput = $true\n`;
+    out += `$wsli.Arguments = "-d Debian"\n`;
+    out += `$wsli.WorkingDirectory = "$PSScriptRoot"\n`;
+    out += `\n`;
+    out += `$wsl = New-Object System.Diagnostics.Process\n`;
+    out += `$wsl.StartInfo = $wsli\n`;
+    out += `\n`;
+    out += `Register-ObjectEvent -InputObject $wsl -EventName OutputDataReceived -action {\n`;
+    out += `    $output = $Event.SourceEventArgs.Data\n`;
+    out += '    Write-Host "WSL: $output`r"\n';
+    out += `}\n`;
+    out += `Write-Host "Starting WSL.."\n`;
+    out += `$wsl.Start()\n`;
+    out += `\n`;
+    out += `$wsl.BeginOutputReadLine()\n`;
+    out += `\n`;
+    out += `$directoryInfo = Get-ChildItem "$PSScriptRoot\\build" | Measure-Object\n`;
+    out += `\n`;
+    out += `if($Rebuild  -or $directoryInfo.count -eq 0) {\n`;
+    out += `    Get-ChildItem -Path "$PSScriptRoot\\build" -Include * -File -Recurse | ForEach-Object { $_.Delete()}\n`;
+    out += '    $wsl.StandardInput.Write("cd build`n");\n';
+    out += '    $wsl.StandardInput.Write("cmake ..`n");\n';
+    out += '    $wsl.StandardInput.Write("make`n");\n';
+    out += `}\n`;
+    out += `else {\n`;
+    out += '    $wsl.StandardInput.Write("cd build`n");\n';
+    out += '    $wsl.StandardInput.Write("make`n");\n';
+    out += `}\n`;
+    out += `\n`;
+    out += `if($Pack) {\n`;
+    out += '    $wsl.StandardInput.Write("cpack`n");\n';
+    out += `}\n`;
+    out += '$wsl.StandardInput.Write("echo done`n");\n';
+    out += '$wsl.StandardInput.Write("exit`n");\n';
+    out += `\n`;
+    out += `$wsl.WaitForExit()\n`;
+    out += `\n`;
+    out += `if($Pack) {\n`;
+    out += `    Copy-Item -Path "$PSScriptRoot\\build\\exar-${typName.toLowerCase()}-*.deb" -Destination "$PSScriptRoot\\..\\"\n`;
+    out += `}\n`;
+    out += `\n`;
+
+    return out;
+}
+
+function generateExosPkg(typName) {
     let out = "";
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
     out += `<ArtefactPackage ErrorHandling="Ignore" StartupTimeout="0">\n`;
-    out += `    <File Name="exar-${typname.toLowerCase()}" FileName="exar-${typname.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
-    out += `    <Service Name="${typname} Runtime Service" Executable="/home/user/${typname.toLowerCase()}" Arguments=""/>\n`;
-    out += `    <Interface Name="${typname}"/>\n`;
+    out += `    <File Name="exar-${typName.toLowerCase()}" FileName="exar-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
+    out += `    <Service Name="${typName} Runtime Service" Executable="/home/user/${typName.toLowerCase()}" Arguments=""/>\n`;
+    out += `    <Interface Name="${typName}"/>\n`;
     out += `</ArtefactPackage>\n`;
     out += ``;
 
@@ -98,7 +156,7 @@ function generateCMakeLists(typName) {
     out += `install(TARGETS ${typName.toLowerCase()} RUNTIME DESTINATION /home/user)\n`;
     out += `\n`;
     out += `set(CPACK_GENERATOR "DEB")\n`;
-    out += `set(CPACK_PACKAGE_NAME exar-"${typName.toLowerCase()}")\n`;
+    out += `set(CPACK_PACKAGE_NAME exar-${typName.toLowerCase()})\n`;
     out += `set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${typName.toLowerCase()} summary")\n`;
     out += `set(CPACK_PACKAGE_DESCRIPTION "Some description")\n`;
     out += `set(CPACK_PACKAGE_VENDOR "Your Organization")\n`;
@@ -444,5 +502,6 @@ module.exports = {
     generateTemplate,
     generateTerminationHeader,
     generateTermination,
-    generateCMakeLists
+    generateCMakeLists,
+    generateWSLBuild
 }
