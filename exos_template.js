@@ -25,7 +25,8 @@ function generateTemplate(fileName, structName, outPath) {
     let out = header.generateHeader(fileName, structName);
 
     fs.writeFileSync(`${outPath}/${structName}/${libName}/SG4/linux/exos_${structName.toLowerCase()}.h`, out);
-    
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.h`, out);
+
     out = template_linux.generateTemplate(fileName, structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/SG4/linux/${structName.toLowerCase()}.c`, out);
 
@@ -41,6 +42,9 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_linux.generateWSLBuild(structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/SG4/linux/WSLBuild.ps1`, out);
 
+    out = template_linux.generateExosPkg(structName);
+    fs.writeFileSync(`${outPath}/${structName}/${structName}.exospkg`, out);
+
     out = template_ar.generatePackage(structName,libName);
     fs.writeFileSync(`${outPath}/${structName}/Package.pkg`, out);
 
@@ -52,8 +56,6 @@ function generateTemplate(fileName, structName, outPath) {
     
     out = template_ar.generateIECProgramST(libName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}_0/${libName}.st`, out);
-
-    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.h`, out);
 
     out = template_ar.generateTemplate(fileName, structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName.toLowerCase()}.c`, out);

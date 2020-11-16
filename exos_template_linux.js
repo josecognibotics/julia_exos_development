@@ -54,7 +54,7 @@ function generateWSLBuild(typName) {
     out += `$wsl.WaitForExit()\n`;
     out += `\n`;
     out += `if($Pack) {\n`;
-    out += `    Copy-Item -Path "$PSScriptRoot\\build\\exar-${typName.toLowerCase()}-*.deb" -Destination "$PSScriptRoot\\..\\"\n`;
+    out += `    Copy-Item -Path "$PSScriptRoot\\build\\exar-${typName.toLowerCase()}-*.deb" -Destination "$PSScriptRoot\\..\\..\\..\\"\n`;
     out += `}\n`;
     out += `\n`;
 
