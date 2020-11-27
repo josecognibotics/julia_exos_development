@@ -621,6 +621,9 @@ function generateStructRegister(typName, children) {
 
 function generateHeader(fileName, typName) {
 
+    nestingDepth = 0;
+    infoId = 0;
+
     types = parseTypFile(fileName, typName);
 
     types.attributes.info = "<infoId" + infoId + ">"; // top level

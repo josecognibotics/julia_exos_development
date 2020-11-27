@@ -26,9 +26,28 @@ function activate(context) {
 
 		vscode.window.showInputBox({prompt:"Name of the DataType:"}).then(selection => {
 			
-			try {				
+			try {
 				exostemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
-				vscode.window.showInformationMessage(`Generated Template for ${selection}`);
+				vscode.window.showInformationMessage(`Generated Template for ${selection}, please dont rename this folder!`);
+
+				//update the Package file if were in an AS project
+				let pkgFileName = `${path.dirname(uri.fsPath)}/Package.pkg`;
+				if (fs.existsSync(pkgFileName)) {
+					let lines = fs.readFileSync(pkgFileName);
+					lines = lines.split("\r").join("");
+					lines = lines.split("\n");
+					lines.forEach(line => {
+						if(line.includes(path.basename(uri.fsPath))) {
+							line = `    <Object Type="Package">${selection}</Object>`
+						}
+					});
+					lines = lines.join("\r\n");
+					fs.writeFileSync(pkgFileName,lines);
+					fs.unlinkSync(uri.fsPath);
+
+					vscode.window.showInformationMessage(`Replaced ${path.basename(uri.fsPath)} with ${selection} Package`);
+				}
+				
 			} catch (error) {
 				vscode.window.showErrorMessage(error);	
 			}
@@ -42,32 +61,32 @@ function activate(context) {
 	let updateHeader = vscode.commands.registerCommand('exos-interface-builder.updateHeader', function (uri) {
 		// The code you place here will be executed every time your command is executed
 
-		vscode.window.showInputBox({prompt:"Folder Name:"}).then(selection => {
-			try {
-				let arLibFolder = `${path.dirname(uri.fsPath)}/${selection}/ar/${selection.substring(0, 10)}`;
-				let linuxSrcFolder = `${path.dirname(uri.fsPath)}/${selection}/linux`;
+		try {
+			let arLibFolder = `${path.dirname(uri.fsPath)}`;
+			let linuxSrcFolder = `${path.dirname(uri.fsPath)}/SG4/linux`;
 
-				let arFiles = fs.readdirSync(arLibFolder);
-				let linuxFiles = fs.readdirSync(linuxSrcFolder);
-				
-				if(arFiles.length > 0 && linuxFiles.length > 0)
-				{
-					fs.copyFileSync(uri.fsPath, `${arLibFolder}/${path.basename(uri.fsPath)}`);
-					let out = exosheader.generateHeader(uri.fsPath, selection);
-					fs.writeFileSync(`${arLibFolder}/exos_${selection.toLowerCase()}.h`, out);
-					fs.writeFileSync(`${linuxSrcFolder}/exos_${selection.toLowerCase()}.h`, out);
+			let arFiles = fs.readdirSync(arLibFolder);
+			let linuxFiles = fs.readdirSync(linuxSrcFolder);
+			
+			if(arFiles.length > 0 && linuxFiles.length > 0)
+			{
+				let selection = path.basename(path.dirname(arLibFolder)); //we just assume the folder name wont change
 
-					vscode.window.showInformationMessage(`Updated Headerfile for ${selection}`);
-				}
-				else {
-					vscode.window.showErrorMessage('Source folders cannot be found');
-				}				
+				let out = exosheader.generateHeader(uri.fsPath, selection);
+				fs.writeFileSync(`${arLibFolder}/exos_${selection.toLowerCase()}.h`, out);
+				fs.writeFileSync(`${linuxSrcFolder}/exos_${selection.toLowerCase()}.h`, out);
 
-			} catch (error) {
-				vscode.window.showErrorMessage(error);
+				vscode.window.showInformationMessage(`Updated Headerfile for ${selection}`);
 			}
+			else {
+				vscode.window.showErrorMessage('Source folders cannot be found');
+			}	
+		
 
-		});
+		} catch (error) {
+			vscode.window.showErrorMessage(error);
+		}
+
 	});
 	context.subscriptions.push(updateHeader);
 }

@@ -68,7 +68,7 @@ function generateTemplate(fileName, structName, outPath) {
 
     fs.writeFileSync(`${outPath}/${structName}/${libName}/dynamic_heap.cpp`, "unsigned long bur_heap_size = 100000;\n");
 
-    // fs.copyFileSync(fileName, `${outPath}/${structName}/ar/${libName}/${path.basename(fileName)}`);
+    fs.copyFileSync(fileName, `${outPath}/${structName}/${libName}/${path.basename(fileName)}`);
 }
 
 if (require.main === module) {

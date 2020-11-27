@@ -132,6 +132,7 @@ function generateCLibrary(fileName, typName) {
     out += `<?AutomationStudio Version=4.6.3.55 SP?>\n`;
     out += `<Library SubType="ANSIC" xmlns="http://br-automation.co.at/AS/Library">\n`;
     out += `  <Files>\n`;
+    out += `    <File Description="Data Model Definition">${typName}.typ</File>\n`;
     out += `    <File Description="Exported functions and function blocks">${typName.substring(0, 10)}.fun</File>\n`;
     out += `    <File Description="Generated exos headerfile">exos_${typName.toLowerCase()}.h</File>\n`;
     out += `    <File Description="Implementation">${typName.toLowerCase()}.c</File>\n`;

@@ -26,7 +26,7 @@ function generateWSLBuild(typName) {
     out += `Register-ObjectEvent -InputObject $wsl -EventName OutputDataReceived -action {\n`;
     out += `    $output = $Event.SourceEventArgs.Data\n`;
     out += '    Write-Host "WSL: $output`r"\n';
-    out += `}\n`;
+    out += `} | Out-Null\n`;
     out += `Write-Host "Starting WSL.."\n`;
     out += `$wsl.Start()\n`;
     out += `\n`;
