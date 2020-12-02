@@ -1,7 +1,10 @@
 {
-	"name": "exos-interface-builder",
-	"displayName": "exOS Interface Builder",
-	"description": "Code Generator for exOS Hybrid Modules",
+	"name": "exos-component-extension",
+	"publisher": "exOS-ComponentExtension",
+	"repository": "https://github.com/br-automation-com/exOS-ComponentExtension",
+	"displayName": "exOS Component Generator",
+	"description": "Code Generator for exOS Hybrid Components",
+	"icon": "exos_components.png",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.50.0"
@@ -10,18 +13,18 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:exos-interface-builder.generateTemplate",
-		"onCommand:exos-interface-builder.updateHeader"
+		"onCommand:exos-component-extension.generateTemplate",
+		"onCommand:exos-component-extension.updateHeader"
 	],
 	"main": "./extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "exos-interface-builder.generateTemplate",
+				"command": "exos-component-extension.generateTemplate",
 				"title": "Generate exOS C-Template"
 			},
 			{
-				"command": "exos-interface-builder.updateHeader",
+				"command": "exos-component-extension.updateHeader",
 				"title": "Update exOS Header"
 			}
 		],
@@ -29,12 +32,12 @@
 			"explorer/context": [
 				{
 					"when": "filesExplorerFocus && resourceExtname == .typ",
-					"command": "exos-interface-builder.generateTemplate",
+					"command": "exos-component-extension.generateTemplate",
 					"group": "2_workspace"
 				},
 				{
 					"when": "filesExplorerFocus && resourceExtname == .typ",
-					"command": "exos-interface-builder.updateHeader",
+					"command": "exos-component-extension.updateHeader",
 					"group": "2_workspace"
 				}
 			]

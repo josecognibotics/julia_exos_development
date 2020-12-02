@@ -32,36 +32,23 @@ function generateWSLBuild(typName) {
     out += `\n`;
     out += `$wsl.BeginOutputReadLine()\n`;
     out += `\n`;
-    out += `$directoryInfo = Get-ChildItem "$PSScriptRoot\\build" | Measure-Object\n`;
-    out += `\n`;
-    out += `if($Rebuild  -or $directoryInfo.count -eq 0) {\n`;
-    out += `    Get-ChildItem -Path "$PSScriptRoot\\build" -Include * -File -Recurse | ForEach-Object { $_.Delete()}\n`;
-    out += '    $wsl.StandardInput.Write("cd build`n");\n';
-    out += '    $wsl.StandardInput.Write("cmake ..`n");\n';
-    out += '    $wsl.StandardInput.Write("make`n");\n';
-    out += `}\n`;
-    out += `else {\n`;
-    out += '    $wsl.StandardInput.Write("cd build`n");\n';
-    out += '    $wsl.StandardInput.Write("make`n");\n';
-    out += `}\n`;
-    out += `\n`;
-    out += `if($Pack) {\n`;
-    out += '    $wsl.StandardInput.Write("cpack`n");\n';
-    out += `}\n`;
+    out += `Get-ChildItem -Path "$PSScriptRoot\\build" -Include * -File -Recurse | ForEach-Object { $_.Delete()}\n`;
+    out += '$wsl.StandardInput.Write("cd build`n");\n';
+    out += '$wsl.StandardInput.Write("cmake ..`n");\n';
+    out += '$wsl.StandardInput.Write("make`n");\n';
+    out += '$wsl.StandardInput.Write("cpack`n");\n';
     out += '$wsl.StandardInput.Write("echo done`n");\n';
     out += '$wsl.StandardInput.Write("exit`n");\n';
     out += `\n`;
     out += `$wsl.WaitForExit()\n`;
     out += `\n`;
-    out += `if($Pack) {\n`;
-    out += `    Copy-Item -Path "$PSScriptRoot\\build\\exar-${typName.toLowerCase()}-*.deb" -Destination "$PSScriptRoot\\..\\..\\..\\"\n`;
-    out += `}\n`;
+    out += `Copy-Item -Path "$PSScriptRoot\\build\\exar-${typName.toLowerCase()}-*.deb" -Destination "$PSScriptRoot\\..\\..\\..\\"\n`;
     out += `\n`;
 
     return out;
 }
 
-function generateExosPkg(typName) {
+function generateExosPkg(typName,libName,fileName) {
     let out = "";
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
@@ -69,6 +56,7 @@ function generateExosPkg(typName) {
     out += `    <File Name="exar-${typName.toLowerCase()}" FileName="exar-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
     out += `    <Service Name="${typName} Runtime Service" Executable="/home/user/${typName.toLowerCase()}" Arguments=""/>\n`;
     out += `    <Interface Name="${typName}"/>\n`;
+    out += `    <GenerateHeader FileName="${libName}\\${fileName}" TypeName="${typName}" OutputPath="${libName}"/>\n`;
     out += `</ArtefactPackage>\n`;
     out += ``;
 

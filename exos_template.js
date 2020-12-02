@@ -42,7 +42,7 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_linux.generateWSLBuild(structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/SG4/linux/WSLBuild.ps1`, out);
 
-    out = template_linux.generateExosPkg(structName);
+    out = template_linux.generateExosPkg(structName,libName,path.basename(fileName));
     fs.writeFileSync(`${outPath}/${structName}/${structName}.exospkg`, out);
 
     out = template_ar.generatePackage(structName,libName);
