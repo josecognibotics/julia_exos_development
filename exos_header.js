@@ -467,7 +467,7 @@ function convertTyp2Struct(fileName) {
     //sort the structs according to their dependencies
     if (structs.length > 1) {
         for (i = 0; i < structs.length; i++) {
-            let maxindex = 0;
+            let maxindex = -1;
             for (let depend of structs[i].depends) {
                 for (j = 0; j < structs.length; j++) {
                     if (structs[j].name == depend) {
@@ -475,8 +475,11 @@ function convertTyp2Struct(fileName) {
                     }
                 }
             }
-            let tmpstructs = structs.splice(i, 1)[0];
-            structs.splice(maxindex + 1, 0, tmpstructs);
+            if(maxindex != -1)
+            {
+                let tmpstructs = structs.splice(i, 1)[0];
+                structs.splice(maxindex + 1, 0, tmpstructs);
+            }
         }
     }
 

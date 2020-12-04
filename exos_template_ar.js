@@ -132,7 +132,7 @@ function generateCLibrary(fileName, typName) {
     out += `<?AutomationStudio Version=4.6.3.55 SP?>\n`;
     out += `<Library SubType="ANSIC" xmlns="http://br-automation.co.at/AS/Library">\n`;
     out += `  <Files>\n`;
-    out += `    <File Description="Data Model Definition">${typName}.typ</File>\n`;
+    out += `    <File Description="Data Model Definition">${typfile}.typ</File>\n`;
     out += `    <File Description="Exported functions and function blocks">${typName.substring(0, 10)}.fun</File>\n`;
     out += `    <File Description="Generated exos headerfile">exos_${typName.toLowerCase()}.h</File>\n`;
     out += `    <File Description="Implementation">${typName.toLowerCase()}.c</File>\n`;
@@ -246,12 +246,12 @@ function generateExosCallbacks(template) {
     out += `        break;\n`;
     out += `    case EXOS_STATE_CONNECTED:\n`;
     out += `        //call the value changed event to update the value\n`;
-    out += `        valueChanged(value);\n`;
+    out += `        //valueChanged(value);\n`;
     out += `        break;\n`;
     out += `    case EXOS_STATE_OPERATIONAL:\n`;
     out += `        break;\n`;
     out += `    case EXOS_STATE_ABORTED:\n`;
-    out += `        ERROR("value error %d (%s) occured", value->error, exos_error_string(value->error));\n`;
+    out += `        ERROR("value %s error %d (%s) occured", value->name, value->error, exos_error_string(value->error));\n`;
     out += `        break;\n`;
     out += `    }\n`;
 
@@ -269,6 +269,7 @@ function generateExosCallbacks(template) {
     out += `    {\n`;
     out += `    case EXOS_STATE_DISCONNECTED:\n`;
     out += `        inst->Disconnected = 1;\n`;
+    out += `        inst->_state = 255;\n`;
     out += `        break;\n`;
     out += `    case EXOS_STATE_CONNECTED:\n`;
     out += `        inst->Connected = 1;\n`;
@@ -279,6 +280,7 @@ function generateExosCallbacks(template) {
     out += `        break;\n`;
     out += `    case EXOS_STATE_ABORTED:\n`;
     out += `        ERROR("application error %d (%s) occured", artefact->error, exos_error_string(artefact->error));\n`;
+    out += `        inst->_state = 255;\n`;
     out += `        inst->Aborted = 1;\n`;
     out += `        break;\n`;
     out += `    }\n`;
@@ -344,9 +346,14 @@ function generateExosCyclic(template) {
 
     out += `    // ${template.artefact.dataType} *data = &${template.handle.name}->data;\n`;
     out += `    exos_artefact_handle_t *${template.artefact.varName} = &${template.handle.name}->${template.artefact.varName};\n`;
+    out += `    //the user context of the artefact points to the ${template.artefact.structName}Cyclic instance\n`;
+    out += `    ${template.artefact.varName}->user_context = inst; //set it cyclically in case the program using the FUB is retransferred\n`;
+    out += `    ${template.artefact.varName}->user_tag = 0; //user defined\n\n`;
     for (let value of template.values) {
         if (value.comment.includes("SUB") || value.comment.includes("PUB")) {
             out += `    exos_value_handle_t *${value.varName} = &${template.handle.name}->${value.varName};\n`;
+            out += `    ${value.varName}->user_context = NULL; //user defined\n`;
+            out += `    ${value.varName}->user_tag = 0; //user defined\n\n`;
         }
     }
     out += `    //unregister on disable\n`;
@@ -361,15 +368,14 @@ function generateExosCyclic(template) {
     out += `        inst->Connected = 0;\n`;
     out += `        inst->Operational = 0;\n`;
     out += `        inst->Aborted = 0;\n\n`;
-    out += `        if (inst->Enable)\n`;
+    out += `        if (inst->Enable && exos_api_server_ready())\n`;
     out += `        {\n`;
-    out += `            //the user context of the artefact points to the ${template.artefact.structName}Cyclic instance\n`;
-    out += `            ${template.artefact.varName}->user_context = inst;\n`;
     out += `            inst->_state = 10;\n`;
     out += `        }\n`;
     out += `        break;\n\n`;
     out += `    case 10:\n`;
     out += `        inst->_state = 100;\n`;
+    out += `\n        SUCCESS("starting ${template.artefact.structName} application..");\n\n`;
     out += `        //register the artefact, then the values\n`;
     out += `        EXOS_ASSERT_OK(exos_artefact_register_${template.artefact.structName.toLowerCase()}(${template.artefact.varName}, connectionChanged));\n`;
     for (let value of template.values) {
@@ -387,8 +393,7 @@ function generateExosCyclic(template) {
             }
         }
     }
-    out += `\n        SUCCESS("starting ${template.artefact.structName} application..");\n\n`;
-    out += `        inst->Active = true;\n`;
+    out += `\n        inst->Active = true;\n`;
     out += `        break;\n\n`;
 
     out += `    case 100:\n`;
@@ -405,8 +410,8 @@ function generateExosCyclic(template) {
     out += `        {\n`;
     out += `            inst->_state = 100;\n`;
     out += `        }\n\n`;
-    out += `        //put your cyclic code here!\n\n`;
     out += `        EXOS_ASSERT_OK(exos_artefact_cyclic(${template.artefact.varName}));\n`;
+    out += `        //put your cyclic code here!\n\n`;
     out += `        break;\n\n`;
     out += `    case 255:\n`;
     out += `        //first unregister the values, then the artefact\n`;

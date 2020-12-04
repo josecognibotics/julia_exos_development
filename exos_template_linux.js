@@ -32,7 +32,7 @@ function generateWSLBuild(typName) {
     out += `\n`;
     out += `$wsl.BeginOutputReadLine()\n`;
     out += `\n`;
-    out += `Get-ChildItem -Path "$PSScriptRoot\\build" -Include * -File -Recurse | ForEach-Object { $_.Delete()}\n`;
+    out += `Remove-Item "$PSScriptRoot\\build\\*" -Recurse\n`;
     out += '$wsl.StandardInput.Write("cd build`n");\n';
     out += '$wsl.StandardInput.Write("cmake ..`n");\n';
     out += '$wsl.StandardInput.Write("make`n");\n';
@@ -43,6 +43,7 @@ function generateWSLBuild(typName) {
     out += `$wsl.WaitForExit()\n`;
     out += `\n`;
     out += `Copy-Item -Path "$PSScriptRoot\\build\\exar-${typName.toLowerCase()}-*.deb" -Destination "$PSScriptRoot\\..\\..\\..\\"\n`;
+    out += `Remove-Item "$PSScriptRoot\\build\\*" -Recurse\n`;
     out += `\n`;
 
     return out;
@@ -240,12 +241,12 @@ function generateExosCallbacks(template) {
     out += `        break;\n`;
     out += `    case EXOS_STATE_CONNECTED:\n`;
     out += `        //call the value changed event to update the value\n`;
-    out += `        valueChanged(value);\n`;
+    out += `        //valueChanged(value);\n`;
     out += `        break;\n`;
     out += `    case EXOS_STATE_OPERATIONAL:\n`;
     out += `        break;\n`;
     out += `    case EXOS_STATE_ABORTED:\n`;
-    out += `        ERROR("value error %d (%s) occured", value->error, exos_error_string(value->error));\n`;
+    out += `        ERROR("value %s error %d (%s) occured", value->name, value->error, exos_error_string(value->error));\n`;
     out += `        break;\n`;
     out += `    }\n`;
 
@@ -283,15 +284,19 @@ function generateExosInit(template) {
     }
     out += `    \n`;
     out += `    exos_log_init(&${template.logname}, "${template.artefact.structName}");\n\n`;
+    out += `    SUCCESS("starting ${template.artefact.structName} application..");\n\n`;
 
     //initialization
     out += `    EXOS_ASSERT_OK(exos_artefact_init(&${template.artefact.varName}, "${template.artefact.structName}"));\n\n`;
     out += `    //set the user_context to access custom data in the callbacks\n`;
-    out += `    ${template.artefact.varName}.user_context = NULL; //should be something other than NULL..\n\n`;
+    out += `    ${template.artefact.varName}.user_context = NULL; //user defined\n`;
+    out += `    ${template.artefact.varName}.user_tag = 0; //user defined\n\n`;
 
     for (let value of template.values) {
         if (value.comment.includes("PUB") || value.comment.includes("SUB")) {
             out += `    EXOS_ASSERT_OK(exos_value_init(&${value.varName}, &${template.artefact.varName}, "${value.structName}", &data.${value.structName}, sizeof(data.${value.structName})));\n`;
+            out += `    ${value.varName}.user_context = NULL; //user defined\n`;
+            out += `    ${value.varName}.user_tag = 0; //user defined\n\n`;
         }
     }
     out += `    //register the artefact\n`;
@@ -314,17 +319,16 @@ function generateExosInit(template) {
             }
         }
     }
-
-    out += `\n    SUCCESS("starting ${template.artefact.structName} application..");\n\n`;
+    out += `    \n`;
 
     return out;
 }
 
 function generateExosCyclic(template) {
     var out = "";
-    out += `        //put your cyclic code here!\n\n`;
     out += `        EXOS_ASSERT_OK(exos_artefact_cyclic(&${template.artefact.varName}));\n`;
     out += `        exos_log_cyclic(&${template.logname});\n\n`;
+    out += `        //put your cyclic code here!\n\n`;
 
     return out;
 }
