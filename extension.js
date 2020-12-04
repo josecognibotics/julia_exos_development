@@ -3,6 +3,7 @@
 const vscode = require('vscode');
 const exostemplate = require('./exos_template');
 const exosheader = require("./exos_header");
+const exosas = require("./exos_template_as");
 const path = require('path');
 const fs = require('fs')
 
@@ -30,22 +31,8 @@ function activate(context) {
 				exostemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
 				vscode.window.showInformationMessage(`Generated Template for ${selection}, please dont rename this folder!`);
 
-				//update the Package file if were in an AS project
-				let pkgFileName = `${path.dirname(uri.fsPath)}/Package.pkg`;
-				if (fs.existsSync(pkgFileName)) {
-					let lines = fs.readFileSync(pkgFileName);
-					lines = lines.split("\r").join("");
-					lines = lines.split("\n");
-					lines.forEach(line => {
-						if(line.includes(path.basename(uri.fsPath))) {
-							line = `    <Object Type="Package">${selection}</Object>`
-						}
-					});
-					lines = lines.join("\r\n");
-					fs.writeFileSync(pkgFileName,lines);
-					fs.unlinkSync(uri.fsPath);
-
-					vscode.window.showInformationMessage(`Replaced ${path.basename(uri.fsPath)} with ${selection} Package`);
+				if(exosas.replaceTypWithPackage(uri.fsPath, selection)) {
+					vscode.window.showInformationMessage(`Replaced ${path.basename(uri.fsPath)} with ${selection} Package. The file ${path.basename(uri.fsPath)} has been copied to the ${selection.substring(0,10)} Library`);
 				}
 				
 			} catch (error) {
@@ -62,27 +49,8 @@ function activate(context) {
 		// The code you place here will be executed every time your command is executed
 
 		try {
-			let arLibFolder = `${path.dirname(uri.fsPath)}`;
-			let linuxSrcFolder = `${path.dirname(uri.fsPath)}/SG4/linux`;
-
-			let arFiles = fs.readdirSync(arLibFolder);
-			let linuxFiles = fs.readdirSync(linuxSrcFolder);
-			
-			if(arFiles.length > 0 && linuxFiles.length > 0)
-			{
-				let selection = path.basename(path.dirname(arLibFolder)); //we just assume the folder name wont change
-
-				let out = exosheader.generateHeader(uri.fsPath, selection);
-				fs.writeFileSync(`${arLibFolder}/exos_${selection.toLowerCase()}.h`, out);
-				fs.writeFileSync(`${linuxSrcFolder}/exos_${selection.toLowerCase()}.h`, out);
-
-				vscode.window.showInformationMessage(`Updated Headerfile for ${selection}`);
-			}
-			else {
-				vscode.window.showErrorMessage('Source folders cannot be found');
-			}	
-		
-
+			var selection = exostemplate.updateHeaderfiles(uri.fsPath);
+			vscode.window.showInformationMessage(`Updated Headerfile for ${selection}`);
 		} catch (error) {
 			vscode.window.showErrorMessage(error);
 		}
