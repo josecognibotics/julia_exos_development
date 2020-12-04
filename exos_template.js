@@ -84,7 +84,7 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_ar.generateFun(structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${libName}.fun`, out);
 
-    out = template_ar.generateCLibrary(fileName, structName);
+    out = template_ar.generateCLibrary(path.basename(fileName), structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/ANSIC.lby`, out);
 
     fs.writeFileSync(`${outPath}/${structName}/${libName}/dynamic_heap.cpp`, "unsigned long bur_heap_size = 100000;\n");
