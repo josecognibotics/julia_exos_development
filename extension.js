@@ -1,9 +1,9 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
-const exostemplate = require('./exos_template');
 const exosheader = require("./exos_header");
-const exosas = require("./exos_template_as");
+const exostemplate = require('./c-template/exos_template');
+const exosas = require("./c-template/exos_template_as");
 const path = require('path');
 const fs = require('fs')
 

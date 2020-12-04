@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require('fs')
-const header = require('./exos_header');
+const header = require('../exos_header');
 const template_ar = require('./exos_template_ar');
 const template_linux = require('./exos_template_linux');
 const path = require('path');

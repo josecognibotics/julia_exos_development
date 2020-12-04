@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const header = require('./exos_header');
+const header = require('../exos_header');
 const fs = require('fs');
 
 function generateWSLBuild(typName) {
