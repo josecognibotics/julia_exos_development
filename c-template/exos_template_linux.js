@@ -54,12 +54,22 @@ function generateExosPkg(typName,libName,fileName) {
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
     out += `<ArtefactPackage ErrorHandling="Ignore" StartupTimeout="0">\n`;
-    out += `    <File Name="exar-${typName.toLowerCase()}" FileName="exar-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
+    out += `    <File Name="exar-${typName.toLowerCase()}" FileName="${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
     out += `    <Service Name="${typName} Runtime Service" Executable="/home/user/${typName.toLowerCase()}" Arguments=""/>\n`;
     out += `    <Interface Name="${typName}"/>\n`;
-    out += `    <GenerateHeader FileName="${libName}\\${fileName}" TypeName="${typName}" OutputPath="${libName}"/>\n`;
+    out += `    <Build>\n`;
+    out += `        <GenerateHeader FileName="${libName}\\${fileName}" TypeName="${typName}">\n`;
+    out += `            <Output Path="${libName}\\SG4\\linux"/>\n`;
+    out += `            <Output Path="${libName}"/>\n`;
+    out += `        </GenerateHeader>\n`;
+    out += `        <BuildCommand Command="powershell" WorkingDirectory="${libName}\\SG4\\linux" Arguments="${libName}\\SG4\\linux\\WSLbuild.ps1">\n`;
+    out += `            <Dependency FileName="${libName}\\SG4\\linux\\exos_${typName.toLowerCase()}.h"/>\n`;
+    out += `            <Dependency FileName="${libName}\\SG4\\linux\\${typName.toLowerCase()}.c"/>\n`;
+    out += `            <Dependency FileName="${libName}\\SG4\\linux\\termination.h"/>\n`;
+    out += `            <Dependency FileName="${libName}\\SG4\\linux\\termination.c"/>\n`;
+    out += `        </BuildCommand>\n`;
+    out += `    </Build>\n`;
     out += `</ArtefactPackage>\n`;
-    out += ``;
 
     return out;
 }
