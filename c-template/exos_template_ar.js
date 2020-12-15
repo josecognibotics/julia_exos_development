@@ -8,7 +8,7 @@ function generatePackage(typName, libName) {
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
     out += `<?AutomationStudio Version=4.9.1.69?>\n`;
-    out += `<Package PackageType="exosPackage" xmlns="http://br-automation.co.at/AS/Package">\n`;
+    out += `<Package SubType="exosPackage" xmlns="http://br-automation.co.at/AS/Package">\n`;
     out += `  <Objects>\n`;
     out += `    <Object Type="File">${typName}.exospkg</Object>\n`;
     out += `    <Object Type="File">exar-${typName.toLowerCase()}-1.0.0.deb</Object>\n`;
