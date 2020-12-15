@@ -54,7 +54,7 @@ function generateExosPkg(typName,libName,fileName) {
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
     out += `<ArtefactPackage ErrorHandling="Ignore" StartupTimeout="0">\n`;
-    out += `    <File Name="exar-${typName.toLowerCase()}" FileName="${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
+    out += `    <File Name="exar-${typName.toLowerCase()}" FileName="exar-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
     out += `    <Service Name="${typName} Runtime Service" Executable="/home/user/${typName.toLowerCase()}" Arguments=""/>\n`;
     out += `    <Interface Name="${typName}"/>\n`;
     out += `    <Build>\n`;
