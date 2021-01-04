@@ -63,6 +63,9 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_linux.generateWSLBuild(structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/SG4/linux/WSLBuild.ps1`, out);
 
+    out = template_linux.generateShBuild(structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/SG4/linux/build.sh`, out);
+
     out = template_linux.generateExosPkg(structName,libName,path.basename(fileName));
     fs.writeFileSync(`${outPath}/${structName}/${structName}.exospkg`, out);
 

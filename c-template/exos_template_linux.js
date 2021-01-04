@@ -3,6 +3,38 @@
 const header = require('../exos_header');
 const fs = require('fs');
 
+function generateShBuild(typName)
+{
+    let out = "";
+
+    out += `#!/bin/sh\n\n`;
+    out += `finalize() {\n`;
+    out += `    cd ..\n`;
+    out += `    rm -rf build/*\n`;
+    out += `    sync\n`;
+    out += `    exit $1\n`;
+    out += `}\n\n`;
+    out += `mkdir build > /dev/null 2>&1\n`;
+    out += `rm -rf build/*\n\n`;
+    out += `cd build\n\n`;
+    out += `cmake ..\n`;
+    out += `if [ "$?" -ne 0 ] ; then\n`;
+    out += `    finalize 1\n`;
+    out += `fi\n\n`;
+    out += `make\n`;
+    out += `if [ "$?" -ne 0 ] ; then\n`;
+    out += `    finalize 2\n`;
+    out += `fi\n\n`;
+    out += `cpack\n`;
+    out += `if [ "$?" -ne 0 ] ; then\n`;
+    out += `    finalize 3\n`;
+    out += `fi\n\n`;
+    out += `cp -f exar-${typName.toLowerCase()}-*.deb ../../../../\n\n`;
+    out += `finalize 0\n`;
+
+    return out;
+}
+
 function generateWSLBuild(typName) {
     let out = "";
 
@@ -62,7 +94,7 @@ function generateExosPkg(typName,libName,fileName) {
     out += `            <Output Path="${libName}\\SG4\\linux"/>\n`;
     out += `            <Output Path="${libName}"/>\n`;
     out += `        </GenerateHeader>\n`;
-    out += `        <BuildCommand Command="powershell" WorkingDirectory="${libName}\\SG4\\linux" Arguments="${libName}\\SG4\\linux\\WSLbuild.ps1">\n`;
+    out += `        <BuildCommand Command="C:\\Windows\\Sysnative\\wsl.exe" WorkingDirectory="${libName}\\SG4\\linux" Arguments="-d Debian -e sh build.sh">\n`;
     out += `            <Dependency FileName="${libName}\\SG4\\linux\\exos_${typName.toLowerCase()}.h"/>\n`;
     out += `            <Dependency FileName="${libName}\\SG4\\linux\\${typName.toLowerCase()}.c"/>\n`;
     out += `            <Dependency FileName="${libName}\\SG4\\linux\\termination.h"/>\n`;
@@ -505,5 +537,6 @@ module.exports = {
     generateTerminationHeader,
     generateTermination,
     generateCMakeLists,
-    generateWSLBuild
+    generateWSLBuild,
+    generateShBuild
 }
