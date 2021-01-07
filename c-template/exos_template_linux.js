@@ -31,6 +31,7 @@ function generateShBuild()
     out += `finalize() {\n`;
     out += `    cd ..\n`;
     out += `    rm -rf build/*\n`;
+    out += `    rm -r build\n`;
     out += `    sync\n`;
     out += `    exit $1\n`;
     out += `}\n\n`;
