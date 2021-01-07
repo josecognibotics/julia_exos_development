@@ -3,7 +3,27 @@
 const header = require('../exos_header');
 const fs = require('fs');
 
-function generateShBuild(typName)
+function generateLinuxPackage(typName) {
+    let out = "";
+
+    out += `<?xml version="1.0" encoding="utf-8"?>\n`;
+    out += `<?AutomationStudio Version=4.9.1.69?>\n`;
+    out += `<Package SubType="exosLinuxPackage" PackageType="exosLinuxPackage" xmlns="http://br-automation.co.at/AS/Package">\n`;
+    out += `  <Objects>\n`;
+    out += `    <Object Type="File">build.sh</Object>\n`;
+    out += `    <Object Type="File">CMakeLists.txt</Object>\n`;
+    out += `    <Object Type="File">exos_${typName.toLowerCase()}.h</Object>\n`;
+    out += `    <Object Type="File">${typName.toLowerCase()}.c</Object>\n`;
+    out += `    <Object Type="File">termination.c</Object>\n`;
+    out += `    <Object Type="File">termination.h</Object>\n`;
+    out += `    <Object Type="File">exar-${typName.toLowerCase()}-1.0.0.deb</Object>\n`;
+    out += `  </Objects>\n`;
+    out += `</Package>\n`;
+
+    return out;
+}
+
+function generateShBuild()
 {
     let out = "";
 
@@ -29,7 +49,7 @@ function generateShBuild(typName)
     out += `if [ "$?" -ne 0 ] ; then\n`;
     out += `    finalize 3\n`;
     out += `fi\n\n`;
-    out += `cp -f exar-${typName.toLowerCase()}-*.deb ../../../../\n\n`;
+    out += `cp -f exar-*.deb ..\n\n`;
     out += `finalize 0\n`;
 
     return out;
@@ -85,23 +105,23 @@ function generateExosPkg(typName,libName,fileName) {
     let out = "";
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
-    out += `<ArtefactPackage ErrorHandling="Ignore" StartupTimeout="0">\n`;
+    out += `<ComponentPackage ErrorHandling="Ignore" StartupTimeout="0">\n`;
     out += `    <File Name="exar-${typName.toLowerCase()}" FileName="exar-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
     out += `    <Service Name="${typName} Runtime Service" Executable="/home/user/${typName.toLowerCase()}" Arguments=""/>\n`;
-    out += `    <Interface Name="${typName}"/>\n`;
+    out += `    <DataModelInstance Name="${typName}"/>\n`;
     out += `    <Build>\n`;
     out += `        <GenerateHeader FileName="${libName}\\${fileName}" TypeName="${typName}">\n`;
-    out += `            <Output Path="${libName}\\SG4\\linux"/>\n`;
+    out += `            <Output Path="Linux"/>\n`;
     out += `            <Output Path="${libName}"/>\n`;
     out += `        </GenerateHeader>\n`;
-    out += `        <BuildCommand Command="C:\\Windows\\Sysnative\\wsl.exe" WorkingDirectory="${libName}\\SG4\\linux" Arguments="-d Debian -e sh build.sh">\n`;
-    out += `            <Dependency FileName="${libName}\\SG4\\linux\\exos_${typName.toLowerCase()}.h"/>\n`;
-    out += `            <Dependency FileName="${libName}\\SG4\\linux\\${typName.toLowerCase()}.c"/>\n`;
-    out += `            <Dependency FileName="${libName}\\SG4\\linux\\termination.h"/>\n`;
-    out += `            <Dependency FileName="${libName}\\SG4\\linux\\termination.c"/>\n`;
+    out += `        <BuildCommand Command="C:\\Windows\\Sysnative\\wsl.exe" WorkingDirectory="Linux" Arguments="-d Debian -e sh build.sh">\n`;
+    out += `            <Dependency FileName="Linux\\exos_${typName.toLowerCase()}.h"/>\n`;
+    out += `            <Dependency FileName="Linux\\${typName.toLowerCase()}.c"/>\n`;
+    out += `            <Dependency FileName="Linux\\termination.h"/>\n`;
+    out += `            <Dependency FileName="Linux\\termination.c"/>\n`;
     out += `        </BuildCommand>\n`;
     out += `    </Build>\n`;
-    out += `</ArtefactPackage>\n`;
+    out += `</ComponentPackage>\n`;
 
     return out;
 }
@@ -533,6 +553,7 @@ if (require.main === module) {
 
 module.exports = {
     generateExosPkg,
+    generateLinuxPackage,
     generateTemplate,
     generateTerminationHeader,
     generateTermination,
