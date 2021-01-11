@@ -13,8 +13,7 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:exos-component-extension.generateTemplate",
-		"onCommand:exos-component-extension.updateHeader"
+		"onCommand:exos-component-extension.generateTemplate"
 	],
 	"main": "./extension.js",
 	"contributes": {
@@ -22,10 +21,6 @@
 			{
 				"command": "exos-component-extension.generateTemplate",
 				"title": "Generate exOS C-Template"
-			},
-			{
-				"command": "exos-component-extension.updateHeader",
-				"title": "Update exOS Header"
 			}
 		],
 		"menus": {
@@ -33,11 +28,6 @@
 				{
 					"when": "filesExplorerFocus && resourceExtname == .typ",
 					"command": "exos-component-extension.generateTemplate",
-					"group": "2_workspace"
-				},
-				{
-					"when": "filesExplorerFocus && resourceExtname == .typ",
-					"command": "exos-component-extension.updateHeader",
 					"group": "2_workspace"
 				}
 			]

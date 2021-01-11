@@ -44,19 +44,6 @@ function activate(context) {
 
 	});
 	context.subscriptions.push(generateTemplate);
-
-	let updateHeader = vscode.commands.registerCommand('exos-component-extension.updateHeader', function (uri) {
-		// The code you place here will be executed every time your command is executed
-
-		try {
-			var selection = exostemplate.updateHeaderfiles(uri.fsPath);
-			vscode.window.showInformationMessage(`Updated Headerfile for ${selection}`);
-		} catch (error) {
-			vscode.window.showErrorMessage(error);
-		}
-
-	});
-	context.subscriptions.push(updateHeader);
 }
 exports.activate = activate;
 

@@ -6,28 +6,6 @@ const template_ar = require('./exos_template_ar');
 const template_linux = require('./exos_template_linux');
 const path = require('path');
 
-function updateHeaderfiles(fsPath, selection) {
-    let arLibFolder = `${path.dirname(fsPath)}`;
-    let linuxSrcFolder = `${path.dirname(fsPath)}/SG4/linux`;
-    
-    selection = path.basename(path.dirname(arLibFolder)); //we just assume the folder name wont change
-
-    let arHeader = `${arLibFolder}/exos_${selection.toLowerCase()}.h`
-    let linuxHeader = `${linuxSrcFolder}/exos_${selection.toLowerCase()}.h`
-
-    if(fs.existsSync(arHeader) && fs.existsSync(linuxHeader))
-    {
-        let out = header.generateHeader(fsPath, selection);
-        fs.writeFileSync(arHeader, out);
-        fs.writeFileSync(linuxHeader, out);
-
-        return selection;
-    }
-    else {
-        throw(`Headerfiles for data type ${selection} cannot be found. You update the header via the .typ file in the Library. The generated package cannot be renamed`);
-    }
-}
-
 function generateTemplate(fileName, structName, outPath) {
 
     let libName = structName.substring(0, 10);
@@ -125,6 +103,5 @@ if (require.main === module) {
 }
 
 module.exports = {
-    generateTemplate,
-    updateHeaderfiles
+    generateTemplate
 }
