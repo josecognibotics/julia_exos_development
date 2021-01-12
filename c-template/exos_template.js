@@ -49,7 +49,7 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_ar.generateTemplate(fileName, structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName.toLowerCase()}.c`, out);
 
-    out = template_ar.generateFun(structName);
+    out = template_ar.generateFun(fileName, structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${libName}.fun`, out);
 
     out = template_ar.generateCLibrary(path.basename(fileName), structName);

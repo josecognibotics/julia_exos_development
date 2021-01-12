@@ -532,53 +532,53 @@ function infoChildren(children, parent, parentArray) {
             if (child.name == "variable" || child.name == "enum") {
                 if (parent == "") {
                     if (child.attributes.arraySize > 0) {
-                        out += checkExosInfoCallParam(`        {EXOS_INFO(data.${child.attributes.name}),{${parentArray}}},\n`);
+                        out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}),{${parentArray}}},\n`);
                         infoId++;
                         child.attributes.info2 = "<infoId" + infoId + ">";
-                        out += checkExosInfoCallParam(`        {EXOS_INFO(data.${child.attributes.name}[0]),{${arrayStr}}},\n`);
+                        out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}[0]),{${arrayStr}}},\n`);
                     }
                     else {
-                        out += checkExosInfoCallParam(`        {EXOS_INFO(data.${child.attributes.name}),{${arrayStr}}},\n`);
+                        out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}),{${arrayStr}}},\n`);
                     }
                 }
                 else {
                     if (child.attributes.arraySize > 0) {
-                        out += checkExosInfoCallParam(`        {EXOS_INFO(data.${parent}.${child.attributes.name}),{${parentArray}}},\n`);
+                        out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}),{${parentArray}}},\n`);
                         infoId++;
                         child.attributes.info2 = "<infoId" + infoId + ">";
-                        out += checkExosInfoCallParam(`        {EXOS_INFO(data.${parent}.${child.attributes.name}[0]),{${arrayStr}}},\n`);
+                        out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}[0]),{${arrayStr}}},\n`);
                     }
                     else {
-                        out += checkExosInfoCallParam(`        {EXOS_INFO(data.${parent}.${child.attributes.name}),{${arrayStr}}},\n`);
+                        out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}),{${arrayStr}}},\n`);
                     }
                 }
             }
             else if (child.name == "struct" && child.hasOwnProperty("children")) {
                 if (parent == "") {
                     if (child.attributes.arraySize > 0) {
-                        out += checkExosInfoCallParam(`        {EXOS_INFO(data.${child.attributes.name}),{${parentArray}}},\n`);
+                        out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}),{${parentArray}}},\n`);
                         infoId++;
                         child.attributes.info2 = "<infoId" + infoId + ">";
-                        out += checkExosInfoCallParam(`        {EXOS_INFO(data.${child.attributes.name}[0]),{${arrayStr}}},\n`);
+                        out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}[0]),{${arrayStr}}},\n`);
                         out += infoChildren(child.children, `${child.attributes.name}[0]`, arrayStr);
                     }
                     else {
-                        out += checkExosInfoCallParam(`        {EXOS_INFO(data.${child.attributes.name}),{${arrayStr}}},\n`);
+                        out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}),{${arrayStr}}},\n`);
                         out += infoChildren(child.children, child.attributes.name, arrayStr);
                     }
                 }
                 else {
                     if (child.attributes.arraySize > 0) {
 
-                        out += checkExosInfoCallParam(`        {EXOS_INFO(data.${parent}.${child.attributes.name}),{${parentArray}}},\n`);
+                        out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}),{${parentArray}}},\n`);
                         infoId++;
                         child.attributes.info2 = "<infoId" + infoId + ">";
-                        out += checkExosInfoCallParam(`        {EXOS_INFO(data.${parent}.${child.attributes.name}[0]),{${arrayStr}}},\n`);
+                        out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}[0]),{${arrayStr}}},\n`);
                         out += infoChildren(child.children, `${parent}.${child.attributes.name}[0]`, arrayStr);
 
                     }
                     else {
-                        out += checkExosInfoCallParam(`        {EXOS_INFO(data.${parent}.${child.attributes.name}),{${arrayStr}}},\n`);
+                        out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}),{${arrayStr}}},\n`);
                         out += infoChildren(child.children, `${parent}.${child.attributes.name}`, arrayStr);
                     }
                 }
@@ -656,20 +656,20 @@ function generateHeader(fileName, typName) {
     //out += `const char config_${typName.toLowerCase()}[] = "${JSON.stringify(types,null,4).split('"').join('\\"').split('\n').join(' \\\n')}";\n\n`; // pretty print with escapes on " and \ for multiline string
     //out += `const char config_${typName.toLowerCase()}[] = "${JSON.stringify(types,null,4)}";\n\n`; // pretty print without escapes (wont compile)
 
-    out += `/*Register this artefact on the Server and create the OPCUA structure for the ${typName} structure*/\n`;
-    out += `EXOS_ERROR_CODE exos_artefact_register_${typName.toLowerCase()}(exos_artefact_handle_t *artefact, exos_connection_changed_cb connection_changed)\n{\n`;
-    out += `    ${typName} data;\n`;
-    out += `    exos_info_t info[] = {\n`;
-    out += `        {EXOS_INFO(data),{}},\n`;
+    out += `/*Connect the ${typName} datamodel to the server*/\n`;
+    out += `EXOS_ERROR_CODE exos_datamodel_connect_${typName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback)\n{\n`;
+    out += `    ${typName} datamodel;\n`;
+    out += `    exos_dataset_info_t datasets[] = {\n`;
+    out += `        {EXOS_DATASET_BROWSE_NAME_INIT,{}},\n`;
     out += info;
     out = out.slice(0, -2); //remove the last ,\n
     out += `\n`;
     out += `    };\n\n`;
 
 
-    out += `    _exos_internal_calc_offsets(info,sizeof(info));\n\n`;
+    out += `    _exos_internal_calc_offsets(datasets,sizeof(datasets));\n\n`;
 
-    out += `    return _exos_internal_artefact_register(artefact, config_${typName.toLowerCase()}, info, sizeof(info), connection_changed);\n`;
+    out += `    return _exos_internal_datamodel_connect(datamodel, config_${typName.toLowerCase()}, datasets, sizeof(datasets), datamodel_event_callback);\n`;
     out += `}\n\n`;
 
     //register function with INFO for each type: out += generateStructRegister(typName, types.children);
@@ -718,5 +718,6 @@ if (require.main === module) {
 module.exports = {
     parseTypFile,
     generateHeader,
-    convertPlcType
+    convertPlcType,
+    isScalarType
 }

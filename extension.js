@@ -29,7 +29,7 @@ function activate(context) {
 			
 			try {
 				exostemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
-				vscode.window.showInformationMessage(`Generated Template for ${selection}, please dont rename this folder!`);
+				vscode.window.showInformationMessage(`Generated Template for ${selection}`);
 
 				if(exosas.replaceTypWithPackage(uri.fsPath, selection)) {
 					vscode.window.showInformationMessage(`Replaced ${path.basename(uri.fsPath)} with ${selection} Package. The file ${path.basename(uri.fsPath)} has been copied to the ${selection.substring(0,10)} Library`);

@@ -30,7 +30,7 @@ function replaceTypWithPackage(fsPath, package) {
             fs.unlinkSync(fsPath);
         }
         else
-            throw(fsPath);
+            throw(`The Package.pkg in this folder has no reference to ${fsPath}`);
 
         return true;
     }   

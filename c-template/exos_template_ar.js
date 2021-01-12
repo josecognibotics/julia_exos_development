@@ -72,10 +72,12 @@ function generateIECProgramST(typName) {
     return out;
 }
 
-function generateFun(typName) {
+function generateFun(fileName, typName) {
+
+    let template = configTemplate(fileName, typName);
     let out = "";
 
-    out += `FUNCTION_BLOCK ${typName}Init\n`;
+    out += `FUNCTION_BLOCK ${template.datamodel.structName}Init\n`;
     out += `	VAR_OUTPUT\n`;
     out += `		Handle : UDINT;\n`;
     out += `	END_VAR\n`;
@@ -85,11 +87,25 @@ function generateFun(typName) {
     out += `END_FUNCTION_BLOCK\n`;
     out += `\n`;
 
-    out += `FUNCTION_BLOCK ${typName}Cyclic\n`;
+    out += `FUNCTION_BLOCK ${template.datamodel.structName}Cyclic\n`;
     out += `	VAR_INPUT\n`;
     out += `		Enable : BOOL;\n`;
     out += `		Handle : UDINT;\n`;
     out += `		Start : BOOL;\n`;
+    for (let dataset of template.datasets) {
+        let dataType = dataset.dataType;
+        if(dataset.arraySize > 0) {
+            dataType = `ARRAY[0..${dataset.arraySize}] OF ${dataset.dataType}`
+        }
+        if (dataset.comment.includes("PUB")) {
+            if (dataset.comment.includes("SUB")) {
+                out += `		${dataset.structName} : REFERENCE TO ${dataType};\n`;
+            }
+            else {
+                out += `		${dataset.structName} : ${dataType};\n`;
+            }
+        }
+    }
     out += `	END_VAR\n`;
     out += `	VAR_OUTPUT\n`;
     out += `		Active : BOOL;\n`;
@@ -98,6 +114,15 @@ function generateFun(typName) {
     out += `		Connected : BOOL;\n`;
     out += `		Operational : BOOL;\n`;
     out += `		Aborted : BOOL;\n`;
+    for (let dataset of template.datasets) {
+        let dataType = dataset.dataType;
+        if(dataset.arraySize > 0) {
+            dataType = `ARRAY[0..${dataset.arraySize-1}] OF ${dataset.dataType}`
+        }
+        if (dataset.comment.includes("SUB") && !dataset.comment.includes("PUB")) {
+            out += `		${dataset.structName} : ${dataType};\n`;
+        }
+    }
     out += `	END_VAR\n`;
     out += `	VAR\n`;
     out += `		_state : USINT;\n`;
@@ -105,7 +130,7 @@ function generateFun(typName) {
     out += `END_FUNCTION_BLOCK\n`;
     out += `\n`;
 
-    out += `FUNCTION_BLOCK ${typName}Exit\n`;
+    out += `FUNCTION_BLOCK ${template.datamodel.structName}Exit\n`;
     out += `	VAR_INPUT\n`;
     out += `		Handle : UDINT;\n`;
     out += `	END_VAR\n`;
@@ -140,11 +165,11 @@ function generateCLibrary(fileName, typName) {
 
 function generateExosIncludes(template) {
     let out = "";
-    out += `#include <${template.artefact.dataType.substring(0, 10)}.h>\n\n`;
+    out += `#include <${template.datamodel.dataType.substring(0, 10)}.h>\n\n`;
     out += `#define EXOS_ASSERT_LOG &${template.handle.name}->${template.logname}\n`;
     out += `#define EXOS_ASSERT_CALLBACK inst->_state = 255;\n`;
     out += `#include "exos_log.h"\n`;
-    out += `#include "exos_${template.artefact.dataType.toLowerCase()}.h"\n`;
+    out += `#include "exos_${template.datamodel.dataType.toLowerCase()}.h"\n`;
     out += `#include <string.h>\n`;
     out += `\n`;
 
@@ -162,16 +187,16 @@ function generateExosHandle(template) {
     out += `typedef struct\n{\n`;
     out += `    void *self;\n`
     out += `    exos_log_handle_t ${template.logname};\n`;
-    out += `    ${template.artefact.structName} data;\n\n`;
-    out += `    exos_artefact_handle_t ${template.artefact.varName};\n\n`;
-    for (let value of template.values) {
+    out += `    ${template.datamodel.structName} data;\n\n`;
+    out += `    exos_datamodel_handle_t ${template.datamodel.varName};\n\n`;
+    for (let dataset of template.datasets) {
         // initialize non-string comments to "" to avoid crashes in the next if...
-        if (typeof value.comment !== 'string') {
-            value.comment = "";
+        if (typeof dataset.comment !== 'string') {
+            dataset.comment = "";
         }
 
-        if (value.comment.includes("SUB") || value.comment.includes("PUB")) {
-            out += `    exos_value_handle_t ${value.varName};\n`;
+        if (dataset.comment.includes("SUB") || dataset.comment.includes("PUB")) {
+            out += `    exos_dataset_handle_t ${dataset.varName};\n`;
         }
     }
 
@@ -182,100 +207,142 @@ function generateExosHandle(template) {
 function generateExosCallbacks(template) {
     let out = "";
 
-    out += `static void valueChanged(exos_value_handle_t *value)\n{\n`;
-    out += `    struct ${template.artefact.structName}Cyclic *inst = (struct ${template.artefact.structName}Cyclic *)value->artefact->user_context;\n`;
+    out += `static void datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE event_type, void *info)\n{\n`;
+    out += `    struct ${template.datamodel.structName}Cyclic *inst = (struct ${template.datamodel.structName}Cyclic *)dataset->datamodel->user_context;\n`;
     out += `    ${template.handle.dataType} *${template.handle.name} = (${template.handle.dataType} *)inst->Handle;\n\n`;
-    out += `    VERBOSE("value %s changed!", value->name);\n`;
-    out += `    //handle each subscription value separately\n`;
+    out += `    switch (event_type)\n    {\n`;
+    out += `    case EXOS_DATASET_UPDATED:\n`;
+    out += `        VERBOSE("dataset %s updated! latency (us):%i", dataset->name, (exos_datamodel_get_nettime(dataset->datamodel,NULL) - dataset->nettime));\n`;
+    out += `        //handle each subscription dataset separately\n`;
     var atleastone = false;
-    for (let value of template.values) {
-        if (value.comment.includes("PUB")) {
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes("SUB")) {
             if (atleastone) {
-                out += `    else `;
+                out += `        else `;
             }
             else {
-                out += `    `;
+                out += `        `;
                 atleastone = true;
             }
-            out += `if(0 == strcmp(value->name,"${value.structName}"))\n`;
-            out += `    {\n`;
-            out += `        // ${value.dataType} *${value.varName} = (${value.dataType} *)value->data;\n`;
-            out += `    }\n`;
+            out += `if(0 == strcmp(dataset->name, "${dataset.structName}"))\n`;
+            out += `        {\n`;
+            if(dataset.comment.includes("PUB")) {
+                out += `            if(NULL != inst->${dataset.structName})\n`;
+                out += `            {\n`;
+                if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
+                    out += `                *inst->${dataset.structName} = *(${dataset.dataType} *)dataset->data;\n`;
+                }
+                else {
+                    out += `                memcpy(inst->${dataset.structName}, dataset->data, sizeof(${dataset.dataType}));\n`;
+                }
+                out += `            }\n`;
+            }
+            else {
+                if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
+                    out += `            inst->${dataset.structName} = *(${dataset.dataType} *)dataset->data;\n`;
+                }
+                else {
+                    out += `            memcpy(&inst->${dataset.structName}, dataset->data, sizeof(${dataset.dataType}));\n`;
+                }
+            }
+            out += `        }\n`;
         }
     }
-    out += `}\n\n`;
+    out += `        break;\n\n`;
 
-    out += `static void valuePublished(exos_value_handle_t *value, uint32_t queue_items)\n{\n`;
-    out += `    struct ${template.artefact.structName}Cyclic *inst = (struct ${template.artefact.structName}Cyclic *)value->artefact->user_context;\n`;
-    out += `    ${template.handle.dataType} *${template.handle.name} = (${template.handle.dataType} *)inst->Handle;\n\n`;
-    out += `    VERBOSE("value %s published! queue size:%i", value->name, queue_items);\n`;
-    out += `    //handle each published value separately\n`;
+    out += `    case EXOS_DATASET_PUBLISHED:\n`;
+    out += `        VERBOSE("dataset %s published to local server for distribution! send buffer free:%i", dataset->name, dataset->send_buffer.free);\n`;
+    out += `        //handle each published dataset separately\n`;
     atleastone = false;
-    for (let value of template.values) {
-        if (value.comment.includes("SUB")) {
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes("PUB")) {
             if (atleastone) {
-                out += `    else `;
+                out += `        else `;
             }
             else {
-                out += `    `;
+                out += `        `;
                 atleastone = true;
             }
-            out += `if(0 == strcmp(value->name,"${value.structName}"))\n`;
-            out += `    {\n`;
-            out += `        // ${value.dataType} *${value.varName} = (${value.dataType} *)value->data;\n`;
-            out += `    }\n`;
+            out += `if(0 == strcmp(dataset->name, "${dataset.structName}"))\n`;
+            out += `        {\n`;
+            out += `            // ${dataset.dataType} *${dataset.varName} = (${dataset.dataType} *)dataset->data;\n`;
+            out += `        }\n`;
         }
     }
+    out += `        break;\n\n`;
+
+    out += `    case EXOS_DATASET_DELIVERED:\n`;
+    out += `        VERBOSE("dataset %s delivered to remote server for distribution! send buffer free:%i", dataset->name, dataset->send_buffer.free);\n`;
+    out += `        //handle each published dataset separately\n`;
+    atleastone = false;
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes("SUB")) {
+            if (atleastone) {
+                out += `        else `;
+            }
+            else {
+                out += `        `;
+                atleastone = true;
+            }
+            out += `if(0 == strcmp(dataset->name, "${dataset.structName}"))\n`;
+            out += `        {\n`;
+            out += `            // ${dataset.dataType} *${dataset.varName} = (${dataset.dataType} *)dataset->data;\n`;
+            out += `        }\n`;
+        }
+    }
+    out += `        break;\n\n`;
+
+    out += `    case EXOS_DATASET_CONNECTION_CHANGED:\n`;
+    out += `        INFO("dataset %s changed state to %s", dataset->name, exos_get_state_string(dataset->connection_state));\n\n`;
+    out += `        switch (dataset->connection_state)\n`;
+    out += `        {\n`;
+    out += `        case EXOS_STATE_DISCONNECTED:\n`;
+    out += `            break;\n`;
+    out += `        case EXOS_STATE_CONNECTED:\n`;
+    out += `            //call the dataset changed event to update the dataset when connected\n`;
+    out += `            //datasetEvent(dataset,EXOS_DATASET_UPDATED,info);\n`;
+    out += `            break;\n`;
+    out += `        case EXOS_STATE_OPERATIONAL:\n`;
+    out += `            break;\n`;
+    out += `        case EXOS_STATE_ABORTED:\n`;
+    out += `            ERROR("dataset %s error %d (%s) occured", dataset->name, dataset->error, exos_get_error_string(dataset->error));\n`;
+    out += `            break;\n`;
+    out += `        }\n`;
+    out += `        break;\n`;
+    out += `    }\n\n`;
+
     out += `}\n\n`;
 
-    out += `static void valueConnectionChanged(exos_value_handle_t *value)\n{\n`;
-    out += `    struct ${template.artefact.structName}Cyclic *inst = (struct ${template.artefact.structName}Cyclic *)value->artefact->user_context;\n`;
+    out += `static void datamodelEvent(exos_datamodel_handle_t *datamodel, const EXOS_DATAMODEL_EVENT_TYPE event_type, void *info)\n{\n`;
+    out += `    struct ${template.datamodel.structName}Cyclic *inst = (struct ${template.datamodel.structName}Cyclic *)datamodel->user_context;\n`;
     out += `    ${template.handle.dataType} *${template.handle.name} = (${template.handle.dataType} *)inst->Handle;\n\n`;
-    out += `    INFO("value %s changed state to %s", value->name, exos_state_string(value->connection_state));\n\n`;
-    out += `    switch (value->connection_state)\n`;
-    out += `    {\n`;
-    out += `    case EXOS_STATE_DISCONNECTED:\n`;
-    out += `        break;\n`;
-    out += `    case EXOS_STATE_CONNECTED:\n`;
-    out += `        //call the value changed event to update the value\n`;
-    out += `        //valueChanged(value);\n`;
-    out += `        break;\n`;
-    out += `    case EXOS_STATE_OPERATIONAL:\n`;
-    out += `        break;\n`;
-    out += `    case EXOS_STATE_ABORTED:\n`;
-    out += `        ERROR("value %s error %d (%s) occured", value->name, value->error, exos_error_string(value->error));\n`;
-    out += `        break;\n`;
-    out += `    }\n`;
-
-    out += `}\n\n`;
-
-    out += `static void connectionChanged(exos_artefact_handle_t *artefact)\n{\n`;
-    out += `    struct ${template.artefact.structName}Cyclic *inst = (struct ${template.artefact.structName}Cyclic *)artefact->user_context;\n`;
-    out += `    ${template.handle.dataType} *${template.handle.name} = (${template.handle.dataType} *)inst->Handle;\n\n`;
-    out += `    INFO("application changed state to %s", exos_state_string(artefact->connection_state));\n\n`;
-    out += `    inst->Disconnected = 0;\n`;
-    out += `    inst->Connected = 0;\n`;
-    out += `    inst->Operational = 0;\n`;
-    out += `    inst->Aborted = 0;\n\n`;
-    out += `    switch (artefact->connection_state)\n`;
-    out += `    {\n`;
-    out += `    case EXOS_STATE_DISCONNECTED:\n`;
-    out += `        inst->Disconnected = 1;\n`;
-    out += `        inst->_state = 255;\n`;
-    out += `        break;\n`;
-    out += `    case EXOS_STATE_CONNECTED:\n`;
-    out += `        inst->Connected = 1;\n`;
-    out += `        break;\n`;
-    out += `    case EXOS_STATE_OPERATIONAL:\n`;
-    out += `        SUCCESS("${template.artefact.structName} operational!");\n`
-    out += `        inst->Operational = 1;\n`;
-    out += `        break;\n`;
-    out += `    case EXOS_STATE_ABORTED:\n`;
-    out += `        ERROR("application error %d (%s) occured", artefact->error, exos_error_string(artefact->error));\n`;
-    out += `        inst->_state = 255;\n`;
-    out += `        inst->Aborted = 1;\n`;
-    out += `        break;\n`;
-    out += `    }\n`;
+    out += `    switch (event_type)\n    {\n`;
+    out += `    case EXOS_DATASET_CONNECTION_CHANGED:\n`;
+    out += `        INFO("application changed state to %s", exos_get_state_string(datamodel->connection_state));\n\n`;
+    out += `        inst->Disconnected = 0;\n`;
+    out += `        inst->Connected = 0;\n`;
+    out += `        inst->Operational = 0;\n`;
+    out += `        inst->Aborted = 0;\n\n`;
+    out += `        switch (datamodel->connection_state)\n`;
+    out += `        {\n`;
+    out += `        case EXOS_STATE_DISCONNECTED:\n`;
+    out += `            inst->Disconnected = 1;\n`;
+    out += `            inst->_state = 255;\n`;
+    out += `            break;\n`;
+    out += `        case EXOS_STATE_CONNECTED:\n`;
+    out += `            inst->Connected = 1;\n`;
+    out += `            break;\n`;
+    out += `        case EXOS_STATE_OPERATIONAL:\n`;
+    out += `            SUCCESS("${template.datamodel.structName} operational!");\n`
+    out += `            inst->Operational = 1;\n`;
+    out += `            break;\n`;
+    out += `        case EXOS_STATE_ABORTED:\n`;
+    out += `            ERROR("application error %d (%s) occured", datamodel->error, exos_error_string(datamodel->error));\n`;
+    out += `            inst->_state = 255;\n`;
+    out += `            inst->Aborted = 1;\n`;
+    out += `            break;\n`;
+    out += `        }\n`;
+    out += `        break;\n    }\n`;
     out += `}\n\n`;
 
     return out;
@@ -284,7 +351,7 @@ function generateExosCallbacks(template) {
 function generateExosInit(template) {
     let out = "";
 
-    out += `_BUR_PUBLIC void ${template.artefact.structName}Init(struct ${template.artefact.structName}Init *inst)\n{\n`;
+    out += `_BUR_PUBLIC void ${template.datamodel.structName}Init(struct ${template.datamodel.structName}Init *inst)\n{\n`;
     out += `    ${template.handle.dataType} *${template.handle.name};\n`;
     out += `    TMP_alloc(sizeof(${template.handle.dataType}), (void **)&${template.handle.name});\n`;
     out += `    if (NULL == handle)\n`;
@@ -294,21 +361,21 @@ function generateExosInit(template) {
     out += `    }\n\n`;
     out += `    memset(&${template.handle.name}->data, 0, sizeof(${template.handle.name}->data));\n`;
     out += `    ${template.handle.name}->self = ${template.handle.name};\n\n`;
-    out += `    exos_log_init(&${template.handle.name}->${template.logname}, "${template.artefact.structName}");\n\n`;
+    out += `    exos_log_init(&${template.handle.name}->${template.logname}, "${template.datamodel.structName}_AR");\n\n`;
     out += `    \n`;
     out += `    \n`;
-    out += `    exos_artefact_handle_t *${template.artefact.varName} = &${template.handle.name}->${template.artefact.varName};\n`;
-    for (let value of template.values) {
-        if (value.comment.includes("SUB") || value.comment.includes("PUB")) {
-            out += `    exos_value_handle_t *${value.varName} = &${template.handle.name}->${value.varName};\n`;
+    out += `    exos_datamodel_handle_t *${template.datamodel.varName} = &${template.handle.name}->${template.datamodel.varName};\n`;
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes("SUB") || dataset.comment.includes("PUB")) {
+            out += `    exos_dataset_handle_t *${dataset.varName} = &${template.handle.name}->${dataset.varName};\n`;
         }
     }
 
     //initialization
-    out += `    EXOS_ASSERT_OK(exos_artefact_init(${template.artefact.varName}, "${template.artefact.structName}"));\n\n`;
-    for (let value of template.values) {
-        if (value.comment.includes("SUB") || value.comment.includes("PUB")) {
-            out += `    EXOS_ASSERT_OK(exos_value_init(${value.varName}, ${template.artefact.varName}, "${value.structName}", &${template.handle.name}->data.${value.structName}, sizeof(${template.handle.name}->data.${value.structName})));\n`;
+    out += `    EXOS_ASSERT_OK(exos_datamodel_init(${template.datamodel.varName}, "${template.datamodel.structName}", "${template.datamodel.structName}_AR"));\n\n`;
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes("SUB") || dataset.comment.includes("PUB")) {
+            out += `    EXOS_ASSERT_OK(exos_dataset_init(${dataset.varName}, ${template.datamodel.varName}, "${dataset.structName}", &${template.handle.name}->data.${dataset.structName}, sizeof(${template.handle.name}->data.${dataset.structName})));\n`;
         }
     }
     out += `    \n`;
@@ -321,7 +388,7 @@ function generateExosInit(template) {
 function generateExosCyclic(template) {
     let out = "";
 
-    out += `_BUR_PUBLIC void ${template.artefact.structName}Cyclic(struct ${template.artefact.structName}Cyclic *inst)\n{\n`;
+    out += `_BUR_PUBLIC void ${template.datamodel.structName}Cyclic(struct ${template.datamodel.structName}Cyclic *inst)\n{\n`;
 
     out += `    ${template.handle.dataType} *${template.handle.name} = (${template.handle.dataType} *)inst->Handle;\n\n`;
     out += `    inst->Error = false;\n`;
@@ -336,16 +403,16 @@ function generateExosCyclic(template) {
     out += `        return;\n`;
     out += `    }\n\n`;
 
-    out += `    // ${template.artefact.dataType} *data = &${template.handle.name}->data;\n`;
-    out += `    exos_artefact_handle_t *${template.artefact.varName} = &${template.handle.name}->${template.artefact.varName};\n`;
-    out += `    //the user context of the artefact points to the ${template.artefact.structName}Cyclic instance\n`;
-    out += `    ${template.artefact.varName}->user_context = inst; //set it cyclically in case the program using the FUB is retransferred\n`;
-    out += `    ${template.artefact.varName}->user_tag = 0; //user defined\n\n`;
-    for (let value of template.values) {
-        if (value.comment.includes("SUB") || value.comment.includes("PUB")) {
-            out += `    exos_value_handle_t *${value.varName} = &${template.handle.name}->${value.varName};\n`;
-            out += `    ${value.varName}->user_context = NULL; //user defined\n`;
-            out += `    ${value.varName}->user_tag = 0; //user defined\n\n`;
+    out += `    ${template.datamodel.dataType} *data = &${template.handle.name}->data;\n`;
+    out += `    exos_datamodel_handle_t *${template.datamodel.varName} = &${template.handle.name}->${template.datamodel.varName};\n`;
+    out += `    //the user context of the datamodel points to the ${template.datamodel.structName}Cyclic instance\n`;
+    out += `    ${template.datamodel.varName}->user_context = inst; //set it cyclically in case the program using the FUB is retransferred\n`;
+    out += `    ${template.datamodel.varName}->user_tag = 0; //user defined\n\n`;
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes("SUB") || dataset.comment.includes("PUB")) {
+            out += `    exos_dataset_handle_t *${dataset.varName} = &${template.handle.name}->${dataset.varName};\n`;
+            out += `    ${dataset.varName}->user_context = NULL; //user defined\n`;
+            out += `    ${dataset.varName}->user_tag = 0; //user defined\n\n`;
         }
     }
     out += `    //unregister on disable\n`;
@@ -360,30 +427,29 @@ function generateExosCyclic(template) {
     out += `        inst->Connected = 0;\n`;
     out += `        inst->Operational = 0;\n`;
     out += `        inst->Aborted = 0;\n\n`;
-    out += `        if (inst->Enable && exos_api_server_ready())\n`;
+    out += `        if (inst->Enable)\n`;
     out += `        {\n`;
     out += `            inst->_state = 10;\n`;
     out += `        }\n`;
     out += `        break;\n\n`;
     out += `    case 10:\n`;
     out += `        inst->_state = 100;\n`;
-    out += `\n        SUCCESS("starting ${template.artefact.structName} application..");\n\n`;
-    out += `        //register the artefact, then the values\n`;
-    out += `        EXOS_ASSERT_OK(exos_artefact_register_${template.artefact.structName.toLowerCase()}(${template.artefact.varName}, connectionChanged));\n`;
-    for (let value of template.values) {
-        if (value.comment.includes("SUB")) {
-            out += `        EXOS_ASSERT_OK(exos_value_register_publisher(${value.varName}, valueConnectionChanged, valuePublished));\n`;
-        }
-    }
-    for (let value of template.values) {
-        if (value.comment.includes("PUB")) {
-            if (value.comment.includes("SUB")) {
-                out += `        EXOS_ASSERT_OK(exos_value_register_subscription(${value.varName}, NULL, valueChanged));\n`;
+    out += `\n        SUCCESS("starting ${template.datamodel.structName} application..");\n\n`;
+    out += `        //connect the datamodel, then the datasets\n`;
+    out += `        EXOS_ASSERT_OK(exos_datamodel_connect_${template.datamodel.structName.toLowerCase()}(${template.datamodel.varName}, datamodelEvent));\n`;
+    
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes("SUB")) {
+            if (dataset.comment.includes("PUB")) {
+                out += `        EXOS_ASSERT_OK(exos_dataset_connect(${dataset.varName}, EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, datasetEvent));\n`;
             }
             else {
-                out += `        EXOS_ASSERT_OK(exos_value_register_subscription(${value.varName}, valueConnectionChanged, valueChanged));\n`;
+                out += `        EXOS_ASSERT_OK(exos_dataset_connect(${dataset.varName}, EXOS_DATASET_SUBSCRIBE, datasetEvent));\n`;
             }
         }
+        else if (dataset.comment.includes("PUB")) {
+            out += `        EXOS_ASSERT_OK(exos_dataset_connect(${dataset.varName}, EXOS_DATASET_PUBLISH, datasetEvent));\n`;
+        }   
     }
     out += `\n        inst->Active = true;\n`;
     out += `        break;\n\n`;
@@ -394,7 +460,7 @@ function generateExosCyclic(template) {
     out += `        {\n`;
     out += `            if (inst->_state == 100)\n`;
     out += `            {\n`;
-    out += `                EXOS_ASSERT_OK(exos_artefact_set_operational(${template.artefact.varName}));\n`;
+    out += `                EXOS_ASSERT_OK(exos_datamodel_set_operational(${template.datamodel.varName}));\n`;
     out += `                inst->_state = 101;\n`;
     out += `            }\n`;
     out += `        }\n`;
@@ -402,23 +468,55 @@ function generateExosCyclic(template) {
     out += `        {\n`;
     out += `            inst->_state = 100;\n`;
     out += `        }\n\n`;
-    out += `        EXOS_ASSERT_OK(exos_artefact_cyclic(${template.artefact.varName}));\n`;
+    out += `        EXOS_ASSERT_OK(exos_datamodel_process(${template.datamodel.varName}));\n`;
     out += `        //put your cyclic code here!\n\n`;
-    out += `        break;\n\n`;
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes("PUB")) {
+            if (dataset.comment.includes("SUB")) {
+                out += `        if (NULL != inst->${dataset.structName})\n`;
+                out += `        {\n`;
+                out += `            //publish the ${dataset.varName} dataset as soon as there are changes\n`;
+                if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
+                    out += `            if (*inst->${dataset.structName} != data->${dataset.structName})\n`;
+                    out += `            {\n`;
+                    out += `                *data->${dataset.structName} = inst->${dataset.structName};\n`;
+                    out += `                exos_dataset_publish(${dataset.varName});\n`;
+                    out += `            }\n`;
+                    out += `        }\n`;
+                }
+                else {
+                    out += `            if (0 != memcmp(inst->${dataset.structName}, &data->${dataset.structName}, sizeof(${dataset.dataType})))\n`;
+                    out += `            {\n`;
+                    out += `                memcpy(&data->${dataset.structName}, inst->${dataset.structName}, sizeof(${dataset.dataType}));\n`;
+                    out += `                exos_dataset_publish(${dataset.varName});\n`;
+                    out += `            }\n`;
+                    out += `        }\n`;
+                }
+            }
+            else {
+                if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
+                    out += `        //publish the ${dataset.varName} dataset as soon as there are changes\n`;
+                    out += `        if (inst->${dataset.structName} != data->${dataset.structName})\n`;
+                    out += `        {\n`;
+                    out += `            data->${dataset.structName} = inst->${dataset.structName};\n`;
+                    out += `            exos_dataset_publish(${dataset.varName});\n`;
+                    out += `        }\n`;
+                } 
+                else {
+                    out += `        //publish the ${dataset.varName} dataset as soon as there are changes\n`;
+                    out += `        if (0 != memcmp(&inst->${dataset.structName}, &data->${dataset.structName}, sizeof(${dataset.dataType})))\n`;
+                    out += `        {\n`;
+                    out += `            memcpy(&data->${dataset.structName}, &inst->${dataset.structName}, sizeof(${dataset.dataType}));\n`;
+                    out += `            exos_dataset_publish(${dataset.varName});\n`;
+                    out += `        }\n`;
+                }
+            }
+        }
+    }
+    out += `\n        break;\n\n`;
     out += `    case 255:\n`;
-    out += `        //first unregister the values, then the artefact\n`;
-    for (let value of template.values) {
-        if (value.comment.includes("SUB")) {
-            out += `        EXOS_ASSERT_OK(exos_value_unregister_publisher(${value.varName}));\n`;
-        }
-    }
-    for (let value of template.values) {
-        if (value.comment.includes("PUB")) {
-            out += `        EXOS_ASSERT_OK(exos_value_unregister_subscription(${value.varName}));\n`;
-        }
-    }
-    out += `        \n`;
-    out += `        EXOS_ASSERT_OK(exos_artefact_unregister(${template.artefact.varName}));\n\n`;
+    out += `        //disconnect the datamodel\n`;
+    out += `        EXOS_ASSERT_OK(exos_datamodel_disconnect(${template.datamodel.varName}));\n\n`;
     out += `        inst->Active = false;\n`;
     out += `        inst->_state = 254;\n`;
     out += `        //no break\n\n`;
@@ -427,7 +525,7 @@ function generateExosCyclic(template) {
     out += `            inst->_state = 0;\n`;
     out += `        break;\n`;
     out += `    }\n\n`;
-    out += `    exos_log_cyclic(&${template.handle.name}->${template.logname});\n\n`;
+    out += `    exos_log_process(&${template.handle.name}->${template.logname});\n\n`;
     out += `}\n\n`;
 
     return out;
@@ -435,50 +533,23 @@ function generateExosCyclic(template) {
 
 function generateExosExit(template) {
     let out = "";
-    out += `_BUR_PUBLIC void ${template.artefact.structName}Exit(struct ${template.artefact.structName}Exit *inst)\n{\n`;
+    out += `_BUR_PUBLIC void ${template.datamodel.structName}Exit(struct ${template.datamodel.structName}Exit *inst)\n{\n`;
 
     out += `    ${template.handle.dataType} *${template.handle.name} = (${template.handle.dataType} *)inst->Handle;\n\n`;
     out += `    if (NULL == handle)\n`;
     out += `    {\n`;
-    out += `        ERROR("${template.artefact.structName}Exit: NULL handle, cannot delete resources");\n`;
+    out += `        ERROR("${template.datamodel.structName}Exit: NULL handle, cannot delete resources");\n`;
     out += `        return;\n`;
     out += `    }\n`;
     out += `    if ((void *)handle != handle->self)\n`;
     out += `    {\n`;
-    out += `        ERROR("${template.artefact.structName}Exit: invalid handle, cannot delete resources");\n`;
+    out += `        ERROR("${template.datamodel.structName}Exit: invalid handle, cannot delete resources");\n`;
     out += `        return;\n`;
     out += `    }\n\n`;
 
-    out += `    exos_artefact_handle_t *${template.artefact.varName} = &${template.handle.name}->${template.artefact.varName};\n`;
-    for (let value of template.values) {
-        if (value.comment.includes("SUB") || value.comment.includes("PUB")) {
-            out += `    exos_value_handle_t *${value.varName} = &${template.handle.name}->${value.varName};\n`;
-        }
-    }
-
-    out += `    //first unregister the values, then the artefact\n`;
-    for (let value of template.values) {
-        if (value.comment.includes("SUB")) {
-            out += `    EXOS_ASSERT_OK(exos_value_unregister_publisher(${value.varName}));\n`;
-        }
-    }
-    for (let value of template.values) {
-        if (value.comment.includes("PUB")) {
-            out += `    EXOS_ASSERT_OK(exos_value_unregister_subscription(${value.varName}));\n`;
-        }
-    }
+    out += `    exos_datamodel_handle_t *${template.datamodel.varName} = &${template.handle.name}->${template.datamodel.varName};\n`;
     out += `\n`;
-    out += `    EXOS_ASSERT_OK(exos_artefact_unregister(${template.artefact.varName}));\n\n`;
-
-    out += `    //first delete the values, then the artefact\n`;
-    for (let value of template.values) {
-        if (value.comment.includes("SUB") || value.comment.includes("PUB")) {
-            out += `    EXOS_ASSERT_OK(exos_value_delete(${value.varName}));\n`;
-        }
-    }
-
-    out += `    \n`;
-    out += `    EXOS_ASSERT_OK(exos_artefact_delete(${template.artefact.varName}));\n\n`;
+    out += `    EXOS_ASSERT_OK(exos_datamodel_delete(${template.datamodel.varName}));\n\n`;
 
     out += `    //finish with deleting the log\n`;
     out += `    exos_log_delete(&${template.handle.name}->${template.logname});\n`;
@@ -518,13 +589,13 @@ function configTemplate(fileName, typName) {
             dataType: "",
             name: "",
         },
-        artefact: {
+        datamodel: {
             structName: "",
             varName: "",
             dataType: "",
             comment: ""
         },
-        values: [],
+        datasets: [],
         logname: ""
     };
 
@@ -537,35 +608,46 @@ function configTemplate(fileName, typName) {
         template.handle.dataType = `${types.attributes.dataType}Handle_t`;
         template.handle.name = "handle";
 
-        template.artefact.dataType = types.attributes.dataType;
-        template.artefact.structName = types.attributes.dataType;
-        //check if toLowerCase is equal to datatype name, then extend it with _artefact
+        template.datamodel.dataType = types.attributes.dataType;
+        template.datamodel.structName = types.attributes.dataType;
+        //check if toLowerCase is equal to datatype name, then extend it with _datamodel
         if (types.attributes.dataType == types.attributes.dataType.toLowerCase()) {
-            template.artefact.varName = types.attributes.dataType.toLowerCase() + "_artefact";
+            template.datamodel.varName = types.attributes.dataType.toLowerCase() + "_datamodel";
         }
         else {
-            template.artefact.varName = types.attributes.dataType.toLowerCase();
+            template.datamodel.varName = types.attributes.dataType.toLowerCase();
         }
 
-        //check if toLowerCase is same as struct name, then extend it with _value
+        //check if toLowerCase is same as struct name, then extend it with _dataset
         for (let child of types.children) {
             if (child.attributes.name == child.attributes.name.toLowerCase()) {
-                template.values.push({
+                template.datasets.push({
                     structName: child.attributes.name,
-                    varName: child.attributes.name.toLowerCase() + "_value",
+                    varName: child.attributes.name.toLowerCase() + "_dataset",
                     dataType: child.attributes.dataType,
+                    arraySize: child.attributes.arraySize,
                     comment: child.attributes.comment
                 });
             }
             else {
-                template.values.push({
+                template.datasets.push({
                     structName: child.attributes.name,
                     varName: child.attributes.name.toLowerCase(),
                     dataType: child.attributes.dataType,
+                    arraySize: child.attributes.arraySize,
                     comment: child.attributes.comment
                 });
             }
+        }
 
+        // initialize non-string comments to "" and missing arraysizes to 0
+        for (let dataset of template.datasets) {
+            if (typeof dataset.comment !== 'string') {
+                dataset.comment = "";
+            }
+            if (typeof dataset.arraySize !== 'number') {
+                dataset.arraySize = 0;
+            }
         }
     }
     else {
