@@ -658,7 +658,7 @@ function generateHeader(fileName, typName) {
 
     out += `/*Connect the ${typName} datamodel to the server*/\n`;
     out += `EXOS_ERROR_CODE exos_datamodel_connect_${typName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback)\n{\n`;
-    out += `    ${typName} datamodel;\n`;
+    out += `    ${typName} data;\n`;
     out += `    exos_dataset_info_t datasets[] = {\n`;
     out += `        {EXOS_DATASET_BROWSE_NAME_INIT,{}},\n`;
     out += info;
