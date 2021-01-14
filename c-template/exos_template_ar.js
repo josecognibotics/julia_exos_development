@@ -358,7 +358,7 @@ function generateExosCallbacks(template) {
     out += `            inst->Operational = 1;\n`;
     out += `            break;\n`;
     out += `        case EXOS_STATE_ABORTED:\n`;
-    out += `            ERROR("application error %d (%s) occured", datamodel->error, exos_error_string(datamodel->error));\n`;
+    out += `            ERROR("application error %d (%s) occured", datamodel->error, exos_get_error_string(datamodel->error));\n`;
     out += `            inst->_state = 255;\n`;
     out += `            inst->Aborted = 1;\n`;
     out += `            break;\n`;

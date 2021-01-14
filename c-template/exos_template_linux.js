@@ -348,7 +348,7 @@ function generateExosCallbacks(template) {
     out += `            SUCCESS("${template.datamodel.structName} operational!");\n`
     out += `            break;\n`;
     out += `        case EXOS_STATE_ABORTED:\n`;
-    out += `            ERROR("application error %d (%s) occured", datamodel->error, exos_error_string(datamodel->error));\n`;
+    out += `            ERROR("application error %d (%s) occured", datamodel->error, exos_get_error_string(datamodel->error));\n`;
     out += `            break;\n`;
     out += `        }\n`;
     out += `        break;\n    }\n`;
