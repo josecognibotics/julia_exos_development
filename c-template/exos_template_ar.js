@@ -215,7 +215,7 @@ function generateExosCallbacks(template) {
     out += `    struct ${template.datamodel.structName}Cyclic *inst = (struct ${template.datamodel.structName}Cyclic *)dataset->datamodel->user_context;\n`;
     out += `    ${template.handle.dataType} *${template.handle.name} = (${template.handle.dataType} *)inst->Handle;\n\n`;
     out += `    switch (event_type)\n    {\n`;
-    out += `    case EXOS_DATASET_UPDATED:\n`;
+    out += `    case EXOS_DATASET_EVENT_UPDATED:\n`;
     out += `        VERBOSE("dataset %s updated! latency (us):%i", dataset->name, (exos_datamodel_get_nettime(dataset->datamodel,NULL) - dataset->nettime));\n`;
     out += `        //handle each subscription dataset separately\n`;
     var atleastone = false;
@@ -271,7 +271,7 @@ function generateExosCallbacks(template) {
     }
     out += `        break;\n\n`;
 
-    out += `    case EXOS_DATASET_PUBLISHED:\n`;
+    out += `    case EXOS_DATASET_EVENT_PUBLISHED:\n`;
     out += `        VERBOSE("dataset %s published to local server for distribution! send buffer free:%i", dataset->name, dataset->send_buffer.free);\n`;
     out += `        //handle each published dataset separately\n`;
     atleastone = false;
@@ -292,7 +292,7 @@ function generateExosCallbacks(template) {
     }
     out += `        break;\n\n`;
 
-    out += `    case EXOS_DATASET_DELIVERED:\n`;
+    out += `    case EXOS_DATASET_EVENT_DELIVERED:\n`;
     out += `        VERBOSE("dataset %s delivered to remote server for distribution! send buffer free:%i", dataset->name, dataset->send_buffer.free);\n`;
     out += `        //handle each published dataset separately\n`;
     atleastone = false;
@@ -313,7 +313,7 @@ function generateExosCallbacks(template) {
     }
     out += `        break;\n\n`;
 
-    out += `    case EXOS_DATASET_CONNECTION_CHANGED:\n`;
+    out += `    case EXOS_DATASET_EVENT_CONNECTION_CHANGED:\n`;
     out += `        INFO("dataset %s changed state to %s", dataset->name, exos_get_state_string(dataset->connection_state));\n\n`;
     out += `        switch (dataset->connection_state)\n`;
     out += `        {\n`;
@@ -338,7 +338,7 @@ function generateExosCallbacks(template) {
     out += `    struct ${template.datamodel.structName}Cyclic *inst = (struct ${template.datamodel.structName}Cyclic *)datamodel->user_context;\n`;
     out += `    ${template.handle.dataType} *${template.handle.name} = (${template.handle.dataType} *)inst->Handle;\n\n`;
     out += `    switch (event_type)\n    {\n`;
-    out += `    case EXOS_DATASET_CONNECTION_CHANGED:\n`;
+    out += `    case EXOS_DATAMODEL_EVENT_CONNECTION_CHANGED:\n`;
     out += `        INFO("application changed state to %s", exos_get_state_string(datamodel->connection_state));\n\n`;
     out += `        inst->Disconnected = 0;\n`;
     out += `        inst->Connected = 0;\n`;
@@ -501,7 +501,7 @@ function generateExosCyclic(template) {
                     if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
                         out += `            if (*inst->${dataset.structName} != data->${dataset.structName})\n`;
                         out += `            {\n`;
-                        out += `                *data->${dataset.structName} = inst->${dataset.structName};\n`;
+                        out += `                data->${dataset.structName} = *inst->${dataset.structName};\n`;
                         out += `                exos_dataset_publish(${dataset.varName});\n`;
                         out += `            }\n`;
                         out += `        }\n`;

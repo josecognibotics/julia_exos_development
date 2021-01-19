@@ -250,7 +250,7 @@ function generateExosCallbacks(template) {
     let out = "";
     out += `static void datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE event_type, void *info)\n{\n`;
     out += `    switch (event_type)\n    {\n`;
-    out += `    case EXOS_DATASET_UPDATED:\n`;
+    out += `    case EXOS_DATASET_EVENT_UPDATED:\n`;
     out += `        VERBOSE("dataset %s updated! latency (us):%i", dataset->name, (exos_datamodel_get_nettime(dataset->datamodel,NULL) - dataset->nettime));\n`;
     out += `        //handle each subscription dataset separately\n`;
     var atleastone = false;
@@ -271,7 +271,7 @@ function generateExosCallbacks(template) {
     }
     out += `        break;\n\n`;
 
-    out += `    case EXOS_DATASET_PUBLISHED:\n`;
+    out += `    case EXOS_DATASET_EVENT_PUBLISHED:\n`;
     out += `        VERBOSE("dataset %s published to local server for distribution! send buffer free:%i", dataset->name, dataset->send_buffer.free);\n`;
     out += `        //handle each published dataset separately\n`;
     atleastone = false;
@@ -292,7 +292,7 @@ function generateExosCallbacks(template) {
     }
     out += `        break;\n\n`;
 
-    out += `    case EXOS_DATASET_DELIVERED:\n`;
+    out += `    case EXOS_DATASET_EVENT_DELIVERED:\n`;
     out += `        VERBOSE("dataset %s delivered to remote server for distribution! send buffer free:%i", dataset->name, dataset->send_buffer.free);\n`;
     out += `        //handle each published dataset separately\n`;
     atleastone = false;
@@ -313,7 +313,7 @@ function generateExosCallbacks(template) {
     }
     out += `        break;\n\n`;
 
-    out += `    case EXOS_DATASET_CONNECTION_CHANGED:\n`;
+    out += `    case EXOS_DATASET_EVENT_CONNECTION_CHANGED:\n`;
     out += `        INFO("dataset %s changed state to %s", dataset->name, exos_get_state_string(dataset->connection_state));\n\n`;
     out += `        switch (dataset->connection_state)\n`;
     out += `        {\n`;
@@ -336,7 +336,7 @@ function generateExosCallbacks(template) {
 
     out += `static void datamodelEvent(exos_datamodel_handle_t *datamodel, const EXOS_DATAMODEL_EVENT_TYPE event_type, void *info)\n{\n`;
     out += `    switch (event_type)\n    {\n`;
-    out += `    case EXOS_DATASET_CONNECTION_CHANGED:\n`;
+    out += `    case EXOS_DATAMODEL_EVENT_CONNECTION_CHANGED:\n`;
     out += `        INFO("application changed state to %s", exos_get_state_string(datamodel->connection_state));\n\n`;
     out += `        switch (datamodel->connection_state)\n`;
     out += `        {\n`;
