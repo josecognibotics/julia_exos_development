@@ -13,7 +13,8 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:exos-component-extension.generateTemplate"
+		"onCommand:exos-component-extension.generateTemplate",
+		"onCommand:exos-component-extension.generateCLibTemplate"
 	],
 	"main": "./extension.js",
 	"contributes": {
@@ -21,6 +22,10 @@
 			{
 				"command": "exos-component-extension.generateTemplate",
 				"title": "Generate exOS C-Template"
+			},
+			{
+				"command": "exos-component-extension.generateCLibTemplate",
+				"title": "Generate exOS Static C-Lib Template"
 			}
 		],
 		"menus": {
@@ -28,6 +33,11 @@
 				{
 					"when": "filesExplorerFocus && resourceExtname == .typ",
 					"command": "exos-component-extension.generateTemplate",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .typ",
+					"command": "exos-component-extension.generateCLibTemplate",
 					"group": "2_workspace"
 				}
 			]

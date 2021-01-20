@@ -4,6 +4,7 @@ const vscode = require('vscode');
 const exosheader = require("./exos_header");
 const exostemplate = require('./c-template/exos_template');
 const exosas = require("./c-template/exos_template_as");
+const clibtemplate = require('./c-static-lib-template/template');
 const path = require('path');
 const fs = require('fs')
 
@@ -44,6 +45,26 @@ function activate(context) {
 
 	});
 	context.subscriptions.push(generateTemplate);
+
+	let generateCLibTemplate = vscode.commands.registerCommand('exos-component-extension.generateCLibTemplate', function (uri) {
+		vscode.window.showInputBox({prompt:"Name of the DataType:"}).then(selection => {
+			
+			try {
+				clibtemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
+				vscode.window.showInformationMessage(`Generated C-Lib Template for ${selection}`);
+
+				// if(exosas.replaceTypWithPackage(uri.fsPath, selection)) {
+				// 	vscode.window.showInformationMessage(`Replaced ${path.basename(uri.fsPath)} with ${selection} Package. The file ${path.basename(uri.fsPath)} has been copied to the ${selection.substring(0,10)} Library`);
+				// }
+				
+			} catch (error) {
+				vscode.window.showErrorMessage(error);	
+			}
+
+		});
+	});
+	context.subscriptions.push(generateCLibTemplate);
+
 }
 exports.activate = activate;
 
