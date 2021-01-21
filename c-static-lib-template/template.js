@@ -2,7 +2,8 @@
 
 const fs = require('fs')
 const header = require('../exos_header');
-const template_linux = require('./c_static_lib_template');
+const template_lib = require('./c_static_lib_template');
+const template_linux = require('./template_linux');
 const path = require('path');
 
 function generateTemplate(fileName, structName, outPath) {
@@ -32,7 +33,7 @@ function generateTemplate(fileName, structName, outPath) {
     // out = template_ar.generatePackage(structName,libName);
     // fs.writeFileSync(`${outPath}/${structName}/Package.pkg`, out);
 
-    // out = template_linux.generateExosPkg(structName,libName,path.basename(fileName));
+    // out = template_lib.generateExosPkg(structName,libName,path.basename(fileName));
     // fs.writeFileSync(`${outPath}/${structName}/${structName}.exospkg`, out);
     
     // out = template_ar.generateIECProgram(libName);
@@ -58,25 +59,28 @@ function generateTemplate(fileName, structName, outPath) {
     // fs.copyFileSync(fileName, `${outPath}/${structName}/${libName}/${path.basename(fileName)}`);
 
     //Linux Files
-    // out = template_linux.generateLinuxPackage(structName);
-    // fs.writeFileSync(`${outPath}/${structName}/Linux/Package.pkg`, out);
+    out = template_linux.generateLinuxPackage(structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/Package.pkg`, out);
 
-    // out = template_linux.generateShBuild();
-    // fs.writeFileSync(`${outPath}/${structName}/Linux/build.sh`, out);
+    out = template_linux.generateShBuild();
+    fs.writeFileSync(`${outPath}/${structName}/Linux/build.sh`, out);
 
-    // out = template_linux.generateCMakeLists(structName);
-    // fs.writeFileSync(`${outPath}/${structName}/Linux/CMakeLists.txt`, out);
+    out = template_linux.generateCMakeLists(structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/CMakeLists.txt`, out);
     
-    // out = template_linux.generateTerminationHeader();
-    // fs.writeFileSync(`${outPath}/${structName}/Linux/termination.h`, out);
+    out = template_linux.generateTerminationHeader();
+    fs.writeFileSync(`${outPath}/${structName}/Linux/termination.h`, out);
 
-    out = template_linux.genenerateLibHeader(fileName, structName, "PUB", "SUB");
+    out = template_linux.generateTermination();
+    fs.writeFileSync(`${outPath}/${structName}/Linux/termination.c`, out);
+
+    out = template_lib.genenerateLibHeader(fileName, structName, "PUB", "SUB");
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.h`, out);
 
-    out = template_linux.generateMain(fileName, structName, "PUB", "SUB");
+    out = template_lib.generateMain(fileName, structName, "PUB", "SUB");
     fs.writeFileSync(`${outPath}/${structName}/Linux/main.c`, out);
 
-    out = template_linux.generateTemplate(fileName, structName, "PUB", "SUB", `${structName}_Linux`);
+    out = template_lib.generateTemplate(fileName, structName, "PUB", "SUB", `${structName}_Linux`);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.c`, out);
 
 }

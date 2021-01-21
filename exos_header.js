@@ -647,11 +647,14 @@ function generateHeader(fileName, typName) {
 
     out += convertTyp2Struct(fileName);
 
-    out += `#endif // _SG4\n\n`
+    out += `#endif // _SG4\n\n`;
 
     let jsonConfig = JSON.stringify(types).split('"').join('\\"');
     if (jsonConfig.length > MAX_CONFIG_LENGTH) throw(`JSON config (${jsonConfig.length} chars) is longer than maximum (${MAX_CONFIG_LENGTH}).`);
 
+    out += `#ifdef EXOS_STATIC_INCLUDE\n`;
+    out += `EXOS_ERROR_CODE exos_datamodel_connect_${typName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback);\n`;
+    out += `#else\n`;
     out += `const char config_${typName.toLowerCase()}[] = "${jsonConfig}";\n\n`; // one liner with escapes on "
     //out += `const char config_${typName.toLowerCase()}[] = "${JSON.stringify(types,null,4).split('"').join('\\"').split('\n').join(' \\\n')}";\n\n`; // pretty print with escapes on " and \ for multiline string
     //out += `const char config_${typName.toLowerCase()}[] = "${JSON.stringify(types,null,4)}";\n\n`; // pretty print without escapes (wont compile)
@@ -673,6 +676,7 @@ function generateHeader(fileName, typName) {
     out += `}\n\n`;
 
     //register function with INFO for each type: out += generateStructRegister(typName, types.children);
+    out += `#endif // EXOS_STATIC_INCLUDE\n`
 
     out += `#endif // _${typName.toUpperCase()}_H_\n`
 
