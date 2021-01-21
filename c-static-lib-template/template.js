@@ -32,21 +32,6 @@ function generateTemplate(fileName, structName, outPath) {
     //Linux header
     fs.writeFileSync(`${outPath}/${structName}/Linux/exos_${structName.toLowerCase()}.h`, out);
 
-    //libheader
-    out = template_lib.genenerateLibHeader(fileName, structName, "PUB", "SUB");
-    //AS
-    fs.writeFileSync(`${outPath}/${structName}/lib${libName}/lib${structName.toLowerCase()}.h`, out);
-    //Linux
-    fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.h`, out);
-    
-    //lib implementation
-    out = template_lib.generateTemplate(fileName, structName, "PUB", "SUB", `${structName}_Linux`);
-    //AS
-    fs.writeFileSync(`${outPath}/${structName}/lib${libName}/lib${structName.toLowerCase()}.c`, out);
-    //Linux
-    fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.c`, out);
-
-
     // //AS files
     out = template_ar.generatePackage(structName,libName);
     fs.writeFileSync(`${outPath}/${structName}/Package.pkg`, out);
@@ -57,6 +42,12 @@ function generateTemplate(fileName, structName, outPath) {
 
     out = template_ar.generateCLibrary(structName);
     fs.writeFileSync(`${outPath}/${structName}/lib${libName}/ANSIC.lby`, out);
+
+    out = template_lib.genenerateLibHeader(fileName, structName, "SUB", "PUB");
+    fs.writeFileSync(`${outPath}/${structName}/lib${libName}/lib${structName.toLowerCase()}.h`, out);
+
+    out = template_lib.generateTemplate(fileName, structName, "SUB", "PUB", `${structName}_AR`);
+    fs.writeFileSync(`${outPath}/${structName}/lib${libName}/lib${structName.toLowerCase()}.c`, out);
 
     out = template_ar.generateCProgram(path.basename(fileName), libName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/ANSIC.prg`, out);
@@ -72,6 +63,13 @@ function generateTemplate(fileName, structName, outPath) {
     fs.writeFileSync(`${outPath}/${structName}/${libName}/main.c`, out);
 
     //Linux Files
+    out = template_lib.genenerateLibHeader(fileName, structName, "PUB", "SUB");
+    fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.h`, out);
+    
+    out = template_lib.generateTemplate(fileName, structName, "PUB", "SUB", `${structName}_Linux`);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.c`, out);
+
+
     out = template_linux.generateLinuxPackage(structName);
     fs.writeFileSync(`${outPath}/${structName}/Linux/Package.pkg`, out);
 
