@@ -3,6 +3,33 @@
 const header = require('../exos_header');
 const fs = require('fs');
 
+
+function checkVarNames(fileName, typName) {
+    let out = "";
+
+    if (fs.existsSync(fileName)) {
+
+        let types = header.parseTypFile(fileName, typName);
+
+        for (let child of types.children) {
+            if (child.attributes.comment.includes("SUB") || child.attributes.comment.includes("PUB")) {
+                switch (child.attributes.name) {
+                    case "Enable": 
+                    case "Handle": 
+                    case "Start":
+                    case "Active":
+                    case "Error":
+                    case "Disconnected":
+                    case "Connected":
+                    case "Aborted":
+                    case "_state":
+                        throw(`Member name ${child.attributes.name} is not allowed as a PUB/SUB dataset. Keyword is in use`);
+                }
+            }
+        }
+    }
+}
+
 function generatePackage(typName, libName) {
     let out = "";
 
@@ -238,7 +265,7 @@ function generateExosCallbacks(template) {
                         out += `                *inst->${dataset.structName} = *(${dataset.dataType} *)dataset->data;\n`;
                     }
                     else {
-                        out += `                memcpy(inst->${dataset.structName}, dataset->data, sizeof(${dataset.dataType}));\n`;
+                        out += `                memcpy(inst->${dataset.structName}, dataset->data, dataset->size));\n`;
                     }
                     out += `            }\n`;
                 }
@@ -247,7 +274,7 @@ function generateExosCallbacks(template) {
                         out += `            inst->${dataset.structName} = *(${dataset.dataType} *)dataset->data;\n`;
                     }
                     else {
-                        out += `            memcpy(&inst->${dataset.structName}, dataset->data, sizeof(${dataset.dataType}));\n`;
+                        out += `            memcpy(&inst->${dataset.structName}, dataset->data, dataset->size));\n`;
                     }
                 }
                 out += `        }\n`;
@@ -507,9 +534,9 @@ function generateExosCyclic(template) {
                         out += `        }\n`;
                     }
                     else {
-                        out += `            if (0 != memcmp(inst->${dataset.structName}, &data->${dataset.structName}, sizeof(${dataset.dataType})))\n`;
+                        out += `            if (0 != memcmp(inst->${dataset.structName}, &data->${dataset.structName}, sizeof(data->${dataset.structName})))\n`;
                         out += `            {\n`;
-                        out += `                memcpy(&data->${dataset.structName}, inst->${dataset.structName}, sizeof(${dataset.dataType}));\n`;
+                        out += `                memcpy(&data->${dataset.structName}, inst->${dataset.structName}, sizeof(data->${dataset.structName}));\n`;
                         out += `                exos_dataset_publish(${dataset.varName});\n`;
                         out += `            }\n`;
                         out += `        }\n`;
@@ -526,9 +553,9 @@ function generateExosCyclic(template) {
                     } 
                     else {
                         out += `        //publish the ${dataset.varName} dataset as soon as there are changes\n`;
-                        out += `        if (0 != memcmp(&inst->${dataset.structName}, &data->${dataset.structName}, sizeof(${dataset.dataType})))\n`;
+                        out += `        if (0 != memcmp(&inst->${dataset.structName}, &data->${dataset.structName}, sizeof(data->${dataset.structName})))\n`;
                         out += `        {\n`;
-                        out += `            memcpy(&data->${dataset.structName}, &inst->${dataset.structName}, sizeof(${dataset.dataType}));\n`;
+                        out += `            memcpy(&data->${dataset.structName}, &inst->${dataset.structName}, sizeof(data->${dataset.structName}));\n`;
                         out += `            exos_dataset_publish(${dataset.varName});\n`;
                         out += `        }\n`;
                     }
@@ -711,5 +738,6 @@ module.exports = {
     generateIECProgramST,
     generateTemplate,
     generateCLibrary,
-    generateFun
+    generateFun,
+    checkVarNames
 }

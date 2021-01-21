@@ -10,6 +10,8 @@ function generateTemplate(fileName, structName, outPath) {
 
     let libName = structName.substring(0, 10);
 
+    template_ar.checkVarNames(fileName, structName);
+
     if (fs.existsSync(`${outPath}/${structName}`)) {
         throw(`folder ${outPath}/${structName} already exists, choose another output folder`);
     }

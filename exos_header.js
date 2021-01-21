@@ -638,7 +638,7 @@ function generateHeader(fileName, typName) {
     out += `#ifndef _${typName.toUpperCase()}_H_\n`;
     out += `#define _${typName.toUpperCase()}_H_\n\n`;
     out += `#include "exos_api_internal.h"\n\n`;
-    out += `#ifdef _SG4\n`;
+    out += `#if defined(_SG4) && !defined(EXOS_STATIC_INCLUDE)\n`;
     out += `#include <${typName.substring(0, 10)}.h>\n`;
     out += `#else\n`;
     out += `#include <stddef.h>\n`;
@@ -647,7 +647,7 @@ function generateHeader(fileName, typName) {
 
     out += convertTyp2Struct(fileName);
 
-    out += `#endif // _SG4\n\n`;
+    out += `#endif // _SG4 && !EXOS_STATIC_INCLUDE\n\n`;
 
     let jsonConfig = JSON.stringify(types).split('"').join('\\"');
     if (jsonConfig.length > MAX_CONFIG_LENGTH) throw(`JSON config (${jsonConfig.length} chars) is longer than maximum (${MAX_CONFIG_LENGTH}).`);

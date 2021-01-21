@@ -286,6 +286,95 @@ function genenerateLibHeader(fileName, typName, SUB, PUB) {
     return out;
 }
 
+function generateMainAR(fileName, typName, libName, SUB, PUB) {
+    let out = "";
+    let template = configTemplate(fileName, typName);
+
+    out += `#include <string.h>\n`;
+    out += `#include <bur/plctypes.h>\n`;
+    out += `#include "../lib${libName}/${template.libHeaderName}"\n\n`;
+    out += `#ifdef _DEFAULT_INCLUDES\n`;
+    out += `	#include <AsDefault.h>\n`;
+    out += `#endif\n\n`;
+
+    out += `static ${template.datamodel.libStructName}_t ${template.datamodel.varName};\n\n`
+
+    out += `static void on_connected_${template.datamodel.varName}(void)\n{\n}\n\n`;
+    //out += `static void on_disconnected_${template.datamodel.varName}(void)\n{\n}\n\n`;
+    //out += `static void on_operational_${template.datamodel.varName}(void)\n{\n}\n\n`;
+
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes(SUB)) {
+            out += `static void on_change_${dataset.varName}(void)\n`;
+            out += `{\n`;
+            if(header.isScalarType(dataset.dataType) && dataset.arraySize == 0) {
+                out += `    ${dataset.structName} = ${template.datamodel.varName}.${dataset.structName}.value;\n`;
+            }
+            else {
+                out += `    memcpy(&${dataset.structName}, &(${template.datamodel.varName}.${dataset.structName}.value), sizeof(${dataset.structName}));\n`;
+            }
+            out += `}\n`;
+        }
+    }
+
+    out += `void _INIT ProgramInit(void)\n`;
+    out += `{\n`;
+    out += `    //initialize ${template.datamodel.varName} structure\n`;
+    out += `    ${template.datamodel.libStructName}_init(&${template.datamodel.varName});\n\n`
+    out += `    //setup callbacks\n`;
+    out += `    ${template.datamodel.varName}.on_connected = on_connected_${template.datamodel.varName};\n`;
+    out += `    // ${template.datamodel.varName}.on_disconnected = .. ;\n`;
+    out += `    // ${template.datamodel.varName}.on_operational = .. ;\n`;
+    out += `}\n`;
+    out += `\n`;
+    out += `void _CYCLIC ProgramCyclic(void)\n`;
+    out += `{\n`;
+    out += `    if (Enable && !_Enable)\n`;
+    out += `    {\n`;
+    out += `        //connect to the server\n`;
+    out += `        ${template.datamodel.varName}.connect();\n`;
+    out += `    }\n`;
+    out += `    if (!Enable && _Enable)\n`;
+    out += `    {\n`;
+    out += `        //disconnect from server\n`;
+    out += `        ${template.datamodel.varName}.disconnect();\n`;
+    out += `    }\n`;
+    out += `    _Enable = Enable;\n\n`;
+    out += `    //trigger callbacks\n`;
+    out += `    ${template.datamodel.varName}.process();\n\n`;
+    out += `    if (${template.datamodel.varName}.is_connected)\n`;
+    out += `    {\n`;
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes(PUB)) {
+            if(header.isScalarType(dataset.dataType)) {
+                out += `        if (${template.datamodel.varName}.${dataset.structName}.value != ${dataset.structName})\n`;
+                out += `        {\n`;
+                out += `            ${template.datamodel.varName}.${dataset.structName}.value = ${dataset.structName};\n`;
+                out += `            ${template.datamodel.varName}.${dataset.structName}.publish();\n`;
+                out += `        }\n`;
+            }
+            else {
+                out += `        if (memcmp(&(${template.datamodel.varName}.${dataset.structName}.value), &${dataset.structName}, sizeof(${dataset.structName})))\n`;
+                out += `        {\n`;
+                out += `            memcpy(&(${template.datamodel.varName}.${dataset.structName}.value), &${dataset.structName}, sizeof(${dataset.structName}));\n`;
+                out += `            ${template.datamodel.varName}.${dataset.structName}.publish();\n`;
+                out += `        }\n`;
+            }
+            out += "    \n";
+        }
+    }
+    out += `    }\n`;
+    out += `}\n\n`;
+    out += `void _EXIT ProgramExit(void)\n`;
+    out += `{\n`;
+    out += `    //shutdown\n`;
+    out += `    ${template.datamodel.libStructName}_delete(&${template.datamodel.varName});\n\n`
+    out += `}\n`;
+
+
+    return out;
+}
+
 function generateMain(fileName, typName, SUB, PUB) {
     let out = "";
 
@@ -437,5 +526,6 @@ function configTemplate(fileName, typName) {
 module.exports = {
     generateTemplate,
     generateMain,
+    generateMainAR,
     genenerateLibHeader
 }
