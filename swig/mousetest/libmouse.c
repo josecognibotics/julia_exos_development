@@ -1,0 +1,23 @@
+#include "libmouse.h"
+
+void libMouse_publish(void){
+    printf("libmouse.c: libMouse_publish\n");
+}
+
+void libMouse_init(libMouse_t *mouse)
+{
+    printf("libmouse.c: libMouse_init\n");
+
+    mouse->libButtons.publish = libMouse_publish;
+}
+
+void libMouse_process(libMouse_t *mouse)
+{
+    printf("libmouse.c: libMouse_process\n");
+
+}
+void libMouse_exit(libMouse_t *mouse)
+{
+    printf("libmouse.c: libMouse_init\n");
+}
+
