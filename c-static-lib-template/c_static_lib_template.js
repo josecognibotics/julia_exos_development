@@ -51,13 +51,6 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias) {
             }
             out += `if (0 == strcmp(dataset->name,"${dataset.structName}"))\n`;
             out += `        {\n`;
-            out += `            //update the value\n`;
-            if(header.isScalarType(dataset.dataType)) {
-                out += `            ${template.datamodel.handleName}.p_${template.datamodel.varName}->${dataset.structName}.value = *(${header.convertPlcType(dataset.dataType)} *)dataset->data;\n`;
-            }
-            else {
-                out += `            memcpy (&(${template.datamodel.handleName}.p_${template.datamodel.varName}->${dataset.structName}.value), dataset->data, sizeof(${dataset.dataType}));\n`;
-            }
             out += `            //trigger the callback if assigned\n`;
             out += `            if (NULL != ${template.datamodel.handleName}.p_${template.datamodel.varName}->${dataset.structName}.on_change)\n`;
             out += `            {\n`;
@@ -137,16 +130,16 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias) {
     out += `    //connect datasets\n`;
     for (let dataset of template.datasets) {
         if (dataset.comment.includes(SUB)) {
-            out += `    EXOS_ASSERT_OK(exos_dataset_connect(&(${template.datamodel.handleName}.${dataset.varName}), EXOS_DATASET_PUBLISH, datasetEvent));\n`;
-        }
-    }
-    for (let dataset of template.datasets) {
-        if (dataset.comment.includes(PUB)) {
-            if (dataset.comment.includes(SUB)) {
+            if (dataset.comment.includes(PUB)) {
                 out += `    EXOS_ASSERT_OK(exos_dataset_connect(&(${template.datamodel.handleName}.${dataset.varName}), EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, datasetEvent));\n`;
             }
             else {
                 out += `    EXOS_ASSERT_OK(exos_dataset_connect(&(${template.datamodel.handleName}.${dataset.varName}), EXOS_DATASET_SUBSCRIBE, datasetEvent));\n`;
+            }
+        }
+        else {
+            if (dataset.comment.includes(PUB)) {
+                out += `    EXOS_ASSERT_OK(exos_dataset_connect(&(${template.datamodel.handleName}.${dataset.varName}), EXOS_DATASET_PUBLISH, datasetEvent));\n`;
             }
         }
     }
@@ -180,6 +173,8 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias) {
     out += `        return;\n\n`;
 
     out += `    ${template.datamodel.handleName}.p_${template.datamodel.varName} = ${template.datamodel.varName};\n\n`;
+
+    out += `        memset(${template.datamodel.handleName}.p_${template.datamodel.varName}, 0, sizeof(${template.datamodel.libStructName}_t));\n\n`;
 
     for (let dataset of template.datasets) {
         if (dataset.comment.includes(PUB)) {
@@ -325,6 +320,11 @@ function generateMainAR(fileName, typName, libName, SUB, PUB) {
     out += `    ${template.datamodel.varName}.on_connected = on_connected_${template.datamodel.varName};\n`;
     out += `    // ${template.datamodel.varName}.on_disconnected = .. ;\n`;
     out += `    // ${template.datamodel.varName}.on_operational = .. ;\n`;
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes(SUB)) {
+            out += `    ${template.datamodel.varName}.${dataset.structName}.on_change = on_change_${dataset.varName};\n`;
+        }
+    }
     out += `}\n`;
     out += `\n`;
     out += `void _CYCLIC ProgramCyclic(void)\n`;
