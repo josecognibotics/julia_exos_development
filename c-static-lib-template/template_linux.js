@@ -108,12 +108,13 @@ function generateExosPkg(typName,libName,fileName) {
     let out = "";
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
-    out += `<ComponentPackage ErrorHandling="Ignore" StartupTimeout="0">\n`;
+    out += `<ComponentPackage Version="1.0.0" ErrorHandling="Ignore" StartupTimeout="0">\n`;
     out += `    <File Name="exar-${typName.toLowerCase()}" FileName="Linux\\exar-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
     out += `    <Service Name="${typName} Runtime Service" Executable="/home/user/${typName.toLowerCase()}" Arguments=""/>\n`;
     out += `    <DataModelInstance Name="${typName}"/>\n`;
     out += `    <Build>\n`;
     out += `        <GenerateHeader FileName="${libName}\\${fileName}" TypeName="${typName}">\n`;
+    out += `            <SG4 Include="${fileName.split(".")[0].toLowerCase()}TYP.h"/>\n`;
     out += `            <Output Path="Linux"/>\n`;
     out += `            <Output Path="lib${libName}"/>\n`;
     out += `        </GenerateHeader>\n`;

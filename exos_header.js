@@ -622,7 +622,7 @@ function generateStructRegister(typName, children) {
     return out;
 }
 
-function generateHeader(fileName, typName) {
+function generateHeader(fileName, typName, SG4Includes) {
 
     nestingDepth = 0;
     infoId = 0;
@@ -638,16 +638,22 @@ function generateHeader(fileName, typName) {
     out += `#ifndef _${typName.toUpperCase()}_H_\n`;
     out += `#define _${typName.toUpperCase()}_H_\n\n`;
     out += `#include "exos_api_internal.h"\n\n`;
-    out += `#if defined(_SG4) && !defined(EXOS_STATIC_INCLUDE)\n`;
-    out += `#include <${typName.substring(0, 10)}.h>\n`;
-    out += `#else\n`;
+    if(Array.isArray(SG4Includes)) {
+        out += `#if defined(_SG4) && !defined(EXOS_STATIC_INCLUDE)\n`;
+        for(let SG4Include of SG4Includes) {
+            out += `#include <${SG4Include}>\n`;
+        }
+        out += `#else\n`;
+    }
     out += `#include <stddef.h>\n`;
     out += `#include <stdint.h>\n`;
     out += `#include <stdbool.h>\n\n`;
 
     out += convertTyp2Struct(fileName);
 
-    out += `#endif // _SG4 && !EXOS_STATIC_INCLUDE\n\n`;
+    if(Array.isArray(SG4Includes)) {
+        out += `#endif // _SG4 && !EXOS_STATIC_INCLUDE\n\n`;
+    }
 
     let jsonConfig = JSON.stringify(types).split('"').join('\\"');
     if (jsonConfig.length > MAX_CONFIG_LENGTH) throw(`JSON config (${jsonConfig.length} chars) is longer than maximum (${MAX_CONFIG_LENGTH}).`);

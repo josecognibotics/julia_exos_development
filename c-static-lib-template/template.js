@@ -26,7 +26,7 @@ function generateTemplate(fileName, structName, outPath) {
     fs.mkdirSync(`${outPath}/${structName}/Linux`);
     
     //headers
-    let out = header.generateHeader(fileName, structName);
+    let out = header.generateHeader(fileName, structName, [`${path.basename(fileName).split(".")[0].toLowerCase()}TYP.h`]);
     //AS header
     fs.writeFileSync(`${outPath}/${structName}/lib${libName}/exos_${structName.toLowerCase()}.h`, out);
     //Linux header

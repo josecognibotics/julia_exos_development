@@ -21,11 +21,11 @@
 		"commands": [
 			{
 				"command": "exos-component-extension.generateTemplate",
-				"title": "exOS: Generate Template: AR Dynamic C-Lib, Linux C-Executable"
+				"title": "exOS: Generate Dynamic C-Lib, C-Executable Template"
 			},
 			{
 				"command": "exos-component-extension.generateCLibTemplate",
-				"title": "exOS: Generate Template: Static C-Lib, AR C-Task, Linux C-Task"
+				"title": "exOS: Generate Static C-Lib Template"
 			}
 		],
 		"menus": {
