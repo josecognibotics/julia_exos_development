@@ -16,7 +16,7 @@ function generateLinuxPackage(typName) {
     out += `    <Object Type="File">${typName.toLowerCase()}.c</Object>\n`;
     out += `    <Object Type="File">termination.c</Object>\n`;
     out += `    <Object Type="File">termination.h</Object>\n`;
-    out += `    <Object Type="File">exar-${typName.toLowerCase()}-1.0.0.deb</Object>\n`;
+    out += `    <Object Type="File">exos-comp-${typName.toLowerCase()}-1.0.0.deb</Object>\n`;
     out += `  </Objects>\n`;
     out += `</Package>\n`;
 
@@ -50,7 +50,7 @@ function generateShBuild()
     out += `if [ "$?" -ne 0 ] ; then\n`;
     out += `    finalize 3\n`;
     out += `fi\n\n`;
-    out += `cp -f exar-*.deb ..\n\n`;
+    out += `cp -f exos-comp-*.deb ..\n\n`;
     out += `finalize 0\n`;
 
     return out;
@@ -95,7 +95,7 @@ function generateWSLBuild(typName) {
     out += `\n`;
     out += `$wsl.WaitForExit()\n`;
     out += `\n`;
-    out += `Copy-Item -Path "$PSScriptRoot\\build\\exar-${typName.toLowerCase()}-*.deb" -Destination "$PSScriptRoot\\..\\..\\..\\"\n`;
+    out += `Copy-Item -Path "$PSScriptRoot\\build\\exos-comp-${typName.toLowerCase()}-*.deb" -Destination "$PSScriptRoot\\..\\..\\..\\"\n`;
     out += `Remove-Item "$PSScriptRoot\\build\\*" -Recurse\n`;
     out += `\n`;
 
@@ -107,7 +107,7 @@ function generateExosPkg(typName,libName,fileName) {
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
     out += `<ComponentPackage Version="1.0.0" ErrorHandling="Ignore" StartupTimeout="0">\n`;
-    out += `    <File Name="exar-${typName.toLowerCase()}" FileName="Linux\\exar-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
+    out += `    <File Name="exos-comp-${typName.toLowerCase()}" FileName="Linux\\exos-comp-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
     out += `    <Service Name="${typName} Runtime Service" Executable="/home/user/${typName.toLowerCase()}" Arguments=""/>\n`;
     out += `    <DataModelInstance Name="${typName}"/>\n`;
     out += `    <Build>\n`;
@@ -209,7 +209,7 @@ function generateCMakeLists(typName) {
     out += `install(TARGETS ${typName.toLowerCase()} RUNTIME DESTINATION /home/user)\n`;
     out += `\n`;
     out += `set(CPACK_GENERATOR "DEB")\n`;
-    out += `set(CPACK_PACKAGE_NAME exar-${typName.toLowerCase()})\n`;
+    out += `set(CPACK_PACKAGE_NAME exos-comp-${typName.toLowerCase()})\n`;
     out += `set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${typName.toLowerCase()} summary")\n`;
     out += `set(CPACK_PACKAGE_DESCRIPTION "Some description")\n`;
     out += `set(CPACK_PACKAGE_VENDOR "Your Organization")\n`;
@@ -218,7 +218,7 @@ function generateCMakeLists(typName) {
     out += `set(CPACK_PACKAGE_VERSION_MINOR 0)\n`;
     out += `set(CPACK_PACKAGE_VERSION_PATCH 0)\n`;
 
-    out += `set(CPACK_PACKAGE_FILE_NAME exar-${typName.toLowerCase()}-`;
+    out += `set(CPACK_PACKAGE_FILE_NAME exos-comp-${typName.toLowerCase()}-`;
     out += '${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})\n';
     
     out += `set(CPACK_DEBIAN_PACKAGE_MAINTAINER "your name")\n`;
