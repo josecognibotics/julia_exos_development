@@ -9,6 +9,8 @@ void libMouse_init(libMouse_t *mouse)
     printf("libmouse.c: libMouse_init\n");
 
     mouse->libButtons.publish = libMouse_publish;
+    mouse->publish = libMouse_publish;
+    printf("libmouse.c: libMouse_init: mouse->publish addr %u\n", &mouse->publish);
 }
 
 void libMouse_process(libMouse_t *mouse)
