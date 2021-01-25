@@ -5,6 +5,7 @@ const exosheader = require("./exos_header");
 const exostemplate = require('./c-template/exos_template');
 const exosas = require("./c-template/exos_template_as");
 const clibtemplate = require('./c-static-lib-template/template');
+const clibupdate = require('./c-static-lib-template/update_static_c_lib');
 const path = require('path');
 const fs = require('fs')
 
@@ -65,6 +66,17 @@ function activate(context) {
 	});
 	context.subscriptions.push(generateCLibTemplate);
 
+
+	let updateCLib = vscode.commands.registerCommand('exos-component-extension.updateCLib', function (uri) {		
+		try {
+			let selection = clibupdate.updateLibrary(uri.fsPath);
+			vscode.window.showInformationMessage(`Updated C-Lib Template for ${selection}`);
+
+		} catch (error) {
+			vscode.window.showErrorMessage(error);	
+		}
+	});
+	context.subscriptions.push(updateCLib);
 }
 exports.activate = activate;
 
