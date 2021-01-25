@@ -8,8 +8,8 @@ import libmouse
 
 print("  python: lets go")
 
-#mouse = libmouse.libMouse_t()
-mouse = libmouse.init_test()
+mouse = libmouse.libMouse_t()
+#mouse = libmouse.init_test()
 
 # doesnt work with mouse = libmouse.libMouse_t 
 # TypeError: in method 'libMouse_init', argument 1 of type 'libMouse_t *'
@@ -46,9 +46,9 @@ print("  python: call mouse.libButtons.publish()")
 mouse.libButtons.publish()
 
 
-# this should fail as init_test doesnt set it up
-print("  python: call mouse.libMovement.publish()")
-mouse.libMovement.publish()
+# this should fail as libMouse_init doesnt set it up
+#print("  python: call mouse.libMovement.publish()")
+#mouse.libMovement.publish()
 # yup: Segmentation fault (core dumped)
 
 

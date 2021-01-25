@@ -5,7 +5,7 @@
 #include "libmouse.h"
 
 
-
+/*
 libMouse_t *init_test()
 {
     libMouse_t *t = (libMouse_t*) malloc(sizeof(libMouse_t));
@@ -15,7 +15,7 @@ libMouse_t *init_test()
     // and so on
     return t;
 }
-
+*/
 %}
 /*
 TODO: int16_t etc.
@@ -48,8 +48,6 @@ typedef struct libMouse libMouse_t;
 //void libMouse_onchange_cb(libMouse_t *libMouse);
 typedef void (*libMouse_onchange_cb)(libMouse_t *libMouse);
 typedef void (*libMouse_publish_fn)(void);
-
-void libMouse_publish(void);
 
 typedef struct libMouseResetXY
 {
@@ -93,5 +91,5 @@ typedef struct libMouse {
 
 } libMouse_t;
 */
-extern libMouse_t *init_test();
+//libMouse_t *init_test();
 
