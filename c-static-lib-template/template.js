@@ -69,14 +69,6 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_lib.generateTemplate(fileName, structName, "PUB", "SUB", `${structName}_Linux`);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.c`, out);
 
-
-    //Swig Files
-    out = template_lib.generateSwigInclude(fileName, structName, "PUB", "SUB");
-    fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.i`, out);
-
-    out = template_lib.generateSwigStubs(fileName, structName, "PUB", "SUB", `${structName}_Linux`);
-    fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}_swig.c`, out);
-
     out = template_linux.generateLinuxPackage(structName);
     fs.writeFileSync(`${outPath}/${structName}/Linux/Package.pkg`, out);
 
