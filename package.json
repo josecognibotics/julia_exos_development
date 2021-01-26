@@ -15,7 +15,8 @@
 	"activationEvents": [
 		"onCommand:exos-component-extension.generateTemplate",
 		"onCommand:exos-component-extension.generateCLibTemplate",
-		"onCommand:exos-component-extension.updateCLib"
+		"onCommand:exos-component-extension.updateCLib",
+		"onCommand:exos-component-extension.generateSwigPythonTemplate"
 	],
 	"main": "./extension.js",
 	"contributes": {
@@ -31,6 +32,10 @@
 			{
 				"command": "exos-component-extension.updateCLib",
 				"title": "exOS: Update Static C-Lib"
+			},
+			{
+				"command": "exos-component-extension.generateSwigPythonTemplate",
+				"title": "exOS: Generate Static C-Lib SWIG Python Template"
 			}
 		],
 		"menus": {
@@ -43,6 +48,11 @@
 				{
 					"when": "filesExplorerFocus && resourceExtname == .typ",
 					"command": "exos-component-extension.generateCLibTemplate",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .typ",
+					"command": "exos-component-extension.generateSwigPythonTemplate",
 					"group": "2_workspace"
 				},
 				{

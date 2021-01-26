@@ -637,7 +637,10 @@ function generateHeader(fileName, typName, SG4Includes) {
 
     out += `#ifndef _${typName.toUpperCase()}_H_\n`;
     out += `#define _${typName.toUpperCase()}_H_\n\n`;
-    out += `#include "exos_api_internal.h"\n\n`;
+    out += `#ifndef EXOS_INCLUDE_ONLY_DATATYPE\n`;
+    out += `#include "exos_api_internal.h"\n`;
+    out += `#endif\n\n`;
+
     if(Array.isArray(SG4Includes)) {
         out += `#if defined(_SG4) && !defined(EXOS_STATIC_INCLUDE)\n`;
         for(let SG4Include of SG4Includes) {
@@ -657,7 +660,8 @@ function generateHeader(fileName, typName, SG4Includes) {
 
     let jsonConfig = JSON.stringify(types).split('"').join('\\"');
     if (jsonConfig.length > MAX_CONFIG_LENGTH) throw(`JSON config (${jsonConfig.length} chars) is longer than maximum (${MAX_CONFIG_LENGTH}).`);
-
+    
+    out += `#ifndef EXOS_INCLUDE_ONLY_DATATYPE\n`;
     out += `#ifdef EXOS_STATIC_INCLUDE\n`;
     out += `EXOS_ERROR_CODE exos_datamodel_connect_${typName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback);\n`;
     out += `#else\n`;
@@ -683,7 +687,7 @@ function generateHeader(fileName, typName, SG4Includes) {
 
     //register function with INFO for each type: out += generateStructRegister(typName, types.children);
     out += `#endif // EXOS_STATIC_INCLUDE\n`
-
+    out += `#endif // EXOS_INCLUDE_ONLY_DATATYPE\n`;
     out += `#endif // _${typName.toUpperCase()}_H_\n`
 
     return out;
