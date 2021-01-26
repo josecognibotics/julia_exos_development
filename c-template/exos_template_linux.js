@@ -391,11 +391,6 @@ function generateExosInit(template) {
 
     out += `    //connect datasets\n`;
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes("SUB")) {
-            out += `    EXOS_ASSERT_OK(exos_dataset_connect(&${dataset.varName}, EXOS_DATASET_PUBLISH, datasetEvent));\n`;
-        }
-    }
-    for (let dataset of template.datasets) {
         if (dataset.comment.includes("PUB")) {
             if (dataset.comment.includes("SUB")) {
                 out += `    EXOS_ASSERT_OK(exos_dataset_connect(&${dataset.varName}, EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, datasetEvent));\n`;
@@ -403,6 +398,9 @@ function generateExosInit(template) {
             else {
                 out += `    EXOS_ASSERT_OK(exos_dataset_connect(&${dataset.varName}, EXOS_DATASET_SUBSCRIBE, datasetEvent));\n`;
             }
+        }
+        else if (dataset.comment.includes("SUB")) {
+            out += `    EXOS_ASSERT_OK(exos_dataset_connect(&${dataset.varName}, EXOS_DATASET_PUBLISH, datasetEvent));\n`;
         }
     }
     out += `    \n`;

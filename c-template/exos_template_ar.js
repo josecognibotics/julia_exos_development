@@ -265,7 +265,7 @@ function generateExosCallbacks(template) {
                         out += `                *inst->${dataset.structName} = *(${dataset.dataType} *)dataset->data;\n`;
                     }
                     else {
-                        out += `                memcpy(inst->${dataset.structName}, dataset->data, dataset->size));\n`;
+                        out += `                memcpy(inst->${dataset.structName}, dataset->data, dataset->size);\n`;
                     }
                     out += `            }\n`;
                 }
@@ -274,7 +274,7 @@ function generateExosCallbacks(template) {
                         out += `            inst->${dataset.structName} = *(${dataset.dataType} *)dataset->data;\n`;
                     }
                     else {
-                        out += `            memcpy(&inst->${dataset.structName}, dataset->data, dataset->size));\n`;
+                        out += `            memcpy(&inst->${dataset.structName}, dataset->data, dataset->size);\n`;
                     }
                 }
                 out += `        }\n`;
