@@ -12,7 +12,7 @@ function generateLinuxPackage(typName) {
     out += `  <Objects>\n`;
     out += `    <Object Type="File">build.sh</Object>\n`;
     out += `    <Object Type="File">CMakeLists.txt</Object>\n`;
-    out += `    <Object Type="File">main.py</Object>\n`;
+    out += `    <Object Type="File">${typName.toLowerCase()}.py</Object>\n`;
     out += `    <Object Type="File">exos_${typName.toLowerCase()}.h</Object>\n`;
     out += `    <Object Type="File">lib${typName.toLowerCase()}.h</Object>\n`;
     out += `    <Object Type="File">lib${typName.toLowerCase()}.c</Object>\n`;

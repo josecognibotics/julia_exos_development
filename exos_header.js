@@ -635,8 +635,8 @@ function generateHeader(fileName, typName, SG4Includes) {
     let out = "";
     out = `/*Automatically generated header file from ${path.basename(fileName)}*/\n\n`;
 
-    out += `#ifndef _${typName.toUpperCase()}_H_\n`;
-    out += `#define _${typName.toUpperCase()}_H_\n\n`;
+    out += `#ifndef _EXOS_COMP_${typName.toUpperCase()}_H_\n`;
+    out += `#define _EXOS_COMP_${typName.toUpperCase()}_H_\n\n`;
     out += `#ifndef EXOS_INCLUDE_ONLY_DATATYPE\n`;
     out += `#include "exos_api_internal.h"\n`;
     out += `#endif\n\n`;
@@ -688,7 +688,7 @@ function generateHeader(fileName, typName, SG4Includes) {
     //register function with INFO for each type: out += generateStructRegister(typName, types.children);
     out += `#endif // EXOS_STATIC_INCLUDE\n`
     out += `#endif // EXOS_INCLUDE_ONLY_DATATYPE\n`;
-    out += `#endif // _${typName.toUpperCase()}_H_\n`
+    out += `#endif // _EXOS_COMP_${typName.toUpperCase()}_H_\n`
 
     return out;
 }
