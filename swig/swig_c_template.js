@@ -205,9 +205,9 @@ function generateMain(fileName, typName, SUB, PUB) {
 
     out += `import sys\n`;
     out += `\n`;
-    out += `import lib${template.datamodel.varName}\n`;
+    out += `import ${template.datamodel.libStructName}\n`;
     out += `\n`;
-    out += `${template.datamodel.varName} = lib${template.datamodel.varName}.${template.datamodel.libStructName}_init()\n`;
+    out += `${template.datamodel.varName} = ${template.datamodel.libStructName}.${template.datamodel.libStructName}_init()\n`;
     out += `\n`;
     out += `try:\n`;
     out += `    ${template.datamodel.varName}.connect()\n`;
