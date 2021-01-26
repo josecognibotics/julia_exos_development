@@ -16,7 +16,8 @@ function generateLinuxPackage(typName) {
     out += `    <Object Type="File">exos_${typName.toLowerCase()}.h</Object>\n`;
     out += `    <Object Type="File">lib${typName.toLowerCase()}.h</Object>\n`;
     out += `    <Object Type="File">lib${typName.toLowerCase()}.c</Object>\n`;
-    out += `    <Object Type="File">lib${typName.toLowerCase()}_swig.c</Object>\n`;
+    out += `    <Object Type="File">_lib${typName.toLowerCase()}.so</Object>\n`;
+    out += `    <Object Type="File">lib${typName}.py</Object>\n`;
     out += `    <Object Type="File">lib${typName.toLowerCase()}.i</Object>\n`;
     out += `    <Object Type="File">exos-comp-${typName.toLowerCase()}-1.0.0.deb</Object>\n`;
     out += `  </Objects>\n`;
@@ -52,7 +53,8 @@ function generateShBuild()
     out += `if [ "$?" -ne 0 ] ; then\n`;
     out += `    finalize 3\n`;
     out += `fi\n\n`;
-    out += `cp -f exos-comp-*.deb ..\n\n`;
+    out += `cp -f _lib*.so ..\n\n`;
+    out += `cp -f lib*.py ..\n\n`;
     out += `cp -f exos-comp-*.deb ..\n\n`;
     out += `finalize 0\n`;
 
@@ -102,8 +104,8 @@ function generateCMakeLists(typName) {
     out += `\n`;
     out += `SET(CMAKE_SWIG_FLAGS "")\n`;
     out += `\n`;
-    out += `SWIG_ADD_MODULE(lib${typName.toLowerCase()} python lib${typName.toLowerCase()}.i lib${typName.toLowerCase()}_swig.c)\n`;
-    out += `SWIG_LINK_LIBRARIES(lib${typName.toLowerCase()} \${PYTHON_LIBRARIES}) #zmq exos-api\n`;
+    out += `SWIG_ADD_MODULE(lib${typName.toLowerCase()} python lib${typName.toLowerCase()}.i lib${typName.toLowerCase()}.c)\n`;
+    out += `SWIG_LINK_LIBRARIES(lib${typName.toLowerCase()} \${PYTHON_LIBRARIES} zmq exos-api)\n`;
     out += `\n`;
     out += `install(FILES ${typName.toLowerCase()}.py build/_lib${typName.toLowerCase()}.so build/lib${typName}.py DESTINATION /home/user/${typName.toLowerCase()})\n`;
     out += `\n`;

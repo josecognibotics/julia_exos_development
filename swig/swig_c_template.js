@@ -145,8 +145,8 @@ function generateSwigInclude(fileName, typName, SUB, PUB) {
     out += `%}\n`;
     out += `\n`;
     out += `#define EXOS_INCLUDE_ONLY_DATATYPE\n`;
-    out += `#include "stdint.h"\n`;
-    out += `#include "${template.headerName}"\n`;
+    out += `%include "stdint.i"\n`;
+    out += `%include "${template.headerName}"\n`;
     out += `\n`;
   //  out += `typedef void (*${template.datamodel.libStructName}_event_cb)(void);\n\n`;
 
@@ -210,6 +210,7 @@ function generateMain(fileName, typName, SUB, PUB) {
     out += `${template.datamodel.varName} = lib${template.datamodel.varName}.${template.datamodel.libStructName}_init()\n`;
     out += `\n`;
     out += `try:\n`;
+    out += `    ${template.datamodel.varName}.connect()\n`;
     out += `    while True:\n`;
     out += `        ${template.datamodel.varName}.process()\n`;
     out += `        # if ${template.datamodel.varName}.is_connected:\n`;
