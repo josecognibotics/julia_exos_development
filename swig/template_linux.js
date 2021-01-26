@@ -67,7 +67,7 @@ function generateExosPkg(typName,libName,fileName) {
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
     out += `<ComponentPackage Version="1.0.0" ErrorHandling="Ignore" StartupTimeout="0">\n`;
     out += `    <File Name="exos-comp-${typName.toLowerCase()}" FileName="Linux\\exos-comp-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
-    out += `    <Service Name="${typName} Runtime Service" Executable="/home/user/${typName.toLowerCase()}" Arguments=""/>\n`;
+    out += `    <Service Name="${typName} Runtime Service" Executable="/usr/bin/python" Arguments="/home/user/${typName.toLowerCase()}/${typName.toLowerCase()}.py"/>\n`;
     out += `    <DataModelInstance Name="${typName}"/>\n`;
     out += `    <Build>\n`;
     out += `        <GenerateHeader FileName="${libName}\\${fileName}" TypeName="${typName}">\n`;
