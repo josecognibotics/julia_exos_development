@@ -2,18 +2,18 @@ cmake_minimum_required(VERSION 3.0)
 
 project(mouse C)
 
+FIND_PACKAGE(PythonLibs 3) # if it fails:  sudo apt-get install python3-dev
+
 FIND_PACKAGE(SWIG REQUIRED)
 INCLUDE(${SWIG_USE_FILE})
 
-FIND_PACKAGE(PythonLibs)
 # /usr/lib/gcc/x86_64-linux-gnu/8/include/  /usr/include/
 INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(CMAKE_SWIG_FLAGS "")
-
-# SET_SOURCE_FILES_PROPERTIES(libmouse.i PROPERTIES CPLUSPLUS ON)
+SET_SOURCE_FILES_PROPERTIES(libmouse.i PROPERTIES CPLUSPLUS ON)
 # SET_SOURCE_FILES_PROPERTIES(libmouse.i PROPERTIES SWIG_FLAGS "-includeall")
 SWIG_ADD_MODULE(libmouse python libmouse.i libmouse_swig.c)
 SWIG_LINK_LIBRARIES(libmouse ${PYTHON_LIBRARIES})
