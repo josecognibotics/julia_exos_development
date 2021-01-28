@@ -6,12 +6,8 @@
 #include <stdbool.h>
 #include "exos_mouse.h"
 #include "libmouse.h"
-
-void on_change_executer(void (*callback)(void)) {
-  callback();
-}
-
 %}
+
 /*The goal is to have a target language function that gets called by on_change_executer.
 The target language function should have the equivalent signature as the C/C++ function pointer void (*callback)(void).
 As we are using directors, we need a C++ virtual method with this signature,
@@ -24,8 +20,8 @@ struct OnChangeExecuter {
 };
 %}
 
-/*The following handler_helper function and on_change_executer_wrapper function completes the code needed in the C++/SWIG layer.
-The on_change_executer_wrapper function is wrapped by SWIG and is very similar to the on_change_executer function, however, it takes a pointer to the director base class OnChangeExecuter instead of a C/C++ function pointer.*/
+/*The following handler_helper function and on_change_connect function completes the code needed in the C++/SWIG layer.
+The on_change_connect function is wrapped by SWIG and it takes a pointer to the director base class OnChangeExecuter instead of a C/C++ function pointer.*/
 %{
 static OnChangeExecuter *handler_ptr = NULL;
 static void handler_helper() {
@@ -37,14 +33,13 @@ static void handler_helper() {
 %}
 
 %inline %{
-void on_change_executer_wrapper(libMouse_t *mouse, OnChangeExecuter *handler) {
+void on_change_connect(libMouse_t *mouse, OnChangeExecuter *handler) {
   handler_ptr = handler;
-  on_change_executer(&handler_helper);
-  on_change_connect(mouse, &handler_helper);
+  mouse->ResetXY.on_change = &handler_helper;
   handler = NULL;
 }
 %}
-/*On the target language side, we need to derive a class from BinaryOp and override the handle method.*/
+/*On the target language side, we need to derive a class from OnChangeExecuter and override the handle method.*/
 
 
 #define EXOS_INCLUDE_ONLY_DATATYPE
@@ -83,5 +78,4 @@ typedef struct libMouse
     libMouseButtons_t Buttons;
 } libMouse_t;
 
-void on_change_connect(libMouse_t *mouse, void (*on_change_cb)(void));
 libMouse_t *libMouse_init(void);

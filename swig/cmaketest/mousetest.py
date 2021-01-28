@@ -7,7 +7,7 @@ import libmouse
 import threading
 
 
-# PythonBinaryOp class is defined and derived from C++ class BinaryOp
+# PythonOnChangeExecuter class is defined and derived from C++ class OnChangeExecuter in libmouse.i
 class PythonOnChangeExecuter(libmouse.OnChangeExecuter):
 
     # Define Python class 'constructor'
@@ -15,22 +15,10 @@ class PythonOnChangeExecuter(libmouse.OnChangeExecuter):
         # Call C++ base class constructor
         libmouse.OnChangeExecuter.__init__(self)
 
-    # Override C++ method: virtual int handle(int a, int b) = 0;
+    # Override C++ method: virtual void handle() = 0;
     def handle(self):
-        # Return the product
         print("  python: OnChangeExecuter handle callback thingy")
-        #return a * b
 
-
-
-
-def py_callback():
-    print('Hello world! Im a py_callback')
-
-def main(callback):
-    print('Calling callback if != None')
-    if callback != None:
-        callback()
 
 print("  python: lets go")
 
@@ -45,22 +33,19 @@ print("  python: correct left:" + str(mouse.Buttons.value.LeftButton))
 print("  python: call mouse.Buttons.publish()")
 mouse.Buttons.publish()
 
-#print("  python: on_change_connect")
-#libmouse.on_change_connect(mouse, py_callback)
-
+# Setup the callback, at the moment its called from libMouse_process in libmouse_swig
 print("  python: PythonOnChangeExecuter")
 handler = PythonOnChangeExecuter()
-print("  python: on_change_executer_wrapper")
-libmouse.on_change_executer_wrapper(mouse,handler)
+print("  python: on_change_connect")
+libmouse.on_change_connect(mouse, handler)
 
 try:
     while True:
+        print("  python: process do")
         mouse.process()
-        print("  python: process done, val something")
+        print("  python: process done")
         mouse.Buttons.value.RightButton = True
-        print("  python: call mouse.Buttons.publish(), which calls on_change")
         mouse.Buttons.publish()
-        #main(py_callback)
         time.sleep(3)
 except (KeyboardInterrupt, SystemExit):
     print("\n! Received keyboard interrupt, quitting threads.\n")

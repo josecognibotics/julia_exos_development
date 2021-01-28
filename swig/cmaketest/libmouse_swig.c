@@ -17,11 +17,6 @@ static void libMouse_publish_movement(void)
 static void libMouse_publish_buttons(void)
 {
     printf("exos_dataset_publish(&h_Mouse.buttons)\n");
-    if (NULL != h_Mouse.ext_mouse.ResetXY.on_change)
-    {
-        printf("h_Mouse.ext_mouse.ResetXY.on_change()\n");
-        h_Mouse.ext_mouse.ResetXY.on_change();
-    }
 }
 
 static void libMouse_connect(void)
@@ -47,31 +42,25 @@ static void libMouse_set_operational(void)
 static void libMouse_process(void)
 {
     printf("exos_datamodel_process(&(h_Mouse.mouse))\n");
+
+    if (NULL != h_Mouse.ext_mouse.ResetXY.on_change)
+    {
+        printf("h_Mouse.ext_mouse.ResetXY.on_change()\n");
+        h_Mouse.ext_mouse.ResetXY.on_change();
+    }
 }
 
 static void libMouse_dispose(void)
 {
     printf("exos_datamodel_delete(&(h_Mouse.mouse))\n");
 }
-static void libMouse_reset_on_change(void)
-{
-    printf("c: libMouse_reset_on_change\n");
-}
-void on_change_connect(libMouse_t *mouse, void (*on_change_cb)(void))
-{
-    printf("OC_CONNECT\n");
-    mouse->ResetXY.on_change = on_change_cb;
-}
+
 libMouse_t *libMouse_init(void)
 {
     memset(&h_Mouse,0,sizeof(h_Mouse));
 
     h_Mouse.ext_mouse.Movement.publish = libMouse_publish_movement;
     h_Mouse.ext_mouse.Buttons.publish = libMouse_publish_buttons;
-    
-    h_Mouse.ext_mouse.ResetXY.on_change = libMouse_reset_on_change;
-    printf("LALAL\n");
-    h_Mouse.ext_mouse.ResetXY.on_change();
 
     h_Mouse.ext_mouse.connect = libMouse_connect;
     h_Mouse.ext_mouse.disconnect = libMouse_disconnect;

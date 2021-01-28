@@ -41,7 +41,5 @@ typedef struct libMouse
     libMouseButtons_t Buttons;
 } libMouse_t;
 
-void on_change_connect(libMouse_t *mouse,void (*on_change_cb)(void));
-
 libMouse_t *libMouse_init(void);
 #endif // _LIBMOUSE_H_
