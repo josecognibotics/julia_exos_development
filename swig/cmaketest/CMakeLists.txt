@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(mouse C)
+project(libmouse)
 
 FIND_PACKAGE(PythonLibs 3) # if it fails:  sudo apt-get install python3-dev
 

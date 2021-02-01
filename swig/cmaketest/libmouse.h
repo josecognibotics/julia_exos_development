@@ -41,5 +41,13 @@ typedef struct libMouse
     libMouseButtons_t Buttons;
 } libMouse_t;
 
-libMouse_t *libMouse_init(void);
+// To avoid c++ mangling when using swig in c++ mode
+#ifdef __cplusplus
+extern "C" {
+#endif
+    libMouse_t *libMouse_init(void);
+#ifdef __cplusplus
+}
+#endif
+
 #endif // _LIBMOUSE_H_

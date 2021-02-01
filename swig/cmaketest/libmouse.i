@@ -8,7 +8,10 @@
 #include "libmouse.h"
 %}
 
-/*The goal is to have a target language function that gets called by on_change_executer.
+/*
+https://rawgit.com/swig/swig/master/Doc/Manual/SWIGPlus.html#SWIGPlus_target_language_callbacks
+
+The goal is to have a target language function that gets called by on_change_executer.
 The target language function should have the equivalent signature as the C/C++ function pointer void (*callback)(void).
 As we are using directors, we need a C++ virtual method with this signature,
 so let's define the C++ class and pure virtual method first and make it a director class via the director feature:*/
@@ -78,4 +81,6 @@ typedef struct libMouse
     libMouseButtons_t Buttons;
 } libMouse_t;
 
+// To avoid c++ mangling when using swig in c++ mode
+// remember to use 'extern "C"' in header
 libMouse_t *libMouse_init(void);
