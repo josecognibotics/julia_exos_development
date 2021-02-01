@@ -134,7 +134,7 @@ function generateSwigInclude(fileName, typName, SUB, PUB) {
 
     let template = c_static_lib_template.configTemplate(fileName, typName);
 
-    out += `%module ${template.datamodel.libStructName}\n`;
+    out += `%module(directors="1") ${template.datamodel.libStructName}\n`;
     out += `%{\n`;
     out += `#define EXOS_INCLUDE_ONLY_DATATYPE\n`;
     out += `#include <stddef.h>\n`;
@@ -144,11 +144,75 @@ function generateSwigInclude(fileName, typName, SUB, PUB) {
     out += `#include "${template.libHeaderName}"\n`;
     out += `%}\n`;
     out += `\n`;
+    out += `%feature("director") ${template.datamodel.dataType}EventHandler;\n`;
+    out += `%inline %{\n`;
+    out += `struct ${template.datamodel.dataType}EventHandler\n`;
+    out += `{\n`;
+    out += `    virtual void on_connected(void) {}\n`;
+    out += `    virtual void on_disconnected(void) {}\n`;
+    out += `    virtual void on_operational(void) {}\n\n`;
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes(SUB)) {
+            out += `    virtual void on_change_${dataset.structName}() {}\n`;
+        }
+    }
+    out += `\n`;
+    out += `    virtual ~${template.datamodel.dataType}EventHandler() {}\n`;
+    out += `    ${template.datamodel.libStructName}_t *${template.datamodel.varName};\n`;
+    out += `};\n`;
+    out += `%}\n`;
+    out += `\n`;
+    out += `%{\n`;
+    out += `static ${template.datamodel.dataType}EventHandler *p${template.datamodel.dataType}EventHandler = NULL;\n`;
+    out += `\n`;
+    
+    out += `static void ${template.datamodel.libStructName}_on_connected()\n`;
+    out += `{\n`;
+    out += `    p${template.datamodel.dataType}EventHandler->on_connected();\n`;
+    out += `}\n\n`;
+    out += `static void ${template.datamodel.libStructName}_on_disconnected()\n`;
+    out += `{\n`;
+    out += `    p${template.datamodel.dataType}EventHandler->on_disconnected();\n`;
+    out += `}\n\n`;
+    out += `static void ${template.datamodel.libStructName}_on_operational()\n`;
+    out += `{\n`;
+    out += `    p${template.datamodel.dataType}EventHandler->on_operational();\n`;
+    out += `}\n\n`;
+
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes(SUB)) {
+            out += `static void ${template.datamodel.libStructName}_on_change_${dataset.structName}()\n`;
+            out += `{\n`;
+            out += `    p${template.datamodel.dataType}EventHandler->on_change_${dataset.structName}();\n`;
+            out += `}\n`;
+        }
+    }
+    out += `%}\n`;
+    out += `\n`;
+    out += `%inline %{\n`;
+    out += `void add_event_handler(${template.datamodel.libStructName}_t *${template.datamodel.varName}, ${template.datamodel.dataType}EventHandler *handler)\n`;
+    out += `{\n`;
+    out += `    p${template.datamodel.dataType}EventHandler = handler;\n`;
+    out += `\n`;
+    out += `    ${template.datamodel.varName}->on_connected = &${template.datamodel.libStructName}_on_connected;\n`;
+    out += `    ${template.datamodel.varName}->on_disconnected = &${template.datamodel.libStructName}_on_disconnected;\n`;
+    out += `    ${template.datamodel.varName}->on_operational = &${template.datamodel.libStructName}_on_operational;\n`;
+    out += `    \n`;
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes(SUB)) {
+            out += `    ${template.datamodel.varName}->${dataset.structName}.on_change = &${template.datamodel.libStructName}_on_change_${dataset.structName};\n`;
+        }
+    }
+    out += `    \n`;
+    out += `    p${template.datamodel.dataType}EventHandler->${template.datamodel.varName} = ${template.datamodel.varName};\n`;
+    out += `    handler = NULL;\n`;
+    out += `}\n`;
+    out += `%}\n`;
+    out += `\n`;
     out += `#define EXOS_INCLUDE_ONLY_DATATYPE\n`;
     out += `%include "stdint.i"\n`;
     out += `%include "${template.headerName}"\n`;
     out += `\n`;
-  //  out += `typedef void (*${template.datamodel.libStructName}_event_cb)(void);\n\n`;
 
     for (let dataset of template.datasets) {
         if (dataset.comment.includes(SUB)) {
@@ -157,7 +221,7 @@ function generateSwigInclude(fileName, typName, SUB, PUB) {
             if (dataset.comment.includes(PUB)) {
                 out += `    void publish(void);\n`;
             }
-  //          out += `    ${template.datamodel.libStructName}_event_cb on_change;\n`;
+            out += `    void on_change(void);\n`;
             out += `    ${header.convertPlcType(dataset.dataType)} value;\n`;
             out += `} ${dataset.libDataType}_t;\n\n`;
         }
@@ -181,9 +245,9 @@ function generateSwigInclude(fileName, typName, SUB, PUB) {
     out += `    void set_operational(void);\n`;
     out += `    void dispose(void);\n`;
 
-    //out += `    ${template.datamodel.libStructName}_event_cb on_connected;\n`;
-    //out += `    ${template.datamodel.libStructName}_event_cb on_disconnected;\n`;
-    //out += `    ${template.datamodel.libStructName}_event_cb on_operational;\n`;
+    out += `    void on_connected(void);\n`;
+    out += `    void on_disconnected(void);\n`;
+    out += `    void on_operational(void);\n`;
     out += `    bool is_connected;\n`;
     out += `    bool is_operational;\n`;
     for (let dataset of template.datasets) {
@@ -207,7 +271,32 @@ function generateMain(fileName, typName, SUB, PUB) {
     out += `\n`;
     out += `import ${template.datamodel.libStructName}\n`;
     out += `\n`;
+    out += `class ${template.datamodel.dataType}EventHandler(${template.datamodel.libStructName}.${template.datamodel.dataType}EventHandler):\n`;
+    out += `\n`;
+    out += `    def __init__(self):\n`;
+    out += `        ${template.datamodel.libStructName}.${template.datamodel.dataType}EventHandler.__init__(self)\n`;
+    out += `\n`;
+    out += `    # def on_connected(self):\n`;
+    out += `    #     self.${template.datamodel.varName}. ..\n`;
+    out += `\n`;
+    out += `    # def on_disconnected(self):\n`;
+    out += `    #     self.${template.datamodel.varName}. ..\n`;
+    out += `\n`;
+    out += `    # def on_operational(self):\n`;
+    out += `    #     self.${template.datamodel.varName}. ..\n`;
+    out += `\n`;
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes(SUB)) {
+            out += `    # def on_change_${dataset.structName}(self):\n`;
+            out += `    #     .. = self.${template.datamodel.varName}.${dataset.structName}.value\n`;
+            out += "    \n";
+        }
+    }
+    out += `\n`;
     out += `${template.datamodel.varName} = ${template.datamodel.libStructName}.${template.datamodel.libStructName}_init()\n`;
+    out += `\n`;
+    out += `handler = ${template.datamodel.dataType}EventHandler()\n`;
+    out += `${template.datamodel.libStructName}.add_event_handler(${template.datamodel.varName}, handler)\n`;
     out += `\n`;
     out += `try:\n`;
     out += `    ${template.datamodel.varName}.connect()\n`;
@@ -218,7 +307,7 @@ function generateMain(fileName, typName, SUB, PUB) {
     for (let dataset of template.datasets) {
         if (dataset.comment.includes(PUB)) {
             out += `            # ${template.datamodel.varName}.${dataset.structName}.value = .. \n`;
-            out += `            # ${template.datamodel.varName}.${dataset.structName}.publish();\n`;
+            out += `            # ${template.datamodel.varName}.${dataset.structName}.publish()\n`;
             out += "            \n";
         }
     }

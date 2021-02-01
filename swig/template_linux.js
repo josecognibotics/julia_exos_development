@@ -69,6 +69,8 @@ function generateExosPkg(typName,libName,fileName) {
     out += `    <File Name="exos-comp-${typName.toLowerCase()}" FileName="Linux\\exos-comp-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
     out += `    <Service Name="${typName} Runtime Service" Executable="/usr/bin/python" Arguments="/home/user/${typName.toLowerCase()}/${typName.toLowerCase()}.py"/>\n`;
     out += `    <DataModelInstance Name="${typName}"/>\n`;
+    out += `    <File Name="${typName.toLowerCase()}-script" FileName="Linux\\${typName.toLowerCase()}.py" Type="Project"/>\n`;
+    out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/${typName.toLowerCase()}.py /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <Build>\n`;
     out += `        <GenerateHeader FileName="${libName}\\${fileName}" TypeName="${typName}">\n`;
     out += `            <SG4 Include="${fileName.split(".")[0].toLowerCase()}TYP.h"/>\n`;
@@ -76,8 +78,8 @@ function generateExosPkg(typName,libName,fileName) {
     out += `            <Output Path="lib${libName}"/>\n`;
     out += `        </GenerateHeader>\n`;
     out += `        <BuildCommand Command="C:\\Windows\\Sysnative\\wsl.exe" WorkingDirectory="Linux" Arguments="-d Debian -e sh build.sh">\n`;
+    out += `            <Dependency FileName="Linux\\CMakeLists.txt"/>\n`;
     out += `            <Dependency FileName="Linux\\exos_${typName.toLowerCase()}.h"/>\n`;
-    out += `            <Dependency FileName="Linux\\${typName.toLowerCase()}.py"/>\n`;
     out += `            <Dependency FileName="Linux\\lib${typName.toLowerCase()}.h"/>\n`;
     out += `            <Dependency FileName="Linux\\lib${typName.toLowerCase()}.c"/>\n`;
     out += `            <Dependency FileName="Linux\\lib${typName.toLowerCase()}.i"/>\n`;
@@ -93,7 +95,7 @@ function generateCMakeLists(typName) {
 
     out += `cmake_minimum_required(VERSION 3.0)\n`;
     out += `\n`;
-    out += `project(${typName.toLowerCase()} C)\n`;
+    out += `project(lib${typName})\n`;
     out += `FIND_PACKAGE(SWIG REQUIRED)\n`;
     out += `INCLUDE(\${SWIG_USE_FILE})\n`;
     out += `\n`;
@@ -108,11 +110,13 @@ function generateCMakeLists(typName) {
     out += `    "lib${typName.toLowerCase()}.i"\n`;
     out += `    "lib${typName.toLowerCase()}.c")\n`;
     out += `\n`;
+    out += `SET_SOURCE_FILES_PROPERTIES(\${${typName.toUpperCase()}_SOURCES} PROPERTIES CPLUSPLUS ON)\n`;
+    out += `\n`;
     out += `SWIG_ADD_MODULE(lib${typName} python \${${typName.toUpperCase()}_SOURCES})\n`;
     out += `SWIG_LINK_LIBRARIES(lib${typName} \${PYTHON_LIBRARIES} zmq exos-api)\n`;
     out += `\n`;
     out += `SET(${typName.toUpperCase()}_MODULE_FILES\n`;
-    out += `    "${typName.toLowerCase()}.py"\n`;
+   // out += `    "${typName.toLowerCase()}.py"\n`;
     out += `    "build/_lib${typName}.so"\n`;
     out += `    build/lib${typName}.py)\n`;
     out += `\n`;

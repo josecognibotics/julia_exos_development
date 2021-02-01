@@ -263,8 +263,16 @@ function genenerateLibHeader(fileName, typName, SUB, PUB) {
     }
     out += `} ${template.datamodel.libStructName}_t;\n\n`;
 
+    out += `#ifdef __cplusplus\n`;
+    out += `extern "C" {\n`;
+    out += `#endif\n`;
+
     out += `${template.datamodel.libStructName}_t *${template.datamodel.libStructName}_init(void);\n`;
     
+    out += `#ifdef __cplusplus\n`;
+    out += `}\n`;
+    out += `#endif\n`;
+
     out += `#endif // _${template.libHeaderName.toUpperCase().replace('.','_')}_\n`;
 
 

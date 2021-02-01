@@ -18,7 +18,7 @@ so let's define the C++ class and pure virtual method first and make it a direct
 %feature("director") MouseEventHandler;
 %inline %{
 struct MouseEventHandler {
-  virtual void on_change_ResetXY() {};
+  virtual void on_change_ResetXY() {}
   virtual ~MouseEventHandler() {}
   libMouse_t *mouse;
 };
