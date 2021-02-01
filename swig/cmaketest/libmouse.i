@@ -15,30 +15,32 @@ The goal is to have a target language function that gets called by on_change_exe
 The target language function should have the equivalent signature as the C/C++ function pointer void (*callback)(void).
 As we are using directors, we need a C++ virtual method with this signature,
 so let's define the C++ class and pure virtual method first and make it a director class via the director feature:*/
-%feature("director") OnChangeExecuter;
+%feature("director") MouseEventHandler;
 %inline %{
-struct OnChangeExecuter {
-  virtual void handle() = 0;
-  virtual ~OnChangeExecuter() {}
+struct MouseEventHandler {
+  virtual void on_change_ResetXY() {};
+  virtual ~MouseEventHandler() {}
+  libMouse_t *mouse;
 };
 %}
 
 /*The following handler_helper function and on_change_connect function completes the code needed in the C++/SWIG layer.
 The on_change_connect function is wrapped by SWIG and it takes a pointer to the director base class OnChangeExecuter instead of a C/C++ function pointer.*/
 %{
-static OnChangeExecuter *handler_ptr = NULL;
-static void handler_helper() {
+static MouseEventHandler *pMouseEventHandler = NULL;
+static void libMouse_on_change_ResetXY() {
   // Make the call up to the target language when handler_ptr
   // is an instance of a target language director class
-  handler_ptr->handle();
+  pMouseEventHandler->on_change_ResetXY();
 }
 // If desired, handler_ptr above could be changed to a thread-local variable in order to make thread-safe
 %}
 
 %inline %{
-void on_change_connect(libMouse_t *mouse, OnChangeExecuter *handler) {
-  handler_ptr = handler;
-  mouse->ResetXY.on_change = &handler_helper;
+void add_event_handler(libMouse_t *mouse, MouseEventHandler *handler) {
+  pMouseEventHandler = handler;
+  mouse->ResetXY.on_change = &libMouse_on_change_ResetXY;
+  pMouseEventHandler->mouse = mouse;
   handler = NULL;
 }
 %}

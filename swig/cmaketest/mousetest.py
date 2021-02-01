@@ -8,16 +8,17 @@ import threading
 
 
 # PythonOnChangeExecuter class is defined and derived from C++ class OnChangeExecuter in libmouse.i
-class PythonOnChangeExecuter(libmouse.OnChangeExecuter):
+class MouseEventHandler(libmouse.MouseEventHandler):
 
     # Define Python class 'constructor'
     def __init__(self):
         # Call C++ base class constructor
-        libmouse.OnChangeExecuter.__init__(self)
+        libmouse.MouseEventHandler.__init__(self)
 
     # Override C++ method: virtual void handle() = 0;
-    def handle(self):
-        print("  python: OnChangeExecuter handle callback thingy")
+    def on_change_ResetXY(self):
+        print("  python: MouseEventHandler handle callback thingy")
+        print("          Movement: " + str(self.mouse.Movement.value.X))
 
 
 print("  python: lets go")
@@ -34,10 +35,10 @@ print("  python: call mouse.Buttons.publish()")
 mouse.Buttons.publish()
 
 # Setup the callback, at the moment its called from libMouse_process in libmouse_swig
-print("  python: PythonOnChangeExecuter")
-handler = PythonOnChangeExecuter()
+print("  python: MouseEventHandler")
+handler = MouseEventHandler()
 print("  python: on_change_connect")
-libmouse.on_change_connect(mouse, handler)
+libmouse.add_event_handler(mouse, handler)
 
 try:
     while True:
