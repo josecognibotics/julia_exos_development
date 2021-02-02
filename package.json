@@ -16,7 +16,8 @@
 		"onCommand:exos-component-extension.generateTemplate",
 		"onCommand:exos-component-extension.generateCLibTemplate",
 		"onCommand:exos-component-extension.updateCLib",
-		"onCommand:exos-component-extension.generateSwigPythonTemplate"
+		"onCommand:exos-component-extension.generateSwigPythonTemplate",
+		"onCommand:exos-component-extension.generateSwigNodeJSTemplate"
 	],
 	"main": "./extension.js",
 	"contributes": {
@@ -36,6 +37,10 @@
 			{
 				"command": "exos-component-extension.generateSwigPythonTemplate",
 				"title": "exOS: Generate Static C-Lib SWIG Python Template"
+			},
+			{
+				"command": "exos-component-extension.generateSwigNodeJSTemplate",
+				"title": "exOS: Generate Static C-Lib SWIG NodeJS Template"
 			}
 		],
 		"menus": {
@@ -53,6 +58,11 @@
 				{
 					"when": "filesExplorerFocus && resourceExtname == .typ",
 					"command": "exos-component-extension.generateSwigPythonTemplate",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .typ",
+					"command": "exos-component-extension.generateSwigNodeJSTemplate",
 					"group": "2_workspace"
 				},
 				{

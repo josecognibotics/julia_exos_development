@@ -262,7 +262,7 @@ function generateSwigInclude(fileName, typName, SUB, PUB) {
     return out;
 }
 
-function generateMain(fileName, typName, SUB, PUB) {
+function generatePythonMain(fileName, typName, SUB, PUB) {
     let out = "";
 
     let template = c_static_lib_template.configTemplate(fileName, typName);
@@ -321,9 +321,68 @@ function generateMain(fileName, typName, SUB, PUB) {
     return out;
 }
 
+function generateNodeJSMain(fileName, typName, SUB, PUB) {
+    let out = "";
+
+    let template = c_static_lib_template.configTemplate(fileName, typName);
+
+    out += `import sys\n`;
+    out += `\n`;
+    out += `import ${template.datamodel.libStructName}\n`;
+    out += `\n`;
+    out += `class ${template.datamodel.dataType}EventHandler(${template.datamodel.libStructName}.${template.datamodel.dataType}EventHandler):\n`;
+    out += `\n`;
+    out += `    def __init__(self):\n`;
+    out += `        ${template.datamodel.libStructName}.${template.datamodel.dataType}EventHandler.__init__(self)\n`;
+    out += `\n`;
+    out += `    # def on_connected(self):\n`;
+    out += `    #     self.${template.datamodel.varName}. ..\n`;
+    out += `\n`;
+    out += `    # def on_disconnected(self):\n`;
+    out += `    #     self.${template.datamodel.varName}. ..\n`;
+    out += `\n`;
+    out += `    # def on_operational(self):\n`;
+    out += `    #     self.${template.datamodel.varName}. ..\n`;
+    out += `\n`;
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes(SUB)) {
+            out += `    # def on_change_${dataset.structName}(self):\n`;
+            out += `    #     .. = self.${template.datamodel.varName}.${dataset.structName}.value\n`;
+            out += "    \n";
+        }
+    }
+    out += `\n`;
+    out += `${template.datamodel.varName} = ${template.datamodel.libStructName}.${template.datamodel.libStructName}_init()\n`;
+    out += `\n`;
+    out += `handler = ${template.datamodel.dataType}EventHandler()\n`;
+    out += `${template.datamodel.libStructName}.add_event_handler(${template.datamodel.varName}, handler)\n`;
+    out += `\n`;
+    out += `try:\n`;
+    out += `    ${template.datamodel.varName}.connect()\n`;
+    out += `    while True:\n`;
+    out += `        ${template.datamodel.varName}.process()\n`;
+    out += `        # if ${template.datamodel.varName}.is_connected:\n`;
+
+    for (let dataset of template.datasets) {
+        if (dataset.comment.includes(PUB)) {
+            out += `            # ${template.datamodel.varName}.${dataset.structName}.value = .. \n`;
+            out += `            # ${template.datamodel.varName}.${dataset.structName}.publish()\n`;
+            out += "            \n";
+        }
+    }
+    out += `except (KeyboardInterrupt, SystemExit):\n`;
+    out += `    print 'Application terminated, shutting down'\n`;
+    out += `\n`;
+    out += `${template.datamodel.varName}.disconnect()\n`;
+    out += `${template.datamodel.varName}.dispose()\n`;
+    out += `\n`;
+    
+    return out;
+}
 
 module.exports = {
     generateSwigInclude,
     generateSwigStubs,
-    generateMain
+    generatePythonMain,
+    generateNodeJSMain
 }

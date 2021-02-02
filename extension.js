@@ -83,7 +83,7 @@ function activate(context) {
 		vscode.window.showInputBox({prompt:"Name of the DataType:"}).then(selection => {
 			
 			try {
-				swigtemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
+				swigtemplate.generatePythonTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
 				vscode.window.showInformationMessage(`Generated C-Lib SWIG Python Template for ${selection}`);
 
 				if(exosas.replaceTypWithPackage(uri.fsPath, selection)) {
@@ -97,6 +97,26 @@ function activate(context) {
 		});
 	});
 	context.subscriptions.push(generateSwigPythonTemplate);
+
+
+	let generateSwigNodeJSTemplate = vscode.commands.registerCommand('exos-component-extension.generateSwigNodeJSTemplate', function (uri) {
+		vscode.window.showInputBox({prompt:"Name of the DataType:"}).then(selection => {
+			
+			try {
+				swigtemplate.generateNodeJSTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
+				vscode.window.showInformationMessage(`Generated C-Lib SWIG NodeJS Template for ${selection}`);
+
+				if(exosas.replaceTypWithPackage(uri.fsPath, selection)) {
+					vscode.window.showInformationMessage(`Replaced ${path.basename(uri.fsPath)} with ${selection} Package. The file ${path.basename(uri.fsPath)} has been copied to the ${selection.substring(0,10)} Library`);
+				}
+				
+			} catch (error) {
+				vscode.window.showErrorMessage(error);	
+			}
+
+		});
+	});
+	context.subscriptions.push(generateSwigNodeJSTemplate);
 }
 exports.activate = activate;
 
