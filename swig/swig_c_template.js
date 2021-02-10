@@ -267,8 +267,6 @@ function generatePythonMain(fileName, typName, SUB, PUB) {
 
     let template = c_static_lib_template.configTemplate(fileName, typName);
 
-    out += `import sys\n`;
-    out += `\n`;
     out += `import ${template.datamodel.libStructName}\n`;
     out += `\n`;
     out += `class ${template.datamodel.dataType}EventHandler(${template.datamodel.libStructName}.${template.datamodel.dataType}EventHandler):\n`;
@@ -311,8 +309,8 @@ function generatePythonMain(fileName, typName, SUB, PUB) {
             out += "            \n";
         }
     }
-    out += `except (KeyboardInterrupt, SystemExit):\n`;
-    out += `    print 'Application terminated, shutting down'\n`;
+    out += `except(KeyboardInterrupt, SystemExit):\n`;
+    out += `    print('Application terminated, shutting down')\n`;
     out += `\n`;
     out += `${template.datamodel.varName}.disconnect()\n`;
     out += `${template.datamodel.varName}.dispose()\n`;
