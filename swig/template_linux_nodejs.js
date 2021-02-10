@@ -11,74 +11,66 @@ function generateLinuxPackage(typName) {
     out += `<Package SubType="exosLinuxPackage" PackageType="exosLinuxPackage" xmlns="http://br-automation.co.at/AS/Package">\n`;
     out += `  <Objects>\n`;
     out += `    <Object Type="File">build.sh</Object>\n`;
-    out += `    <Object Type="File">CMakeLists.txt</Object>\n`;
-    out += `    <Object Type="File">${typName.toLowerCase()}.py</Object>\n`;
+    out += `    <Object Type="File">${typName.toLowerCase()}.js</Object>\n`;
     out += `    <Object Type="File">exos_${typName.toLowerCase()}.h</Object>\n`;
+    out += `    <Object Type="File">l_${typName.toLowerCase()}.node</Object>\n`;
+    out += `    <Object Type="File">binding.gyp</Object>\n`;
     out += `    <Object Type="File">lib${typName.toLowerCase()}.h</Object>\n`;
     out += `    <Object Type="File">lib${typName.toLowerCase()}.c</Object>\n`;
-    out += `    <Object Type="File">_lib${typName}.so</Object>\n`;
-    out += `    <Object Type="File">lib${typName}.py</Object>\n`;
     out += `    <Object Type="File">lib${typName.toLowerCase()}.i</Object>\n`;
-    out += `    <Object Type="File">exos-comp-${typName.toLowerCase()}-1.0.0.deb</Object>\n`;
     out += `  </Objects>\n`;
     out += `</Package>\n`;
 
     return out;
 }
 
-function generateShBuild()
-{
+function generateShBuild(typName) {
     let out = "";
 
     out += `#!/bin/sh\n\n`;
     out += `finalize() {\n`;
-    out += `    cd ..\n`;
+    out += `    cd ../..\n`;
     out += `    rm -rf build/*\n`;
     out += `    rm -r build\n`;
+    out += `    rm lib${typName.toLowerCase()}_wrap.cpp\n`;
     out += `    sync\n`;
     out += `    exit $1\n`;
     out += `}\n\n`;
-    out += `mkdir build > /dev/null 2>&1\n`;
-    out += `rm -rf build/*\n\n`;
-    out += `cd build\n\n`;
-    out += `cmake -Wno-dev ..\n`;
+    out += `swig -c++ -javascript -node -o lib${typName.toLowerCase()}_wrap.cpp lib${typName.toLowerCase()}.i\n`;
     out += `if [ "$?" -ne 0 ] ; then\n`;
     out += `    finalize 1\n`;
     out += `fi\n\n`;
-    out += `make\n`;
+    out += `node-gyp rebuild\n`;
     out += `if [ "$?" -ne 0 ] ; then\n`;
     out += `    finalize 2\n`;
     out += `fi\n\n`;
-    out += `cpack\n`;
-    out += `if [ "$?" -ne 0 ] ; then\n`;
-    out += `    finalize 3\n`;
-    out += `fi\n\n`;
-    out += `cp -f _lib*.so ..\n\n`;
-    out += `cp -f lib*.py ..\n\n`;
-    out += `cp -f exos-comp-*.deb ..\n\n`;
-    out += `finalize 0\n`;
+    out += `cd build/Release\n\n`;
+    out += `cp -f l_*.node ../..\n\n`;
+    out += `finalize 0`;
 
     return out;
 }
 
-function generateExosPkg(typName,libName,fileName) {
+function generateExosPkg(typName, libName, fileName) {
     let out = "";
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
     out += `<ComponentPackage Version="1.0.0" ErrorHandling="Ignore" StartupTimeout="0">\n`;
-    out += `    <File Name="exos-comp-${typName.toLowerCase()}" FileName="Linux\\exos-comp-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
-    out += `    <Service Name="${typName} Runtime Service" Executable="/usr/bin/python" Arguments="/home/user/${typName.toLowerCase()}/${typName.toLowerCase()}.py"/>\n`;
-    out += `    <DataModelInstance Name="${typName}"/>\n`;
-    out += `    <File Name="${typName.toLowerCase()}-script" FileName="Linux\\${typName.toLowerCase()}.py" Type="Project"/>\n`;
-    out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/${typName.toLowerCase()}.py /home/user/${typName.toLowerCase()}/"/>\n`;
+    out += `    <Service Name="${typName} Runtime Service" Executable="/usr/bin/node" Arguments="/home/user/${typName.toLowerCase()}/${typName.toLowerCase()}.js"/>\n`;
+    out += `    <DataModelInstance Name="MyApp"/>\n`;
+    out += `    <File Name="${typName.toLowerCase()}-script" FileName="Linux\\${typName.toLowerCase()}.js" Type="Project"/>\n`;
+    out += `    <File Name="${typName.toLowerCase()}-lib" FileName="Linux\\l_${typName.toLowerCase()}.node" Type="Project"/>\n`;
+    out += `    <Installation Type="Prerun" Command="mkdir /home/user/${typName.toLowerCase()}/"/>\n`;
+    out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/${typName.toLowerCase()}.js /home/user/${typName.toLowerCase()}/"/>\n`;
+    out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/l_${typName.toLowerCase()}.node /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <Build>\n`;
-    out += `        <GenerateHeader FileName="${libName}\\${fileName}" TypeName="${typName}">\n`;
+    out += `        <GenerateHeader FileName="MyApp\\MyApp.typ" TypeName="MyApp">\n`;
     out += `            <SG4 Include="${fileName.split(".")[0].toLowerCase()}TYP.h"/>\n`;
     out += `            <Output Path="Linux"/>\n`;
     out += `            <Output Path="lib${libName}"/>\n`;
     out += `        </GenerateHeader>\n`;
-    out += `        <BuildCommand Command="C:\\Windows\\Sysnative\\wsl.exe" WorkingDirectory="Linux" Arguments="-d Debian -e sh build.sh">\n`;
-    out += `            <Dependency FileName="Linux\\CMakeLists.txt"/>\n`;
+    out += `        <BuildCommand Command="C:\\Windows\\Sysnative\\wsl.exe" WorkingDirectory="Linux" Arguments="--distribution Debian --exec ./build.sh">\n`;
+    out += `            <Dependency FileName="Linux\\${typName.toLowerCase()}.js"/>\n`;
     out += `            <Dependency FileName="Linux\\exos_${typName.toLowerCase()}.h"/>\n`;
     out += `            <Dependency FileName="Linux\\lib${typName.toLowerCase()}.h"/>\n`;
     out += `            <Dependency FileName="Linux\\lib${typName.toLowerCase()}.c"/>\n`;
@@ -90,64 +82,37 @@ function generateExosPkg(typName,libName,fileName) {
     return out;
 }
 
-function generateCMakeLists(typName) {
+function generateGypFile(typName) {
     let out = "";
 
-    out += `cmake_minimum_required(VERSION 3.0)\n`;
-    out += `\n`;
-    out += `project(lib${typName})\n`;
-    out += `FIND_PACKAGE(SWIG REQUIRED)\n`;
-    out += `INCLUDE(\${SWIG_USE_FILE})\n`;
-    out += `\n`;
-    out += `FIND_PACKAGE(PythonLibs)\n`;
-    out += `INCLUDE_DIRECTORIES(\${PYTHON_INCLUDE_PATH})\n`;
-    out += `\n`;
-    out += `INCLUDE_DIRECTORIES(\${CMAKE_CURRENT_SOURCE_DIR})\n`;
-    out += `\n`;
-    out += `SET(CMAKE_SWIG_FLAGS "")\n`;
-    out += `\n`;
-    out += `set(${typName.toUpperCase()}_SOURCES\n`;
-    out += `    "lib${typName.toLowerCase()}.i"\n`;
-    out += `    "lib${typName.toLowerCase()}.c")\n`;
-    out += `\n`;
-    out += `SET_SOURCE_FILES_PROPERTIES(\${${typName.toUpperCase()}_SOURCES} PROPERTIES CPLUSPLUS ON)\n`;
-    out += `\n`;
-    out += `SWIG_ADD_MODULE(lib${typName} python \${${typName.toUpperCase()}_SOURCES})\n`;
-    out += `SWIG_LINK_LIBRARIES(lib${typName} \${PYTHON_LIBRARIES} zmq exos-api)\n`;
-    out += `\n`;
-    out += `SET(${typName.toUpperCase()}_MODULE_FILES\n`;
-   // out += `    "${typName.toLowerCase()}.py"\n`;
-    out += `    "build/_lib${typName}.so"\n`;
-    out += `    build/lib${typName}.py)\n`;
-    out += `\n`;
-    out += `install(FILES \${${typName.toUpperCase()}_MODULE_FILES} DESTINATION /home/user/${typName.toLowerCase()})\n`;
-    out += `\n`;
-    out += `set(CPACK_GENERATOR "DEB")\n`;
-    out += `set(CPACK_PACKAGE_NAME exos-comp-${typName.toLowerCase()})\n`;
-    out += `set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${typName.toLowerCase()} summary")\n`;
-    out += `set(CPACK_PACKAGE_DESCRIPTION "Some description")\n`;
-    out += `set(CPACK_PACKAGE_VENDOR "Your Organization")\n`;
-    out += `\n`;
-    out += `set(CPACK_PACKAGE_VERSION_MAJOR 1)\n`;
-    out += `set(CPACK_PACKAGE_VERSION_MINOR 0)\n`;
-    out += `set(CPACK_PACKAGE_VERSION_PATCH 0)\n`;
-
-    out += `set(CPACK_PACKAGE_FILE_NAME exos-comp-${typName.toLowerCase()}-`;
-    out += '${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})\n';
-    
-    out += `set(CPACK_DEBIAN_PACKAGE_MAINTAINER "your name")\n`;
-    out += `\n`;
-    out += `set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)\n`;
-    out += `\n`;
-    out += `include(CPack)\n`;
-    out += `\n`;
+    out += `{\n`;
+    out += `  "targets": [\n`;
+    out += `    {\n`;
+    out += `      "target_name": "l_${typName.toLowerCase()}",\n`;
+    out += `      "sources": [\n`;
+    out += `        "lib${typName.toLowerCase()}.c",\n`;
+    out += `        "lib${typName.toLowerCase()}_wrap.cpp"\n`;
+    out += `      ],\n`;
+    out += `      "include_dirs": [\n`;
+    out += `          '/usr/include'\n`;
+    out += `      ],\n`;
+    out += `      'link_settings': {\n`;
+    out += `          'libraries': [\n`;
+    out += `            '-lexos-api',\n`;
+    out += `            '-lzmq'\n`;
+    out += `          ]\n`;
+    out += `      }\n`;
+    out += `    }\n`;
+    out += `  ]\n`;
+    out += `}\n`;
 
     return out;
 }
 
+
 module.exports = {
-    generateCMakeLists,
     generateExosPkg,
     generateShBuild,
-    generateLinuxPackage
+    generateLinuxPackage,
+    generateGypFile
 }

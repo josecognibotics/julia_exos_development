@@ -95,10 +95,10 @@ function generateNodeJSTemplate(fileName, structName, outPath) {
     let libName = structName.substring(0, 7);
 
     if (fs.existsSync(`${outPath}/${structName}`)) {
-        throw(`folder ${outPath}/${structName} already exists, choose another output folder`);
+        throw (`folder ${outPath}/${structName} already exists, choose another output folder`);
     }
 
-    template_ar.checkVarNames(fileName,structName);
+    template_ar.checkVarNames(fileName, structName);
 
     //AS dirs
     fs.mkdirSync(`${outPath}/${structName}`);
@@ -117,11 +117,11 @@ function generateNodeJSTemplate(fileName, structName, outPath) {
 
 
     // //AS files
-    out = template_ar.generatePackage(structName,libName);
+    out = template_ar.generatePackage(structName, libName);
     fs.writeFileSync(`${outPath}/${structName}/Package.pkg`, out);
 
 
-    out = template_linux_nodejs.generateExosPkg(structName,libName,path.basename(fileName));
+    out = template_linux_nodejs.generateExosPkg(structName, libName, path.basename(fileName));
     fs.writeFileSync(`${outPath}/${structName}/${structName}.exospkg`, out);
 
     out = template_ar.generateCLibrary(structName);
@@ -162,14 +162,14 @@ function generateNodeJSTemplate(fileName, structName, outPath) {
     out = template_linux_nodejs.generateLinuxPackage(structName);
     fs.writeFileSync(`${outPath}/${structName}/Linux/Package.pkg`, out);
 
-    out = template_linux_nodejs.generateShBuild();
+    out = template_linux_nodejs.generateShBuild(structName);
     fs.writeFileSync(`${outPath}/${structName}/Linux/build.sh`, out);
 
-    out = template_linux_nodejs.generateCMakeLists(structName);
-    fs.writeFileSync(`${outPath}/${structName}/Linux/CMakeLists.txt`, out);
+    out = template_linux_nodejs.generateGypFile(structName);
+    fs.writeFileSync(`${outPath}/${structName}//Linux/binding.gyp`, out);
         
     out = template_swig.generateNodeJSMain(fileName, structName, "PUB", "SUB");
-    fs.writeFileSync(`${outPath}/${structName}/Linux/${structName.toLowerCase()}.py`, out);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/${structName.toLowerCase()}.js`, out);
 
 }
 
