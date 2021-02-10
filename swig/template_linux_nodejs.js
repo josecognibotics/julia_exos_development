@@ -29,7 +29,6 @@ function generateShBuild(typName) {
 
     out += `#!/bin/sh\n\n`;
     out += `finalize() {\n`;
-    out += `    cd ../..\n`;
     out += `    rm -rf build/*\n`;
     out += `    rm -r build\n`;
     out += `    rm lib${typName.toLowerCase()}_wrap.cpp\n`;
@@ -44,8 +43,7 @@ function generateShBuild(typName) {
     out += `if [ "$?" -ne 0 ] ; then\n`;
     out += `    finalize 2\n`;
     out += `fi\n\n`;
-    out += `cd build/Release\n\n`;
-    out += `cp -f l_*.node ../..\n\n`;
+    out += `cp -f build/Release/l_*.node .\n\n`;
     out += `finalize 0`;
 
     return out;
@@ -60,9 +58,10 @@ function generateExosPkg(typName, libName, fileName) {
     out += `    <DataModelInstance Name="MyApp"/>\n`;
     out += `    <File Name="${typName.toLowerCase()}-script" FileName="Linux\\${typName.toLowerCase()}.js" Type="Project"/>\n`;
     out += `    <File Name="${typName.toLowerCase()}-lib" FileName="Linux\\l_${typName.toLowerCase()}.node" Type="Project"/>\n`;
-    out += `    <Installation Type="Prerun" Command="mkdir /home/user/${typName.toLowerCase()}/"/>\n`;
+    out += `    <Installation Type="Preinst" Command="mkdir /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/${typName.toLowerCase()}.js /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/l_${typName.toLowerCase()}.node /home/user/${typName.toLowerCase()}/"/>\n`;
+    out += `    <Installation Type="Postrm" Command="rm -r /home/user/${typName.toLowerCase()}"/>\n`;
     out += `    <Build>\n`;
     out += `        <GenerateHeader FileName="MyApp\\MyApp.typ" TypeName="MyApp">\n`;
     out += `            <SG4 Include="${fileName.split(".")[0].toLowerCase()}TYP.h"/>\n`;
@@ -70,7 +69,6 @@ function generateExosPkg(typName, libName, fileName) {
     out += `            <Output Path="lib${libName}"/>\n`;
     out += `        </GenerateHeader>\n`;
     out += `        <BuildCommand Command="C:\\Windows\\Sysnative\\wsl.exe" WorkingDirectory="Linux" Arguments="--distribution Debian --exec ./build.sh">\n`;
-    out += `            <Dependency FileName="Linux\\${typName.toLowerCase()}.js"/>\n`;
     out += `            <Dependency FileName="Linux\\exos_${typName.toLowerCase()}.h"/>\n`;
     out += `            <Dependency FileName="Linux\\lib${typName.toLowerCase()}.h"/>\n`;
     out += `            <Dependency FileName="Linux\\lib${typName.toLowerCase()}.c"/>\n`;
