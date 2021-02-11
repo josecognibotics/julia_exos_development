@@ -2,6 +2,7 @@
 
 const fs = require('fs')
 const header = require('../exos_header');
+const ar = require('../template/ar');
 const template_lib = require('./c_static_lib_template');
 const template_linux = require('./template_linux');
 const template_ar = require('./template_ar');
@@ -36,6 +37,11 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_ar.generatePackage(structName,libName);
     fs.writeFileSync(`${outPath}/${structName}/Package.pkg`, out);
 
+    out = ar.generateGitAttributes();
+    fs.writeFileSync(`${outPath}/${structName}/.gitattributes`, out);
+    
+    out = ar.generateGitIgnore(null);
+    fs.writeFileSync(`${outPath}/${structName}/.gitignore`, out);
 
     out = template_linux.generateExosPkg(structName,libName,path.basename(fileName));
     fs.writeFileSync(`${outPath}/${structName}/${structName}.exospkg`, out);

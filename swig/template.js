@@ -1,5 +1,6 @@
 const fs = require('fs')
 const header = require('../exos_header');
+const ar = require('../template/ar');
 const template_lib = require('../c-static-lib-template/c_static_lib_template');
 const template_linux_python = require('./template_linux_python');
 const template_linux_nodejs = require('./template_linux_nodejs');
@@ -37,6 +38,11 @@ function generatePythonTemplate(fileName, structName, outPath) {
     out = template_ar.generatePackage(structName,libName);
     fs.writeFileSync(`${outPath}/${structName}/Package.pkg`, out);
 
+    out = ar.generateGitAttributes();
+    fs.writeFileSync(`${outPath}/${structName}/.gitattributes`, out);
+
+    out = ar.generateGitIgnore(["__pycache__/" , "*.pyc", `_lib${structName}.so`, `lib${structName}.py`]);
+    fs.writeFileSync(`${outPath}/${structName}/.gitignore`, out);
 
     out = template_linux_python.generateExosPkg(structName,libName,path.basename(fileName));
     fs.writeFileSync(`${outPath}/${structName}/${structName}.exospkg`, out);
@@ -120,6 +126,11 @@ function generateNodeJSTemplate(fileName, structName, outPath) {
     out = template_ar.generatePackage(structName, libName);
     fs.writeFileSync(`${outPath}/${structName}/Package.pkg`, out);
 
+    out = ar.generateGitAttributes();
+    fs.writeFileSync(`${outPath}/${structName}/.gitattributes`, out);
+
+    out = ar.generateGitIgnore(["l_*.node"]);
+    fs.writeFileSync(`${outPath}/${structName}/.gitignore`, out);
 
     out = template_linux_nodejs.generateExosPkg(structName, libName, path.basename(fileName));
     fs.writeFileSync(`${outPath}/${structName}/${structName}.exospkg`, out);
