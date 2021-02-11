@@ -99,7 +99,7 @@ function generateCMakeLists(typName) {
     out += `FIND_PACKAGE(SWIG REQUIRED)\n`;
     out += `INCLUDE(\${SWIG_USE_FILE})\n`;
     out += `\n`;
-    out += `FIND_PACKAGE(PythonLibs)\n`;
+    out += `FIND_PACKAGE(PythonLibs 3)\n`;
     out += `INCLUDE_DIRECTORIES(\${PYTHON_INCLUDE_PATH})\n`;
     out += `\n`;
     out += `INCLUDE_DIRECTORIES(\${CMAKE_CURRENT_SOURCE_DIR})\n`;
