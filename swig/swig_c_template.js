@@ -325,7 +325,6 @@ function generateNodeJSMain(fileName, typName, SUB, PUB) {
 
     out += `const process = require("process");\n`;
     out += `const lib${typName} = require("./l_${typName.toLowerCase()}");\n`;
-    out += `const cycleTime = 50;\n`;
     out += `\n`;
     out += `let ${typName.toLowerCase()} = lib${typName}.lib${typName}_init();\n`;
     out += `\n`;
@@ -352,7 +351,7 @@ function generateNodeJSMain(fileName, typName, SUB, PUB) {
     out += `        console.error(e);\n`;
     out += `        process.exit(2);\n`;
     out += `    }\n`;
-    out += `}, cycleTime);\n`;
+    out += `}, 0);\n`;
     out += `\n`;
     out += `process.on('exit', (code) => {\n`;
     out += `    ${typName.toLowerCase()}.disconnect()\n`;

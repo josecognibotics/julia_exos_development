@@ -55,7 +55,7 @@ function generateExosPkg(typName, libName, fileName) {
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
     out += `<ComponentPackage Version="1.0.0" ErrorHandling="Ignore" StartupTimeout="0">\n`;
     out += `    <Service Name="${typName} Runtime Service" Executable="/usr/bin/node" Arguments="/home/user/${typName.toLowerCase()}/${typName.toLowerCase()}.js"/>\n`;
-    out += `    <DataModelInstance Name="MyApp"/>\n`;
+    out += `    <DataModelInstance Name="${typName}"/>\n`;
     out += `    <File Name="${typName.toLowerCase()}-script" FileName="Linux\\${typName.toLowerCase()}.js" Type="Project"/>\n`;
     out += `    <File Name="${typName.toLowerCase()}-lib" FileName="Linux\\l_${typName.toLowerCase()}.node" Type="Project"/>\n`;
     out += `    <Installation Type="Preinst" Command="mkdir /home/user/${typName.toLowerCase()}/"/>\n`;
@@ -63,7 +63,7 @@ function generateExosPkg(typName, libName, fileName) {
     out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/l_${typName.toLowerCase()}.node /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <Installation Type="Postrm" Command="rm -r /home/user/${typName.toLowerCase()}"/>\n`;
     out += `    <Build>\n`;
-    out += `        <GenerateHeader FileName="MyApp\\MyApp.typ" TypeName="MyApp">\n`;
+    out += `        <GenerateHeader FileName="${typName}\\${typName}.typ" TypeName="${typName}">\n`;
     out += `            <SG4 Include="${fileName.split(".")[0].toLowerCase()}TYP.h"/>\n`;
     out += `            <Output Path="Linux"/>\n`;
     out += `            <Output Path="lib${libName}"/>\n`;
