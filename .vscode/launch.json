@@ -14,7 +14,10 @@
 				"${workspaceFolder}/out/**/*.js"
 			],
 			"request": "launch",
-			"type": "extensionHost"
+			"type": "extensionHost",
+			"env": {
+				"VSCODE_DEBUG_MODE": "true"
+			}
 		},
 		{
 			"name": "Run Extension",

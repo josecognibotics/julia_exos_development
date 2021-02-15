@@ -13,11 +13,7 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:exos-component-extension.generateTemplate",
-		"onCommand:exos-component-extension.generateCLibTemplate",
-		"onCommand:exos-component-extension.updateCLib",
-		"onCommand:exos-component-extension.generateSwigPythonTemplate",
-		"onCommand:exos-component-extension.generateSwigNodeJSTemplate"
+		"onStartupFinished"
 	],
 	"main": "./extension.js",
 	"contributes": {
@@ -41,6 +37,10 @@
 			{
 				"command": "exos-component-extension.generateSwigNodeJSTemplate",
 				"title": "exOS: Generate Static C-Lib SWIG NodeJS Template"
+			},
+			{
+				"command": "exos-component-extension.generateEverythingDebug",
+				"title": "exOS: >DEBUG> Generate everything <DEBUG<"
 			}
 		],
 		"menus": {
@@ -63,6 +63,11 @@
 				{
 					"when": "filesExplorerFocus && resourceExtname == .typ",
 					"command": "exos-component-extension.generateSwigNodeJSTemplate",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .typ && exos-component-extension.isDebugMode",
+					"command": "exos-component-extension.generateEverythingDebug",
 					"group": "2_workspace"
 				},
 				{
@@ -90,6 +95,7 @@
 		"vscode-test": "^1.4.0"
 	},
 	"dependencies": {
+		"fs-extra": "^9.1.0",
 		"xml-parser": "^1.2.1"
 	}
 }

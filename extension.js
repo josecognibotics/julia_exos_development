@@ -8,7 +8,11 @@ const clibtemplate = require('./c-static-lib-template/template');
 const clibupdate = require('./c-static-lib-template/update_static_c_lib');
 const swigtemplate = require('./swig/template')
 const path = require('path');
-const fs = require('fs')
+const fs = require('fs');
+const fse = require('fs-extra'); // npm install fs-extra
+const { dir } = require('console');
+
+const isDebugMode = () => process.env.VSCODE_DEBUG_MODE === "true";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -20,14 +24,17 @@ function activate(context) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "exos-component-extension" is now active!');
+	console.log('Extension "exos-component-extension" is now active! debug is: ' +isDebugMode());
+
+	// Set a key that can be used in when-clause in package.json
+	vscode.commands.executeCommand('setContext', 'exos-component-extension.isDebugMode', isDebugMode());
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
 	let generateTemplate = vscode.commands.registerCommand('exos-component-extension.generateTemplate', function (uri) {
 		// The code you place here will be executed every time your command is executed
-
+		
 		vscode.window.showInputBox({prompt:"Name of the DataType:"}).then(selection => {
 			
 			try {
@@ -117,6 +124,53 @@ function activate(context) {
 		});
 	});
 	context.subscriptions.push(generateSwigNodeJSTemplate);
+
+	if (isDebugMode()) 
+	{
+		/* 
+			The purpose of this generate-everything-function is to easier compare generated templates before and after changes to the generators.
+				1) Generate everything
+				2) Initialize a git repo (or just copy the generated folders somewhere else for later comparision)
+				3) Change generators
+				4) Generate everything
+				5) Compare the new and old
+		*/
+		let generateEverythingDebug = vscode.commands.registerCommand('exos-component-extension.generateEverythingDebug', function (uri) {
+			
+			// Expecting the structure name to be the same as the name of the .typ file (no ext)
+			selection = path.parse(uri.fsPath).name;
+			
+			try {
+				finalName = `${path.dirname(uri.fsPath)}/${selection}_pure`;
+				fse.removeSync(finalName);
+				exostemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
+				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
+				vscode.window.showInformationMessage(`Generated Template for ${selection}`);
+				
+				finalName = `${path.dirname(uri.fsPath)}/${selection}_clib`;
+				fse.removeSync(finalName);
+				clibtemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
+				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
+				vscode.window.showInformationMessage(`Generated C-Lib Template for ${selection}`);
+				
+				finalName = `${path.dirname(uri.fsPath)}/${selection}_py`;
+				fse.removeSync(finalName);
+				swigtemplate.generatePythonTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
+				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
+				vscode.window.showInformationMessage(`Generated C-Lib SWIG Python Template for ${selection}`);
+
+				finalName = `${path.dirname(uri.fsPath)}/${selection}_js`;
+				fse.removeSync(finalName);
+				swigtemplate.generateNodeJSTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
+				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
+				vscode.window.showInformationMessage(`Generated C-Lib SWIG NodeJS Template for ${selection}`);
+
+			} catch (error) {
+				vscode.window.showErrorMessage(error);	
+			}
+		});
+		context.subscriptions.push(generateEverythingDebug);
+	}
 }
 exports.activate = activate;
 
