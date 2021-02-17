@@ -123,7 +123,7 @@ function generateFun(fileName, typName) {
         if(!dataset.comment.includes("private")) {
             let dataType = dataset.dataType;
             if(dataset.arraySize > 0) {
-                dataType = `ARRAY[0..${dataset.arraySize}] OF ${dataset.dataType}`
+                dataType = `ARRAY[0..${dataset.arraySize-1}] OF ${dataset.dataType}`
             }
             if (dataset.comment.includes("PUB")) {
                 if (dataset.comment.includes("SUB")) {
