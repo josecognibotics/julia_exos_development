@@ -120,11 +120,17 @@ function generateFun(fileName, typName) {
     out += `		Handle : UDINT;\n`;
     out += `		Start : BOOL;\n`;
     for (let dataset of template.datasets) {
-        if(!dataset.comment.includes("private")) {
+        if (!dataset.comment.includes("private")) {
             let dataType = dataset.dataType;
-            if(dataset.arraySize > 0) {
-                dataType = `ARRAY[0..${dataset.arraySize-1}] OF ${dataset.dataType}`
+
+            if (dataType === "STRING" && (dataset.hasOwnProperty("stringLength"))) {
+                dataType = dataType + `[${dataset.stringLength - 1}]`;
             }
+
+            if (dataset.arraySize > 0) {
+                dataType = `ARRAY[0..${dataset.arraySize - 1}] OF ${dataType}`
+            }
+
             if (dataset.comment.includes("PUB")) {
                 if (dataset.comment.includes("SUB")) {
                     out += `		${dataset.structName} : REFERENCE TO ${dataType};\n`;
@@ -146,9 +152,15 @@ function generateFun(fileName, typName) {
     for (let dataset of template.datasets) {
         if (!dataset.comment.includes("private")) {
             let dataType = dataset.dataType;
-            if(dataset.arraySize > 0) {
-                dataType = `ARRAY[0..${dataset.arraySize-1}] OF ${dataset.dataType}`
+
+            if (dataType === "STRING" && (dataset.hasOwnProperty("stringLength"))) {
+                dataType = dataType + `[${dataset.stringLength - 1}]`;
             }
+
+            if (dataset.arraySize > 0) {
+                dataType = `ARRAY[0..${dataset.arraySize - 1}] OF ${dataType}`
+            }
+
             if (dataset.comment.includes("SUB") && !dataset.comment.includes("PUB")) {
                 out += `		${dataset.structName} : ${dataType};\n`;
             }
@@ -671,22 +683,25 @@ function configTemplate(fileName, typName) {
         //check if toLowerCase is same as struct name, then extend it with _dataset
         for (let child of types.children) {
             if (child.attributes.name == child.attributes.name.toLowerCase()) {
-                template.datasets.push({
-                    structName: child.attributes.name,
-                    varName: child.attributes.name.toLowerCase() + "_dataset",
-                    dataType: child.attributes.dataType,
-                    arraySize: child.attributes.arraySize,
-                    comment: child.attributes.comment
-                });
+                let object = {}
+                object["structName"] = child.attributes.name;
+                object["varName"] = child.attributes.name.toLowerCase() + "_dataset";
+                object["dataType"] = child.attributes.dataType;
+                object["arraySize"] = child.attributes.arraySize;
+                object["comment"] = child.attributes.comment;
+                if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
+                template.datasets.push(object);
             }
             else {
-                template.datasets.push({
-                    structName: child.attributes.name,
-                    varName: child.attributes.name.toLowerCase(),
-                    dataType: child.attributes.dataType,
-                    arraySize: child.attributes.arraySize,
-                    comment: child.attributes.comment
-                });
+                let object = {}
+                object["structName"] = child.attributes.name;
+                object["varName"] = child.attributes.name.toLowerCase();
+                object["dataType"] = child.attributes.dataType;
+                object["arraySize"] = child.attributes.arraySize;
+                object["comment"] = child.attributes.comment;
+                if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
+                template.datasets.push(object);
+                ;
             }
         }
 
