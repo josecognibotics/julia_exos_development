@@ -34,7 +34,7 @@ function activate(context) {
 	// The commandId parameter must match the command field in package.json
 	let generateTemplate = vscode.commands.registerCommand('exos-component-extension.generateTemplate', function (uri) {
 		// The code you place here will be executed every time your command is executed
-		
+
 		vscode.window.showInputBox({prompt:"Name of the DataType:"}).then(selection => {
 			
 			try {
@@ -139,31 +139,34 @@ function activate(context) {
 			
 			// Expecting the structure name to be the same as the name of the .typ file (no ext)
 			selection = path.parse(uri.fsPath).name;
-			
+			infoMessage = `Generated Template for ${selection}: `;
+
 			try {
 				finalName = `${path.dirname(uri.fsPath)}/${selection}_pure`;
 				fse.removeSync(finalName);
 				exostemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
-				vscode.window.showInformationMessage(`Generated Template for ${selection}`);
+				infoMessage += `'C'`;
 				
 				finalName = `${path.dirname(uri.fsPath)}/${selection}_clib`;
 				fse.removeSync(finalName);
 				clibtemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
-				vscode.window.showInformationMessage(`Generated C-Lib Template for ${selection}`);
+				infoMessage += `, 'C-Lib'`;
 				
 				finalName = `${path.dirname(uri.fsPath)}/${selection}_py`;
 				fse.removeSync(finalName);
 				swigtemplate.generatePythonTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
-				vscode.window.showInformationMessage(`Generated C-Lib SWIG Python Template for ${selection}`);
-
+				infoMessage += `, 'C-Lib SWIG Python'`;
+				
 				finalName = `${path.dirname(uri.fsPath)}/${selection}_js`;
 				fse.removeSync(finalName);
 				swigtemplate.generateNodeJSTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
-				vscode.window.showInformationMessage(`Generated C-Lib SWIG NodeJS Template for ${selection}`);
+				infoMessage += ` and 'C-Lib SWIG NodeJS'`;
+				
+				vscode.window.showInformationMessage(`${infoMessage}`);
 
 			} catch (error) {
 				vscode.window.showErrorMessage(error);	

@@ -74,7 +74,6 @@ function generatePythonTemplate(fileName, structName, outPath) {
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.h`, out);
     
     out = template_lib.generateTemplate(fileName, structName, "PUB", "SUB", `${structName}_Linux`, true);
-    //out = template_swig.generateSwigStubs(fileName, structName, "PUB", "SUB", `${structName}_Linux`);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.c`, out);
 
 
@@ -162,7 +161,6 @@ function generateNodeJSTemplate(fileName, structName, outPath) {
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.h`, out);
     
     out = template_lib.generateTemplate(fileName, structName, "PUB", "SUB", `${structName}_Linux`, true);
-    //out = template_swig.generateSwigStubs(fileName, structName, "PUB", "SUB", `${structName}_Linux`);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.c`, out);
 
 

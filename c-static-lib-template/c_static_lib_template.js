@@ -53,6 +53,9 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
             }
             out += `if (0 == strcmp(dataset->name,"${dataset.structName}"))\n`;
             out += `        {\n`;
+            out += `            //update the nettime\n`;
+            out += `            ${template.datamodel.handleName}.ext_${template.datamodel.varName}.${dataset.structName}.nettime = dataset->nettime;\n\n`;
+
             out += `            //trigger the callback if assigned\n`;
             out += `            if (NULL != ${template.datamodel.handleName}.ext_${template.datamodel.varName}.${dataset.structName}.on_change)\n`;
             out += `            {\n`;
@@ -156,13 +159,18 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
     out += `static void ${template.datamodel.libStructName}_process(void)\n`;
     out += `{\n`;
     out += `    EXOS_ASSERT_OK(exos_datamodel_process(&(${template.datamodel.handleName}.${template.datamodel.varName})));\n`;
-    out += `    exos_log_process(&${template.logname});\n\n`;
+    out += `    exos_log_process(&${template.logname});\n`;
     out += `}\n\n`;
 
     out += `static void ${template.datamodel.libStructName}_dispose(void)\n`;
     out += `{\n`;
     out += `    EXOS_ASSERT_OK(exos_datamodel_delete(&(${template.datamodel.handleName}.${template.datamodel.varName})));\n`;
     out += `    exos_log_delete(&${template.logname});\n`;
+    out += `}\n\n`;
+
+    out += `static int32_t ${template.datamodel.libStructName}_get_nettime(void)\n`;
+    out += `{\n`;
+    out += `    return exos_datamodel_get_nettime(&(${template.datamodel.handleName}.${template.datamodel.varName}), NULL);\n`;
     out += `}\n\n`;
 
     out += `${template.datamodel.libStructName}_t *${template.datamodel.libStructName}_init(void)\n`;
@@ -181,6 +189,7 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
     out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.process = ${template.datamodel.libStructName}_process;\n`;
     out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.set_operational = ${template.datamodel.libStructName}_set_operational;\n`;
     out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.dispose = ${template.datamodel.libStructName}_dispose;\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.get_nettime = ${template.datamodel.libStructName}_get_nettime;\n`;
     out += `    \n`;
 
     out += `    exos_log_init(&${template.logname}, "${userAlias}");\n\n`;
@@ -218,7 +227,8 @@ function genenerateLibHeader(fileName, typName, SUB, PUB) {
     out += `#include "${template.headerName}"\n\n`;
 
     out += `typedef void (*${template.datamodel.libStructName}_event_cb)(void);\n`;
-    out += `typedef void (*${template.datamodel.libStructName}_method_fn)(void);\n\n`;
+    out += `typedef void (*${template.datamodel.libStructName}_method_fn)(void);\n`;
+    out += `typedef int32_t (*${template.datamodel.libStructName}_get_nettime_fn)(void);\n\n`;
 
     for (let dataset of template.datasets) {
         if (dataset.comment.includes(SUB)) {
@@ -229,6 +239,7 @@ function genenerateLibHeader(fileName, typName, SUB, PUB) {
             }
             out += `    ${template.datamodel.libStructName}_event_cb on_change;\n`;
             out += `    ${header.convertPlcType(dataset.dataType)} value;\n`;
+            out += `    int32_t nettime;\n`;
             out += `} ${dataset.libDataType}_t;\n\n`;
         }
     }
@@ -250,6 +261,7 @@ function genenerateLibHeader(fileName, typName, SUB, PUB) {
     out += `    ${template.datamodel.libStructName}_method_fn process;\n`;
     out += `    ${template.datamodel.libStructName}_method_fn set_operational;\n`;
     out += `    ${template.datamodel.libStructName}_method_fn dispose;\n`;
+    out += `    ${template.datamodel.libStructName}_get_nettime_fn get_nettime;\n`;
 
     out += `    ${template.datamodel.libStructName}_event_cb on_connected;\n`;
     out += `    ${template.datamodel.libStructName}_event_cb on_disconnected;\n`;

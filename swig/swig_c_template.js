@@ -5,129 +5,6 @@
 const c_static_lib_template = require('../c-static-lib-template/c_static_lib_template')
 const header = require('../exos_header');
 
-function generateSwigStubs(fileName, typName, SUB, PUB, userAlias) {
-    let out = "";
-
-    let template = c_static_lib_template.configTemplate(fileName, typName);
-
-    //includes
-
-    out += `#include <string.h>\n`;
-    out += `#include <unistd.h>\n`;
-    out += `#include <stdio.h>\n`;
-
-    out += `#define EXOS_STATIC_INCLUDE\n`
-    out += `#include "${template.libHeaderName}"\n\n`;
-
-    out += `typedef struct ${template.datamodel.libStructName}Handle\n`;
-    out += `{\n`;
-    out += `    ${template.datamodel.libStructName}_t ext_${template.datamodel.varName};\n`;
-    //    out += `    exos_datamodel_handle_t ${template.datamodel.varName};\n\n`;
-    //    for (let dataset of template.datasets) {
-    //        if (dataset.comment.includes(PUB) || dataset.comment.includes(SUB)) {
-    //            out += `    exos_dataset_handle_t ${dataset.varName};\n`;
-    //        }
-    //    }
-    out += `} ${template.datamodel.libStructName}Handle_t;\n\n`;
-
-    out += `static ${template.datamodel.libStructName}Handle_t ${template.datamodel.handleName};\n\n`;
-
-    for (let dataset of template.datasets) {
-        if (dataset.comment.includes(PUB)) {
-            out += `static void ${template.datamodel.libStructName}_publish_${dataset.varName}(void)\n`;
-            out += `{\n`;
-            out += `    printf("exos_dataset_publish(&${template.datamodel.handleName}.${dataset.varName})\\n");\n`;
-            out += `}\n`;
-        }
-    }
-    out += `\n`;
-
-    out += `static void ${template.datamodel.libStructName}_connect(void)\n`;
-    out += `{\n`;
-    out += `    //connect the datamodel\n`;
-    out += `    printf("exos_datamodel_connect_${template.datamodel.structName.toLowerCase()}(&${template.datamodel.handleName}.${template.datamodel.varName})\\n");\n`;
-    out += `    \n`;
-
-    out += `    //connect datasets\n`;
-    for (let dataset of template.datasets) {
-        if (dataset.comment.includes(SUB)) {
-            if (dataset.comment.includes(PUB)) {
-                out += `    printf("exos_dataset_connect(&(${template.datamodel.handleName}.${dataset.varName}), EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, ${template.datamodel.libStructName}_datasetEvent)\\n");\n`;
-            }
-            else {
-                out += `    printf("exos_dataset_connect(&(${template.datamodel.handleName}.${dataset.varName}), EXOS_DATASET_SUBSCRIBE, ${template.datamodel.libStructName}_datasetEvent)\\n");\n`;
-            }
-        }
-        else {
-            if (dataset.comment.includes(PUB)) {
-                out += `    printf("exos_dataset_connect(&(${template.datamodel.handleName}.${dataset.varName}), EXOS_DATASET_PUBLISH, ${template.datamodel.libStructName}_datasetEvent)\\n");\n`;
-            }
-        }
-    }
-    out += `}\n`;
-
-    out += `static void ${template.datamodel.libStructName}_disconnect(void)\n`;
-    out += `{\n`;
-    out += `    printf("exos_datamodel_disconnect(&(${template.datamodel.handleName}.${template.datamodel.varName}))\\n");\n`;
-    out += `}\n\n`;
-
-    out += `static void ${template.datamodel.libStructName}_set_operational(void)\n`;
-    out += `{\n`;
-    out += `    printf("exos_datamodel_set_operational(&(${template.datamodel.handleName}.${template.datamodel.varName}))\\n");\n`;
-    out += `}\n\n`;
-
-    out += `static void ${template.datamodel.libStructName}_process(void)\n`;
-    out += `{\n`;
-    out += `    printf("exos_datamodel_process(&(${template.datamodel.handleName}.${template.datamodel.varName}))\\n");\n`;
-    out += `    sleep(1);\n`;
-    out += `}\n\n`;
-
-    out += `static void ${template.datamodel.libStructName}_dispose(void)\n`;
-    out += `{\n`;
-    out += `    printf("exos_datamodel_delete(&(${template.datamodel.handleName}.${template.datamodel.varName}))\\n");\n`;
-    out += `}\n\n`;
-
-    out += `${template.datamodel.libStructName}_t *${template.datamodel.libStructName}_init(void)\n`;
-    out += `{\n`;
-
-    out += `    memset(&${template.datamodel.handleName},0,sizeof(${template.datamodel.handleName}));\n\n`;
-
-    for (let dataset of template.datasets) {
-        if (dataset.comment.includes(PUB)) {
-            out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.${dataset.structName}.publish = ${template.datamodel.libStructName}_publish_${dataset.varName};\n`;
-        }
-    }
-    out += `    \n`;
-    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.connect = ${template.datamodel.libStructName}_connect;\n`;
-    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.disconnect = ${template.datamodel.libStructName}_disconnect;\n`;
-    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.process = ${template.datamodel.libStructName}_process;\n`;
-    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.set_operational = ${template.datamodel.libStructName}_set_operational;\n`;
-    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.dispose = ${template.datamodel.libStructName}_dispose;\n`;
-    out += `    \n`;
-
-    out += `    printf("starting ${userAlias} application..\\n");\n\n`;
-
-    //initialization
-    out += `    printf("exos_datamodel_init(&${template.datamodel.handleName}.${template.datamodel.varName}, ${template.datamodel.structName}, ${userAlias})\\n");\n\n`;
-    //   out += `    //set the user_context to access custom data in the callbacks\n`;
-    //   out += `    ${template.datamodel.handleName}.${template.datamodel.varName}.user_context = NULL; //not used\n`;
-    //   out += `    ${template.datamodel.handleName}.${template.datamodel.varName}.user_tag = 0; //not used\n\n`;
-
-    for (let dataset of template.datasets) {
-        if (dataset.comment.includes(PUB) || dataset.comment.includes(SUB)) {
-            out += `    printf("exos_dataset_init(&${template.datamodel.handleName}.${dataset.varName}, &${template.datamodel.handleName}.${template.datamodel.varName}, ${dataset.structName}, &${template.datamodel.handleName}.ext_${template.datamodel.varName}.${dataset.structName}.value, sizeof(${template.datamodel.handleName}.ext_${template.datamodel.varName}.${dataset.structName}.value))\\n");\n`;
-            //           out += `    ${template.datamodel.handleName}.${dataset.varName}.user_context = NULL; //not used\n`;
-            //           out += `    ${template.datamodel.handleName}.${dataset.varName}.user_tag = 0; //not used\n\n`;
-        }
-    }
-    out += `    return &(${template.datamodel.handleName}.ext_${template.datamodel.varName});\n`;
-    out += `}\n\n`;
-
-
-
-    return out;
-}
-
 function generateSwigInclude(fileName, typName, SUB, PUB) {
     let out = "";
 
@@ -223,6 +100,7 @@ function generateSwigInclude(fileName, typName, SUB, PUB) {
             }
             out += `    void on_change(void);\n`;
             out += `    ${header.convertPlcType(dataset.dataType)} value;\n`;
+            out += `    int32_t nettime;\n`;
             out += `} ${dataset.libDataType}_t;\n\n`;
         }
     }
@@ -244,6 +122,7 @@ function generateSwigInclude(fileName, typName, SUB, PUB) {
     out += `    void process(void);\n`;
     out += `    void set_operational(void);\n`;
     out += `    void dispose(void);\n`;
+    out += `    int32_t get_nettime(void);\n`;
 
     out += `    void on_connected(void);\n`;
     out += `    void on_disconnected(void);\n`;
@@ -364,7 +243,6 @@ function generateNodeJSMain(fileName, typName, SUB, PUB) {
 
 module.exports = {
     generateSwigInclude,
-    generateSwigStubs,
     generatePythonMain,
     generateNodeJSMain
 }
