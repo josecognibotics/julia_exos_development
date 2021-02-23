@@ -75,18 +75,11 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_linux.generateShBuild();
     fs.writeFileSync(`${outPath}/${structName}/Linux/build.sh`, out);
 
-    out = template_linux.generateCMakeLists(structName);
-    fs.writeFileSync(`${outPath}/${structName}/Linux/CMakeLists.txt`, out);
+    out = template_linux.generateLibTemplate(fileName, structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.c`, out);
 
-    out = template_linux.generateTemplate(fileName, structName);
-    fs.writeFileSync(`${outPath}/${structName}/Linux/${structName.toLowerCase()}.c`, out);
-
-    out = template_linux.generateTerminationHeader();
-    fs.writeFileSync(`${outPath}/${structName}/Linux/termination.h`, out);
-
-    out = template_linux.generateTermination();
-    fs.writeFileSync(`${outPath}/${structName}/Linux/termination.c`, out);
-
+    out = template_linux.generateJSTemplate(fileName, structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/${structName.toLowerCase()}.js`, out);
 }
 
 if (require.main === module) {

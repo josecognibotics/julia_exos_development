@@ -1,5 +1,5 @@
 ﻿
-const version = "0.7.0";
+const version = "0.7.1";
 
 //limit constants - generates error of exceeded
 const MAX_ARRAY_NEST = 10;
@@ -77,6 +77,7 @@ function isScalarType(type) {
         case "REAL":
         case "LREAL":
         case "BYTE":
+        case "STRING":
             return true;
 
         default:
@@ -127,14 +128,14 @@ function parseStructMember(fileLines, index) {
             dimensions = ranges.split(",");
 
             if (dimensions.length > 1) {
-                throw(`multi dimensional arrays are not supported -> member "${name}"`);
+                throw (`multi dimensional arrays are not supported -> member "${name}"`);
             }
             if (ranges != null) {
                 let from = parseInt(ranges.split("..")[0].trim());
                 let to = parseInt(ranges.split("..")[1].trim());
                 arraySize = to - from + 1;
                 nestingDepth += dimensions.length; //add a nesting depth for each dimention in multi-dim arrays
-                if (nestingDepth > MAX_ARRAY_NEST) throw(`Member "${name}" has array nesting depth of ${nestingDepth} deeper than ${MAX_ARRAY_NEST} nests`);
+                if (nestingDepth > MAX_ARRAY_NEST) throw (`Member "${name}" has array nesting depth of ${nestingDepth} deeper than ${MAX_ARRAY_NEST} nests`);
             }
         }
 
@@ -253,10 +254,10 @@ function parseTyp(fileLines, name, type, comment, arraySize, init) {
 
             if (findDirectlyDerivedType(fileLines, type) >= 0) {
                 //datatype was not found,in .typ file, if not kill with error
-                throw(`Datatype '${type}' is a directly derived type. Not supported!`);
+                throw (`Datatype '${type}' is a directly derived type. Not supported!`);
             } else {
                 //datatype was not found,in .typ file, if not kill with error
-                throw(`Datatype '${type}' not defined in .typ file`);
+                throw (`Datatype '${type}' not defined in .typ file`);
             }
         }
     }
@@ -295,6 +296,7 @@ function convertPlcType(type) {
         case "REAL": return "float";
         case "LREAL": return "double";
         case "BYTE": return "int8_t"
+        case "STRING": return "char"
         default: //returning the type makes the function valid even if you insert a struct
             return type;
     }
@@ -475,8 +477,7 @@ function convertTyp2Struct(fileName) {
                     }
                 }
             }
-            if(maxindex != -1)
-            {
+            if (maxindex != -1) {
                 let tmpstructs = structs.splice(i, 1)[0];
                 structs.splice(maxindex + 1, 0, tmpstructs);
             }
@@ -506,7 +507,7 @@ function infoChildren(children, parent, parentArray) {
 
             infoId++; // start by increasing to reserve 0 for top level structure
 
-            if (infoId > MAX_IDS) throw(`Too many infoId indexes needed. Max ${MAX_IDS} can be used.`);
+            if (infoId > MAX_IDS) throw (`Too many infoId indexes needed. Max ${MAX_IDS} can be used.`);
 
             child.attributes.info = "<infoId" + infoId + ">";
 
@@ -525,7 +526,7 @@ function infoChildren(children, parent, parentArray) {
 
             function checkExosInfoCallParam(call) {
                 let area = call.split("(")[1].split(")")[0].trim();
-                if (area.length > MAX_AREA_NAME_LENGTH) throw(`Area name "${area}" longer than max (${MAX_AREA_NAME_LENGTH})`);
+                if (area.length > MAX_AREA_NAME_LENGTH) throw (`Area name "${area}" longer than max (${MAX_AREA_NAME_LENGTH})`);
                 return call;
             }
 
@@ -641,9 +642,9 @@ function generateHeader(fileName, typName, SG4Includes) {
     out += `#include "exos_api_internal.h"\n`;
     out += `#endif\n\n`;
 
-    if(Array.isArray(SG4Includes)) {
+    if (Array.isArray(SG4Includes)) {
         out += `#if defined(_SG4) && !defined(EXOS_STATIC_INCLUDE)\n`;
-        for(let SG4Include of SG4Includes) {
+        for (let SG4Include of SG4Includes) {
             out += `#include <${SG4Include}>\n`;
         }
         out += `#else\n`;
@@ -654,13 +655,13 @@ function generateHeader(fileName, typName, SG4Includes) {
 
     out += convertTyp2Struct(fileName);
 
-    if(Array.isArray(SG4Includes)) {
+    if (Array.isArray(SG4Includes)) {
         out += `#endif // _SG4 && !EXOS_STATIC_INCLUDE\n\n`;
     }
 
     let jsonConfig = JSON.stringify(types).split('"').join('\\"');
-    if (jsonConfig.length > MAX_CONFIG_LENGTH) throw(`JSON config (${jsonConfig.length} chars) is longer than maximum (${MAX_CONFIG_LENGTH}).`);
-    
+    if (jsonConfig.length > MAX_CONFIG_LENGTH) throw (`JSON config (${jsonConfig.length} chars) is longer than maximum (${MAX_CONFIG_LENGTH}).`);
+
     out += `#ifndef EXOS_INCLUDE_ONLY_DATATYPE\n`;
     out += `#ifdef EXOS_STATIC_INCLUDE\n`;
     out += `EXOS_ERROR_CODE exos_datamodel_connect_${typName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback);\n`;
@@ -710,13 +711,13 @@ if (require.main === module) {
         if (fs.existsSync(fileName)) {
 
             try {
-                    
+
                 let out = generateHeader(fileName, structName);
                 fs.writeFileSync(`${outPath}/exos_${structName.toLowerCase()}.h`, out);
                 process.stdout.write(`${outPath}/exos_${structName.toLowerCase()}.h generated`);
 
             } catch (error) {
-                process.stderr.write(error);        
+                process.stderr.write(error);
             }
 
         } else {

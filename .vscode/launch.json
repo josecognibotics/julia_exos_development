@@ -36,6 +36,19 @@
 				"--extensionDevelopmentPath=${workspaceFolder}",
 				"--extensionTestsPath=${workspaceFolder}/test/suite/index"
 			]
+		},
+		{
+			"name": "Debug Generator N-Api",
+			"type": "node",
+			"preLaunchTask": "Remove MyApp",
+			"request": "launch",
+			"cwd": "${workspaceFolder}/c-template-n-api/",
+			"program": "${workspaceFolder}/c-template-n-api/exos_template.js",
+			"args": [
+				"MyApp.typ",
+				"MyApp",
+				"."
+			]
 		}
 	]
 }
