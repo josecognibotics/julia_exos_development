@@ -455,7 +455,7 @@ function pubFetchLeaf(type, srcValue, destVarName) {
             break;
         case "REAL":
         case "LREAL":
-            out += `    if (napi_ok != napi_get_value_double(env, ${srcValue}, &_value))\n`;
+            out += `    if (napi_ok != napi_get_value_double(env, ${srcValue}, &__value))\n`;
             out += `    {\n`;
             out += `        napi_throw_error(env, "EINVAL", "Expected number convertable to double float");\n`;
             out += `        return NULL;\n`;
@@ -528,18 +528,27 @@ function generateValuesPublishItem(fileName, srcobj, destvar, dataset) {
 
 function generateValuesPublishMethods(fileName, template, init) {
     let out = "";
-
-    out += `// publish methods\n`;
+    let out2 = "";
+    let atleastone = false;
 
     for (let dataset of template.datasets) {
         if (dataset.comment.includes("SUB")) {
+            if (atleastone === false) {
+                out += `// publish methods\n`;
+                atleastone = true;
+            }
+
+            out2 += generateValuesPublishItem(fileName, `${dataset.structName}.value`, `exos_data.${dataset.structName}`, dataset);
+
             out += `napi_value ${dataset.structName}_publish_method(napi_env env, napi_callback_info info)\n`;
             out += `{\n`;
-            out += `    napi_value value, property;;\n`;
-            out += `    size_t _r;\n`;
-            out += `    int32_t _value;\n`;
-            out += `    double_t __value;\n\n`;
-            out += `    __value = (double_t)_value = (int32_t)_r; //prevent unused var warning\n\n`;
+            // check what variables to declare for the publish process in "out2" variable.
+            if (out2.includes(", &value")) { out += `    napi_value value;\n` }
+            if (out2.includes(", &property")) { out += `    napi_value property;\n` }
+            if (out2.includes(", &_r")) { out += `    size_t _r;\n` }
+            if (out2.includes(", &_value")) { out += `    int32_t _value;\n` }
+            if (out2.includes(", &__value")) { out += `    double __value;\n` }
+            out += `\n`;
             out += `    if (napi_ok != napi_get_reference_value(env, ${dataset.structName}.ref, &${dataset.structName}.object_value))\n`;
             out += `    {\n`;
             out += `        napi_throw_error(env, "EINVAL", "Can't get reference");\n`;
@@ -551,7 +560,7 @@ function generateValuesPublishMethods(fileName, template, init) {
             out += `        return NULL;\n`;
             out += `    }\n\n`;
 
-            out += generateValuesPublishItem(fileName, `${dataset.structName}.value`, `exos_data.${dataset.structName}`, dataset);
+            out += out2;
 
             out += `    exos_dataset_publish(&${dataset.structName}_dataset);\n`;
             out += `    return NULL;\n`;
