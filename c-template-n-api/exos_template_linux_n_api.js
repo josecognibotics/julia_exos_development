@@ -2,6 +2,7 @@
 
 const header = require('../exos_header');
 const fs = require('fs');
+const { getHeapCodeStatistics } = require('v8');
 
 function generateLinuxPackage(typName) {
     let out = "";
@@ -38,6 +39,32 @@ function generateShBuild() {
     out += `fi\n\n`;
     out += `cp -f build/Release/l_*.node .\n\n`;
     out += `finalize 0`;
+
+    return out;
+}
+
+function generateGyp(typName) {
+    let out = "";
+
+    out += `{\n`;
+    out += `  "targets": [\n`;
+    out += `    {\n`;
+    out += `      "target_name": "${typName}",\n`;
+    out += `      "sources": [\n`;
+    out += `        "lib${typName.toLowerCase()}.c"\n`;
+    out += `      ],\n`;
+    out += `      "include_dirs": [\n`;
+    out += `        '/usr/include'\n`;
+    out += `      ],  \n`;
+    out += `      'link_settings': {\n`;
+    out += `        'libraries': [\n`;
+    out += `          '-lexos-api',\n`;
+    out += `          '-lzmq'\n`;
+    out += `        ]\n`;
+    out += `      }\n`;
+    out += `    }\n`;
+    out += `  ]\n`;
+    out += `}\n`;
 
     return out;
 }
@@ -94,7 +121,7 @@ function generateExosCallbacks(template) {
                 out += `            //truncate string to max chars since memcpy do not check for null char.\n`;
                 out += `            ${header.convertPlcType(dataset.dataType)} *p = (${header.convertPlcType(dataset.dataType)} *)&exos_data.${dataset.structName};\n`;
                 out += `            p = p + sizeof(exos_data.${dataset.structName}) - 1;\n`;
-                out += `            *p = '\0';\n\n`;
+                out += `            *p = 0;\n\n`;
             } else if (header.isScalarType(dataset.dataType)) {
                 out += `            exos_data.${dataset.structName} = *(${header.convertPlcType(dataset.dataType)} *)dataset->data;\n\n`;
             } else {
@@ -352,33 +379,12 @@ function generateCallbackInits(template) {
 
 function readType(fileName, typName) {
     var template = {
-        headerName: "",
-        datamodel: {
-            structName: "",
-            varName: "",
-            dataType: "",
-            comment: ""
-        },
         datasets: [],
-        logname: ""
     }
 
     if (fs.existsSync(fileName)) {
 
         var types = header.parseTypFile(fileName, typName);
-
-        template.logname = "logger";
-        template.headerName = `exos_${types.attributes.dataType.toLowerCase()}.h`
-
-        template.datamodel.dataType = types.attributes.dataType;
-        template.datamodel.structName = types.attributes.dataType;
-        //check if toLowerCase is equal to datatype name, then extend it with _datamodel
-        if (types.attributes.dataType == types.attributes.dataType.toLowerCase()) {
-            template.datamodel.varName = types.attributes.dataType.toLowerCase() + "_datamodel";
-        }
-        else {
-            template.datamodel.varName = types.attributes.dataType.toLowerCase();
-        }
 
         //check if toLowerCase is same as struct name, then extend it with _dataset
         for (let child of types.children) {
@@ -422,16 +428,16 @@ function readType(fileName, typName) {
     return template;
 }
 
-function pubFetchData(type, varName) {
+function pubFetchLeaf(type, srcValue, destVarName) {
     let out = "";
 
     switch (type) {
         case "BOOL":
-            out += `    if (napi_ok != napi_get_value_bool(env, value, &${varName}))\n`;
+            out += `    if (napi_ok != napi_get_value_bool(env, ${srcValue}, &${destVarName}))\n`;
             out += `    {\n`;
             out += `        napi_throw_error(env, "EINVAL", "Expected bool");\n`;
             out += `        return NULL;\n`;
-            out += `    }\n`;
+            out += `    }\n\n`;
             break;
         case "BYTE":
         case "USINT":
@@ -440,59 +446,80 @@ function pubFetchData(type, varName) {
         case "INT":
         case "UDINT":
         case "DINT":
-            out += `    int32_t _value;\n`;
-            out += `    if (napi_ok != napi_get_value_int32(env, value, &_value))\n`;
+            out += `    if (napi_ok != napi_get_value_int32(env, ${srcValue}, &_value))\n`;
             out += `    {\n`;
-            out += `        napi_throw_error(env, "EINVAL", "Expected number convertable to 32bit");\n`;
+            out += `        napi_throw_error(env, "EINVAL", "Expected number convertable to 32bit integer");\n`;
             out += `        return NULL;\n`;
             out += `    }\n`;
-            out += `    ${varName} = (${header.convertPlcType(type)})_value;\n`;
+            out += `    ${destVarName} = (${header.convertPlcType(type)})_value;\n\n`;
             break;
         case "REAL":
         case "LREAL":
-            out += `    double_t _value;\n`;
-            out += `    if (napi_ok != napi_get_value_double(env, value, &_value))\n`;
+            out += `    if (napi_ok != napi_get_value_double(env, ${srcValue}, &_value))\n`;
             out += `    {\n`;
             out += `        napi_throw_error(env, "EINVAL", "Expected number convertable to double float");\n`;
             out += `        return NULL;\n`;
             out += `    }\n`;
-            out += `    ${varName} = (${header.convertPlcType(type)})_value;\n`;
+            out += `    ${destVarName} = (${header.convertPlcType(type)})__value;\n\n`;
             break;
         case "STRING":
-            out += `    size_t _r\n`;
-            out += `    if (napi_ok != napi_get_value_string_utf8(env, value, (char *)&${varName}, sizeof(${varName}), &_r))\n`;
+            out += `    if (napi_ok != napi_get_value_string_utf8(env, ${srcValue}, (char *)&${destVarName}, sizeof(${destVarName}), &_r))\n`;
             out += `    {\n`;
             out += `        napi_throw_error(env, "EINVAL", "Expected string");\n`;
             out += `        return NULL;\n`;
-            out += `    }\n`;
+            out += `    }\n\n`;
             break;
     }
 
     return out;
 }
 
-function generateValuesPublishItem(fileName, prefix, dataset, init) {
+function generateValuesPublishItem(fileName, srcobj, destvar, dataset) {
     let out = "";
 
     if (header.isScalarType(dataset.dataType)) {
         if (dataset.arraySize > 0) {
-            out += `for (uint32_t i = 0; i < ${dataset.arraySize}; i++)\n`;
+            out += `for (uint32_t i = 0; i < (sizeof(${destvar})/sizeof(${destvar}[0])); i++)\n`;
             out += `{\n`;
             out += `    napi_value value;\n\n`;
-            out += `    napi_get_element(env, ${dataset.structName}.value, i, &value);\n`;
-            out += pubFetchData(dataset.dataType, `${prefix}${dataset.structName}[i]`)
+            out += `    napi_get_element(env, ${srcobj}, i, &value);\n`;
+            out += pubFetchLeaf(dataset.dataType, `value`, `${destvar}[i]`);
             out += `}\n\n`;
         } else {
-            out += pubFetchData(dataset.dataType, `${prefix}${dataset.structName}`);
+            out += pubFetchLeaf(dataset.dataType, `${srcobj}`, `${destvar}`);
             out += `\n`;
         }
     } else {
-        //resolve datatype and call self...
+        //resolve datatype and call self if there are sub-datatypes also at this level
+        let types = readType(fileName, dataset.dataType);
+
         if (dataset.arraySize > 0) {
-            let types = readType(fileName, "MyAppPar_t");
-            let a = types;
+            out += `for (uint32_t i = 0; i < (sizeof(${destvar})/sizeof(${destvar}[0])); i++)\n`;
+            out += `{\n`;
+            out += `    napi_get_element(env, ${srcobj}, i, &value);\n\n`;
+
+            for (let type of types.datasets) {
+                out += `    napi_get_named_property(env, value, "${type.structName}", &property);\n`;
+                if (header.isScalarType(type.dataType)) {
+                    out += pubFetchLeaf(type.dataType, `property`, `${destvar}[i].${type.structName}`);
+                } else {
+                    //subtype detected
+                    out += `    value = property;\n`;
+                    out += generateValuesPublishItem(fileName, `${srcobj}`, `${destvar}[i].${type.structName}`, type);
+                }
+            }
+            out += `}\n\n`;
         } else {
-            ;
+            for (let type of types.datasets) {
+                out += `    napi_get_named_property(env, value, "${type.structName}", &property);\n`;
+                if (header.isScalarType(type.dataType)) {
+                    out += pubFetchLeaf(type.dataType, `property`, `${destvar}.${type.structName}`);
+                } else {
+                    //subtype detected
+                    out += `    value = property;\n`;
+                    out += generateValuesPublishItem(fileName, `${srcobj}`, `${destvar}.${type.structName}`, type);
+                }
+            }
         }
     }
 
@@ -508,7 +535,11 @@ function generateValuesPublishMethods(fileName, template, init) {
         if (dataset.comment.includes("SUB")) {
             out += `napi_value ${dataset.structName}_publish_method(napi_env env, napi_callback_info info)\n`;
             out += `{\n`;
-
+            out += `    napi_value value, property;;\n`;
+            out += `    size_t _r;\n`;
+            out += `    int32_t _value;\n`;
+            out += `    double_t __value;\n\n`;
+            out += `    __value = (double_t)_value = (int32_t)_r; //prevent unused var warning\n\n`;
             out += `    if (napi_ok != napi_get_reference_value(env, ${dataset.structName}.ref, &${dataset.structName}.object_value))\n`;
             out += `    {\n`;
             out += `        napi_throw_error(env, "EINVAL", "Can't get reference");\n`;
@@ -518,9 +549,9 @@ function generateValuesPublishMethods(fileName, template, init) {
             out += `    {\n`;
             out += `        napi_throw_error(env, "EINVAL", "Can't get property");\n`;
             out += `        return NULL;\n`;
-            out += `}\n\n`;
+            out += `    }\n\n`;
 
-            out += generateValuesPublishItem(fileName, "exos_data.", dataset, null);
+            out += generateValuesPublishItem(fileName, `${dataset.structName}.value`, `exos_data.${dataset.structName}`, dataset);
 
             out += `    exos_dataset_publish(&${dataset.structName}_dataset);\n`;
             out += `    return NULL;\n`;
@@ -712,21 +743,20 @@ function generateLibTemplate(fileName, typName) {
 
     //includes, defines, types and global variables
     out += `#define NAPI_VERSION 6\n`;
-    out += `#include < node_api.h >\n`;
-    out += `#include < stdint.h >\n`;
-    out += `#include < exos_api.h >\n`;
-    out += `#include "${template.datamodel.varName}_datamodel.h"\n`;
-    out += `#include < uv.h >\n`;
-    out += `#include < unistd.h >\n`;
-    out += `#include < string.h >\n`;
+    out += `#include <node_api.h>\n`;
+    out += `#include <stdint.h>\n`;
+    out += `#include <exos_api.h>\n`;
+    out += `#include "exos_${template.datamodel.varName}.h"\n`;
+    out += `#include <uv.h>\n`;
+    out += `#include <unistd.h>\n`;
+    out += `#include <string.h>\n`;
     out += `\n`;
     out += `#define BUR_NAPI_DEFAULT_BOOL_INIT false\n`;
     out += `#define BUR_NAPI_DEFAULT_NUM_INIT 0\n`;
     out += `#define BUR_NAPI_DEFAULT_STRING_INIT ""\n`;
     out += `\n`;
     out += `typedef struct\n`;
-    out += `{
-        \n`;
+    out += `{\n`;
     out += `    napi_ref ref; \n`;
     out += `    uint32_t ref_count; \n`;
     out += `    napi_threadsafe_function onchange_cb; \n`;
@@ -879,6 +909,7 @@ if (require.main === module) {
 module.exports = {
     generateExosPkg,
     generateLinuxPackage,
+    generateGyp,
     generateLibTemplate,
     generateJSTemplate,
     generateShBuild

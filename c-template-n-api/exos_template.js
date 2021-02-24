@@ -75,6 +75,9 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_linux.generateShBuild();
     fs.writeFileSync(`${outPath}/${structName}/Linux/build.sh`, out);
 
+    out = template_linux.generateGyp(structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/binding.gyp`, out);
+
     out = template_linux.generateLibTemplate(fileName, structName);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.c`, out);
 
