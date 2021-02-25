@@ -65,7 +65,7 @@ function findDirectlyDerivedType(fileLines, typName) {
     return -1;
 }
 
-function isScalarType(type) {
+function isScalarType(type, includeString) {
     switch (type) {
         case "BOOL":
         case "USINT":
@@ -78,12 +78,17 @@ function isScalarType(type) {
         case "LREAL":
         case "BYTE":
         case "STRING":
+            if (type === "STRING") {
+                if ((includeString === undefined) || (includeString === false)) { return false; }
+                if ((includeString === true)) { return true; }
+                return false;
+            }
             return true;
-
         default:
             return false;
     }
 }
+
 function parseEnumMember(fileLines, index, enumValue) {
 
     let name = "";
