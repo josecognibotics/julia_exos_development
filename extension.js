@@ -9,7 +9,7 @@ const clibupdate = require('./c-static-lib-template/update_static_c_lib');
 const swigtemplate = require('./swig/template')
 const path = require('path');
 const fs = require('fs');
-const fse = require('fs-extra'); // npm install fs-extra
+const fse = require('fs-extra');
 const { dir } = require('console');
 
 const isDebugMode = () => process.env.VSCODE_DEBUG_MODE === "true";
@@ -85,6 +85,17 @@ function activate(context) {
 		}
 	});
 	context.subscriptions.push(updateCLib);
+
+	let updateCLib_py = vscode.commands.registerCommand('exos-component-extension.updateCLib_py', function (uri) {		
+		try {
+			let selection = clibupdate.updateLibrary(uri.fsPath, "python");
+			vscode.window.showInformationMessage(`Updated C-Lib SWIG Python Template for ${selection}`);
+
+		} catch (error) {
+			vscode.window.showErrorMessage(error);	
+		}
+	});
+	context.subscriptions.push(updateCLib_py);
 
 	let generateSwigPythonTemplate = vscode.commands.registerCommand('exos-component-extension.generateSwigPythonTemplate', function (uri) {
 		vscode.window.showInputBox({prompt:"Name of the DataType:"}).then(selection => {

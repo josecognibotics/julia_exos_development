@@ -2,8 +2,9 @@ const fs = require('fs');
 var parse = require('../node_modules/xml-parser');
 const path = require('path');
 const template_lib = require('./c_static_lib_template');
+const template_swig = require('../swig/swig_c_template')
 
-function updateLibrary(fileName) {
+function updateLibrary(fileName, swig_type) {
 
     var xml = fs.readFileSync(fileName).toString();
     
@@ -66,6 +67,9 @@ function updateLibrary(fileName) {
     if(!fs.existsSync(`${libLinux}.h`)) throw(`${libLinux}.h does not exist!`);
     if(!fs.existsSync(`${libAR}.c`)) throw(`${libAR}.c does not exist!`);
     if(!fs.existsSync(`${libAR}.h`)) throw(`${libAR}.h does not exist!`);
+    if(swig_type !== undefined && swig_type == "python") {
+        if(!fs.existsSync(`${libLinux}.i`)) throw(`${libLinux}.i does not exist!`);
+    }
 
     //ok were good to go, regenerate
     let out = "";
@@ -79,8 +83,13 @@ function updateLibrary(fileName) {
     out = template_lib.genenerateLibHeader(typFile, structName, "PUB", "SUB");
     fs.writeFileSync(`${libLinux}.h`, out);
 
-    out = template_lib.generateTemplate(typFile, structName, "PUB", "SUB", `${structName}_Linux`);
+    out = template_lib.generateTemplate(typFile, structName, "PUB", "SUB", `${structName}_Linux`, (swig_type !== undefined && swig_type == "python"));
     fs.writeFileSync(`${libLinux}.c`, out);
+
+    if(swig_type !== undefined && swig_type == "python") {
+        out = template_swig.generateSwigInclude(typFile, structName, "PUB", "SUB");
+        fs.writeFileSync(`${libLinux}.i`, out);
+    }
 
     return structName;
 }

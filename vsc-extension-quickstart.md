@@ -11,6 +11,9 @@
 
 ## Get up and running straight away
 
+* https://nodejs.org/en/download/
+* Run 'npm install' in the root folder to download and install dependencies
+* Run 'npm -g install vsce' to globally install extension package creator. Run 'vsce package' to create a .vsix
 * Press `F5` to open a new window with your extension loaded.
 * Run your command from the command palette by pressing (`Ctrl+Shift+P` or `Cmd+Shift+P` on Mac) and typing `Hello World`.
 * Set breakpoints in your code inside `extension.js` to debug your extension.

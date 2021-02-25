@@ -31,6 +31,10 @@
 				"title": "exOS: Update Static C-Lib"
 			},
 			{
+				"command": "exos-component-extension.updateCLib_py",
+				"title": "exOS: Update Static C-Lib SWIG Python"
+			},
+			{
 				"command": "exos-component-extension.generateSwigPythonTemplate",
 				"title": "exOS: Generate Static C-Lib SWIG Python Template"
 			},
@@ -73,6 +77,11 @@
 				{
 					"when": "filesExplorerFocus && resourceExtname == .exospkg",
 					"command": "exos-component-extension.updateCLib",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .exospkg",
+					"command": "exos-component-extension.updateCLib_py",
 					"group": "2_workspace"
 				}
 			]
