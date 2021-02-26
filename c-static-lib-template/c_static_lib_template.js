@@ -148,6 +148,8 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
 
     out += `static void ${template.datamodel.libStructName}_disconnect(void)\n`;
     out += `{\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.is_connected = false;\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.is_operational = false;\n\n`;
     out += `    EXOS_ASSERT_OK(exos_datamodel_disconnect(&(${template.datamodel.handleName}.${template.datamodel.varName})));\n`;
     out += `}\n\n`;
 
@@ -164,6 +166,8 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
 
     out += `static void ${template.datamodel.libStructName}_dispose(void)\n`;
     out += `{\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.is_connected = false;\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.is_operational = false;\n\n`;
     out += `    EXOS_ASSERT_OK(exos_datamodel_delete(&(${template.datamodel.handleName}.${template.datamodel.varName})));\n`;
     out += `    exos_log_delete(&${template.logname});\n`;
     out += `}\n\n`;
@@ -374,6 +378,7 @@ function generateMainAR(fileName, typName, libName, SUB, PUB) {
         }
     }
     out += `    }\n`;
+    out += `    Connected = ${template.datamodel.varName}->is_connected;\n`;
     out += `}\n\n`;
     out += `void _EXIT ProgramExit(void)\n`;
     out += `{\n`;

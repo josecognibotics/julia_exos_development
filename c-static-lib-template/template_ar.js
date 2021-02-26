@@ -66,6 +66,7 @@ function generateCProgramVar(fileName, typName) {
     out += `VAR\n`;
     out += `    Enable : BOOL;\n`;
     out += `    _Enable : BOOL;\n`;
+    out += `    Connected : BOOL;\n`;
     for (let dataset of template.datasets) {
         if (!dataset.comment.includes("private")) {
             let dataType = dataset.dataType;
