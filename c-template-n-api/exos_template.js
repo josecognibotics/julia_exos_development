@@ -81,8 +81,12 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_linux.generateLibTemplate(fileName, structName);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.c`, out);
 
-    out = template_linux.generateJSTemplate(fileName, structName);
+    out = template_linux.generateJSmodule(fileName, structName);
     fs.writeFileSync(`${outPath}/${structName}/Linux/${structName.toLowerCase()}.js`, out);
+
+    out = template_linux.generateIndexJS(fileName, structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/index.js`, out);
+
 }
 
 if (require.main === module) {

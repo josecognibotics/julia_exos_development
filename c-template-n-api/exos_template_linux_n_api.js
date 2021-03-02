@@ -12,6 +12,8 @@
 
     PLCs WSTRING is not supported.
 
+    Deep nested data types för datasets will not work.
+
     Generally the generates code is not yet fully and understanably error handled. ex. if (napi_ok != .....
 */
 
@@ -106,10 +108,11 @@ function generateLinuxPackage(typName) {
     out += `<Package SubType="exosLinuxPackage" PackageType="exosLinuxPackage" xmlns="http://br-automation.co.at/AS/Package">\n`;
     out += `  <Objects>\n`;
     out += `    <Object Type="File">build.sh</Object>\n`;
+    out += `    <Object Type="File">index.js</Object>\n`;
     out += `    <Object Type="File">${typName.toLowerCase()}.js</Object>\n`;
-    out += `    <Object Type="File">exos_${typName.toLowerCase()}.h</Object>\n`;
     out += `    <Object Type="File">l_${typName.toLowerCase()}.node</Object>\n`;
     out += `    <Object Type="File">binding.gyp</Object>\n`;
+    out += `    <Object Type="File">exos_${typName.toLowerCase()}.h</Object>\n`;
     out += `    <Object Type="File">lib${typName.toLowerCase()}.c</Object>\n`;
     out += `  </Objects>\n`;
     out += `</Package>\n`;
@@ -143,7 +146,7 @@ function generateGyp(typName) {
     out += `{\n`;
     out += `  "targets": [\n`;
     out += `    {\n`;
-    out += `      "target_name": "${typName}",\n`;
+    out += `      "target_name": "l_${typName}",\n`;
     out += `      "sources": [\n`;
     out += `        "lib${typName.toLowerCase()}.c"\n`;
     out += `      ],\n`;
@@ -173,12 +176,13 @@ function generateExosPkg(typName, libName, fileName) {
     out += `    <File Name="${typName.toLowerCase()}-script" FileName="Linux\\${typName.toLowerCase()}.js" Type="Project"/>\n`;
     out += `    <File Name="${typName.toLowerCase()}-lib" FileName="Linux\\l_${typName.toLowerCase()}.node" Type="Project"/>\n`;
     out += `    <Installation Type="Preinst" Command="mkdir /home/user/${typName.toLowerCase()}/"/>\n`;
+    out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/l_${typName}.node /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/${typName.toLowerCase()}.js /home/user/${typName.toLowerCase()}/"/>\n`;
-    out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/l_${typName.toLowerCase()}.node /home/user/${typName.toLowerCase()}/"/>\n`;
+    out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/index.js /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <Installation Type="Postrm" Command="rm -r /home/user/${typName.toLowerCase()}"/>\n`;
     out += `    <Build>\n`;
     out += `        <GenerateHeader FileName="${typName}\\${typName}.typ" TypeName="${typName}">\n`;
-    out += `            <SG4 Include="${fileName.split(".")[0].toLowerCase()}TYP.h"/>\n`;
+    out += `            <SG4 Include="${fileName.split(".")[0].toLowerCase()}.h"/>\n`;
     out += `            <Output Path="Linux"/>\n`;
     out += `            <Output Path="${libName}"/>\n`;
     out += `        </GenerateHeader>\n`;
@@ -1140,12 +1144,56 @@ function generateLibTemplate(fileName, typName) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-function generateJSTemplate(fileName, typName) {
+function generateJSmodule(fileName, typName) {
     let out = "";
 
-    //let template = configTemplate(fileName, typName);
+    let template = configTemplate(fileName, typName);
 
-    out += `TDB\n`;
+    out += `var binding = require("./l_${template.datamodel.structName}.node");\n\n`;
+    out += `module.exports = binding.${template.datamodel.structName};\n`;
+
+    return out;
+}
+
+function generateIndexJS(fileName, typName) {
+    let out = "";
+
+    let template = configTemplate(fileName, typName);
+
+    out += `let ${template.datamodel.structName} = require('./${template.datamodel.varName}.js');\n\n`;
+
+    out += `//connection callbacks\n`;
+    out += `${template.datamodel.structName}.connectionOnChange(() => {\n`;
+    out += `    //${template.datamodel.structName}.connectionState.....;\n`;
+    out += `});\n`;
+    for (let i = 0; i < template.datasets.length; i++) {
+        out += `${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.connectionOnChange(() => {\n`;
+        out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.connectionState ...\n`;
+        out += `});\n`;
+    }
+
+    out += `\n`;
+
+    out += `//value callbacks\n`;
+    for (let i = 0; i < template.datasets.length; i++) {
+        if (template.datasets[i].comment.includes("PUB")) {
+            out += `${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.onChange(() => {\n`;
+            out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.value..\n`;
+            out += `});\n`;
+        }
+    }
+
+    out += `\n`;
+
+    out += `//publishing of values\n`;
+    out += `if (1 === 0) {\n`
+    for (let i = 0; i < template.datasets.length; i++) {
+        if (template.datasets[i].comment.includes("SUB")) {
+            out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.value..\n`;
+            out += `    ${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.publish();\n`;
+        }
+    }
+    out += `}\n`
 
     return out;
 }
@@ -1249,6 +1297,7 @@ module.exports = {
     generateLinuxPackage,
     generateGyp,
     generateLibTemplate,
-    generateJSTemplate,
+    generateJSmodule,
+    generateIndexJS,
     generateShBuild
 }
