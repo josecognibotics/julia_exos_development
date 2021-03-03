@@ -110,7 +110,7 @@ function generateLinuxPackage(typName) {
     out += `    <Object Type="File">build.sh</Object>\n`;
     out += `    <Object Type="File">index.js</Object>\n`;
     out += `    <Object Type="File">${typName.toLowerCase()}.js</Object>\n`;
-    out += `    <Object Type="File">l_${typName.toLowerCase()}.node</Object>\n`;
+    out += `    <Object Type="File">l_${typName}.node</Object>\n`;
     out += `    <Object Type="File">binding.gyp</Object>\n`;
     out += `    <Object Type="File">exos_${typName.toLowerCase()}.h</Object>\n`;
     out += `    <Object Type="File">lib${typName.toLowerCase()}.c</Object>\n`;
@@ -171,10 +171,11 @@ function generateExosPkg(typName, libName, fileName) {
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
     out += `<ComponentPackage Version="1.0.0" ErrorHandling="Ignore" StartupTimeout="0">\n`;
-    out += `    <Service Name="${typName} Runtime Service" Executable="/usr/bin/node" Arguments="/home/user/${typName.toLowerCase()}/${typName.toLowerCase()}.js"/>\n`;
+    out += `    <Service Name="${typName} Runtime Service" Executable="/usr/bin/node" Arguments="/home/user/${typName.toLowerCase()}/index.js"/>\n`;
     out += `    <DataModelInstance Name="${typName}"/>\n`;
+    out += `    <File Name="main-script" FileName="Linux\\index.js" Type="Project"/>\n`;
     out += `    <File Name="${typName.toLowerCase()}-script" FileName="Linux\\${typName.toLowerCase()}.js" Type="Project"/>\n`;
-    out += `    <File Name="${typName.toLowerCase()}-lib" FileName="Linux\\l_${typName.toLowerCase()}.node" Type="Project"/>\n`;
+    out += `    <File Name="${typName.toLowerCase()}-lib" FileName="Linux\\l_${typName}.node" Type="Project"/>\n`;
     out += `    <Installation Type="Preinst" Command="mkdir /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/l_${typName}.node /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/${typName.toLowerCase()}.js /home/user/${typName.toLowerCase()}/"/>\n`;
@@ -874,7 +875,7 @@ function generateInitFunction(fileName, template) {
             iterator.reset();
             out1 = generateDataSetStructures(fileName, `exos_data.${dataset.structName}`, `${dataset.structName}_value`, dataset);
 
-            out3 += `    napi_set_named_property(env, done.value, "value", ${dataset.structName}_value);\n`;
+            out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "value", ${dataset.structName}_value);\n`;
 
             out3 += `    napi_create_function(env, NULL, 0, ${dataset.structName}_connonchange_init, NULL, &${dataset.structName}_conn_change);\n`;
             out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "connectionOnChange", ${dataset.structName}_conn_change);\n`;
