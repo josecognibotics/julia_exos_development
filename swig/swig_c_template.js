@@ -99,7 +99,11 @@ function generateSwigInclude(fileName, typName, SUB, PUB) {
                 out += `    void publish(void);\n`;
             }
             out += `    void on_change(void);\n`;
-            out += `    ${header.convertPlcType(dataset.dataType)} value;\n`;
+            if (dataset.dataType.includes("STRING")) {
+                out += `    ${header.convertPlcType(dataset.dataType)} value[${parseInt(dataset.stringLength)}];\n`;
+            } else {
+                out += `    ${header.convertPlcType(dataset.dataType)} value;\n`;
+            }
             out += `    int32_t nettime;\n`;
             out += `} ${dataset.libDataType}_t;\n\n`;
         }
@@ -110,7 +114,11 @@ function generateSwigInclude(fileName, typName, SUB, PUB) {
             out += `typedef struct ${dataset.libDataType}\n`;
             out += `{\n`;
             out += `    void publish(void);\n`;
-            out += `    ${header.convertPlcType(dataset.dataType)} value;\n`;
+            if (dataset.dataType.includes("STRING")) {
+                out += `    ${header.convertPlcType(dataset.dataType)} value[${parseInt(dataset.stringLength)}];\n`;
+            } else {
+                out += `    ${header.convertPlcType(dataset.dataType)} value;\n`;
+            }
             out += `} ${dataset.libDataType}_t;\n\n`;
         }
     }

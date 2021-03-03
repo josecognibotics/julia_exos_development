@@ -242,7 +242,11 @@ function genenerateLibHeader(fileName, typName, SUB, PUB) {
                 out += `    ${template.datamodel.libStructName}_method_fn publish;\n`;
             }
             out += `    ${template.datamodel.libStructName}_event_cb on_change;\n`;
-            out += `    ${header.convertPlcType(dataset.dataType)} value;\n`;
+            if (dataset.dataType.includes("STRING")) {
+                out += `    ${header.convertPlcType(dataset.dataType)} value[${parseInt(dataset.stringLength)}];\n`;
+            } else {
+                out += `    ${header.convertPlcType(dataset.dataType)} value;\n`;
+            }
             out += `    int32_t nettime;\n`;
             out += `} ${dataset.libDataType}_t;\n\n`;
         }
@@ -253,7 +257,11 @@ function genenerateLibHeader(fileName, typName, SUB, PUB) {
             out += `typedef struct ${dataset.libDataType}\n`;
             out += `{\n`;
             out += `    ${template.datamodel.libStructName}_method_fn publish;\n`;
-            out += `    ${header.convertPlcType(dataset.dataType)} value;\n`;
+            if (dataset.dataType.includes("STRING")) {
+                out += `    ${header.convertPlcType(dataset.dataType)} value[${parseInt(dataset.stringLength)}];\n`;
+            } else {
+                out += `    ${header.convertPlcType(dataset.dataType)} value;\n`;
+            }
             out += `} ${dataset.libDataType}_t;\n\n`;
         }
     }
@@ -500,24 +508,26 @@ function configTemplate(fileName, typName) {
         //check if toLowerCase is same as struct name, then extend it with _dataset
         for (let child of types.children) {
             if (child.attributes.name == child.attributes.name.toLowerCase()) {
-                template.datasets.push({
-                    structName: child.attributes.name,
-                    varName: child.attributes.name.toLowerCase() + "_dataset",
-                    dataType: child.attributes.dataType,
-                    arraySize: child.attributes.arraySize,
-                    comment: child.attributes.comment,
-                    libDataType: template.datamodel.libStructName + child.attributes.name,
-                });
+                let object = {};
+                object["structName"] = child.attributes.name;
+                object["varName"] = child.attributes.name.toLowerCase() + "_dataset";
+                object["dataType"] = child.attributes.dataType;
+                object["arraySize"] = child.attributes.arraySize;
+                object["comment"] = child.attributes.comment;
+                object["libDataType"] = template.datamodel.libStructName + child.attributes.name;
+                if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
+                template.datasets.push(object);
             }
             else {
-                template.datasets.push({
-                    structName: child.attributes.name,
-                    varName: child.attributes.name.toLowerCase(),
-                    dataType: child.attributes.dataType,
-                    arraySize: child.attributes.arraySize,
-                    comment: child.attributes.comment,
-                    libDataType: template.datamodel.libStructName + child.attributes.name
-                });
+                let object = {};
+                object["structName"] = child.attributes.name;
+                object["varName"] = child.attributes.name.toLowerCase();
+                object["dataType"] = child.attributes.dataType;
+                object["arraySize"] = child.attributes.arraySize;
+                object["comment"] = child.attributes.comment;
+                object["libDataType"] = template.datamodel.libStructName + child.attributes.name;
+                if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
+                template.datasets.push(object);
             }
         }
 

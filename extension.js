@@ -151,6 +151,7 @@ function activate(context) {
 			// Expecting the structure name to be the same as the name of the .typ file (no ext)
 			selection = path.parse(uri.fsPath).name;
 			infoMessage = `Generated Template for ${selection}: `;
+			vscode.debug.activeDebugConsole.appendLine(infoMessage);
 
 			try {
 				finalName = `${path.dirname(uri.fsPath)}/${selection}_pure`;
@@ -158,29 +159,33 @@ function activate(context) {
 				exostemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
 				infoMessage += `'C'`;
+				vscode.debug.activeDebugConsole.appendLine('C');
 				
 				finalName = `${path.dirname(uri.fsPath)}/${selection}_clib`;
 				fse.removeSync(finalName);
 				clibtemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
 				infoMessage += `, 'C-Lib'`;
+				vscode.debug.activeDebugConsole.appendLine('C-Lib');
 				
 				finalName = `${path.dirname(uri.fsPath)}/${selection}_py`;
 				fse.removeSync(finalName);
 				swigtemplate.generatePythonTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
 				infoMessage += `, 'C-Lib SWIG Python'`;
+				vscode.debug.activeDebugConsole.appendLine('C-Lib SWIG Python');
 				
 				finalName = `${path.dirname(uri.fsPath)}/${selection}_js`;
 				fse.removeSync(finalName);
 				swigtemplate.generateNodeJSTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
 				infoMessage += ` and 'C-Lib SWIG NodeJS'`;
-				
+				vscode.debug.activeDebugConsole.appendLine('C-Lib SWIG NodeJS');
+
 				vscode.window.showInformationMessage(`${infoMessage}`);
 
 			} catch (error) {
-				vscode.window.showErrorMessage(error);	
+				vscode.window.showErrorMessage(error);
 			}
 		});
 		context.subscriptions.push(generateEverythingDebug);

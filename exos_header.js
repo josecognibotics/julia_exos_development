@@ -294,7 +294,8 @@ function convertPlcType(type) {
         case "DINT": return "int32_t";
         case "REAL": return "float";
         case "LREAL": return "double";
-        case "BYTE": return "int8_t"
+        case "BYTE": return "int8_t";
+        case "STRING": return "char";
         default: //returning the type makes the function valid even if you insert a struct
             return type;
     }
