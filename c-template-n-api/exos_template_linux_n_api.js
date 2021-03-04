@@ -218,19 +218,6 @@ function generateExosCallbacks(template) {
             }
             out += `if(0 == strcmp(dataset->name,"${dataset.structName}"))\n`;
             out += `        {\n`;
-
-            if (dataset.dataType === "STRING") {
-                out += `            memcpy(&exos_data.${dataset.structName}, dataset->data, sizeof(exos_data.${dataset.structName}));\n`;
-                out += `            //truncate string to max chars since memcpy do not check for null char.\n`;
-                out += `            ${header.convertPlcType(dataset.dataType)} *p = (${header.convertPlcType(dataset.dataType)} *)&exos_data.${dataset.structName};\n`;
-                out += `            p = p + sizeof(exos_data.${dataset.structName}) - 1;\n`;
-                out += `            *p = 0;\n\n`;
-            } else if (header.isScalarType(dataset.dataType, true)) {
-                out += `            exos_data.${dataset.structName} = *(${header.convertPlcType(dataset.dataType)} *)dataset->data;\n\n`;
-            } else {
-                out += `            memcpy(&exos_data.${dataset.structName}, dataset->data, sizeof(exos_data.${dataset.structName}));\n\n`;
-            }
-
             out += `            if (${dataset.structName}.onchange_cb != NULL)\n`;
             out += `            {\n`;
             out += `                napi_acquire_threadsafe_function(${dataset.structName}.onchange_cb);\n`;
