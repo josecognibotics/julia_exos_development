@@ -177,6 +177,36 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
     out += `    return exos_datamodel_get_nettime(&(${template.datamodel.handleName}.${template.datamodel.varName}), NULL);\n`;
     out += `}\n\n`;
 
+    out += `static void ${template.datamodel.libStructName}_log_error(char* log_entry)\n`;
+    out += `{\n`;
+    out += `    exos_log_error(&${template.logname}, log_entry);\n`;
+    out += `}\n\n`;
+
+    out += `static void ${template.datamodel.libStructName}_log_warning(char* log_entry)\n`;
+    out += `{\n`;
+    out += `    exos_log_warning(&${template.logname}, EXOS_LOG_TYPE_USER, log_entry);\n`;
+    out += `}\n\n`;
+
+    out += `static void ${template.datamodel.libStructName}_log_success(char* log_entry)\n`;
+    out += `{\n`;
+    out += `    exos_log_success(&${template.logname}, EXOS_LOG_TYPE_USER, log_entry);\n`;
+    out += `}\n\n`;
+
+    out += `static void ${template.datamodel.libStructName}_log_info(char* log_entry)\n`;
+    out += `{\n`;
+    out += `    exos_log_info(&${template.logname}, EXOS_LOG_TYPE_USER, log_entry);\n`;
+    out += `}\n\n`;
+
+    out += `static void ${template.datamodel.libStructName}_log_debug(char* log_entry)\n`;
+    out += `{\n`;
+    out += `    exos_log_debug(&${template.logname}, EXOS_LOG_TYPE_USER, log_entry);\n`;
+    out += `}\n\n`;
+
+    out += `static void ${template.datamodel.libStructName}_log_verbose(char* log_entry)\n`;
+    out += `{\n`;
+    out += `    exos_log_warning(&${template.logname}, EXOS_LOG_TYPE_USER + EXOS_LOG_TYPE_VERBOSE, log_entry);\n`;
+    out += `}\n\n`;
+
     out += `${template.datamodel.libStructName}_t *${template.datamodel.libStructName}_init(void)\n`;
     out += `{\n`;
     
@@ -194,6 +224,13 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
     out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.set_operational = ${template.datamodel.libStructName}_set_operational;\n`;
     out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.dispose = ${template.datamodel.libStructName}_dispose;\n`;
     out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.get_nettime = ${template.datamodel.libStructName}_get_nettime;\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log_error = ${template.datamodel.libStructName}_log_error;\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log_warning = ${template.datamodel.libStructName}_log_warning;\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log_success = ${template.datamodel.libStructName}_log_success;\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log_info = ${template.datamodel.libStructName}_log_info;\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log_debug = ${template.datamodel.libStructName}_log_debug;\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log_verbose = ${template.datamodel.libStructName}_log_verbose;\n`;
+    
     out += `    \n`;
 
     out += `    exos_log_init(&${template.logname}, "${userAlias}");\n\n`;
@@ -233,6 +270,7 @@ function genenerateLibHeader(fileName, typName, SUB, PUB) {
     out += `typedef void (*${template.datamodel.libStructName}_event_cb)(void);\n`;
     out += `typedef void (*${template.datamodel.libStructName}_method_fn)(void);\n`;
     out += `typedef int32_t (*${template.datamodel.libStructName}_get_nettime_fn)(void);\n\n`;
+    out += `typedef void (*${template.datamodel.libStructName}_log_fn)(char *log_entry);\n\n`;
 
     for (let dataset of template.datasets) {
         if (dataset.comment.includes(SUB)) {
@@ -274,6 +312,13 @@ function genenerateLibHeader(fileName, typName, SUB, PUB) {
     out += `    ${template.datamodel.libStructName}_method_fn set_operational;\n`;
     out += `    ${template.datamodel.libStructName}_method_fn dispose;\n`;
     out += `    ${template.datamodel.libStructName}_get_nettime_fn get_nettime;\n`;
+    out += `    ${template.datamodel.libStructName}_log_fn log_error;\n`;
+    out += `    ${template.datamodel.libStructName}_log_fn log_warning;\n`;
+    out += `    ${template.datamodel.libStructName}_log_fn log_success;\n`;
+    out += `    ${template.datamodel.libStructName}_log_fn log_info;\n`;
+    out += `    ${template.datamodel.libStructName}_log_fn log_debug;\n`;
+    out += `    ${template.datamodel.libStructName}_log_fn log_verbose;\n`;
+
 
     out += `    ${template.datamodel.libStructName}_event_cb on_connected;\n`;
     out += `    ${template.datamodel.libStructName}_event_cb on_disconnected;\n`;

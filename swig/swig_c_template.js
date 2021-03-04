@@ -131,6 +131,12 @@ function generateSwigInclude(fileName, typName, SUB, PUB) {
     out += `    void set_operational(void);\n`;
     out += `    void dispose(void);\n`;
     out += `    int32_t get_nettime(void);\n`;
+    out += `    void log_error(char *log_entry);\n`;
+    out += `    void log_warning(char *log_entry);\n`;
+    out += `    void log_success(char *log_entry);\n`;
+    out += `    void log_info(char *log_entry);\n`;
+    out += `    void log_debug(char *log_entry);\n`;
+    out += `    void log_verbose(char *log_entry);\n`;
 
     out += `    void on_connected(void);\n`;
     out += `    void on_disconnected(void);\n`;
