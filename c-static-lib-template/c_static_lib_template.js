@@ -269,7 +269,7 @@ function genenerateLibHeader(fileName, typName, SUB, PUB) {
 
     out += `typedef void (*${template.datamodel.libStructName}_event_cb)(void);\n`;
     out += `typedef void (*${template.datamodel.libStructName}_method_fn)(void);\n`;
-    out += `typedef int32_t (*${template.datamodel.libStructName}_get_nettime_fn)(void);\n\n`;
+    out += `typedef int32_t (*${template.datamodel.libStructName}_get_nettime_fn)(void);\n`;
     out += `typedef void (*${template.datamodel.libStructName}_log_fn)(char *log_entry);\n\n`;
 
     for (let dataset of template.datasets) {
