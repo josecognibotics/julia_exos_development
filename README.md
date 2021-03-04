@@ -23,27 +23,3 @@ On the AR side, this generates a template identical to the `Static C-Lib Templat
 ## Static C-Lib SWIG NodeJS Template
 
 On the AR side, this generates a template identical to the `Static C-Lib Template`, whereas on the Linux side, the static library is used to create a nodeJS module representing the datamodel. Along with the nodeJS module, a "main" Javascript nodejs program is generated that automatically connects the datamodel to AR.
-
-# Versions
-
-## V1.1.3
-
-### added NodeJS SWIG Template
-
-The `exOS Static C-Lib SWIG NodeJS Template` is now available for creating nodejs JavaScript templates. SWIG needs to be installed in the build environment via `sudo apt install swig`. Currently callbacks are not supported, and generator is restricted to node version <= 10.
-
-## V1.1.2
-
-### added python SWIG template
-
-The `exOS Static C-Lib SWIG Python Template` is now available for creating python templates, which also handles callbacks. The callbacks are auto generated in the python scripts. SWIG needs to be installed in the build environment via `sudo apt install swig`
-
-## V1.0.5
-
-### Static C-Lib template added
-
-There is a new function `exOS Static C-Lib Template` which generates a template with a static C-Library representing the configured datamodel for C-tasks on both ends. The benefit of this library is that it allows for being updated (right clicking in the .exospkg file), creating a new static library from the datamodel, without changing the main functions. Also a good starting point to generate SWIG templates.  
-
-### renamed exar- to exos-comp-
-
-Previously, the Debian packages created for deployment to the Linux system were called `exar-`, for example `exar-watertank-1.0.0.deb`. As this prefix had no real meaning, it has been changed to `exos-comp-` for all new templates created, meaning you would get `exos-comp-watertank-1.0.0.deb`, which is a more telling prefix, given that it is an exos component that is being deployed and installed on the remote system.
