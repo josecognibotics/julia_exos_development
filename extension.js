@@ -7,6 +7,7 @@ const exosas = require("./c-template/exos_template_as");
 const clibtemplate = require('./c-static-lib-template/template');
 const clibupdate = require('./c-static-lib-template/update_static_c_lib');
 const swigtemplate = require('./swig/template')
+const napitemplate = require('./c-template-n-api/exos_template')
 const path = require('path');
 const fs = require('fs');
 const fse = require('fs-extra');
@@ -135,6 +136,26 @@ function activate(context) {
 		});
 	});
 	context.subscriptions.push(generateSwigNodeJSTemplate);
+
+	let generateNapiNodeJSTemplate = vscode.commands.registerCommand('exos-component-extension.generateNapiNodeJSTemplate', function (uri) {
+		vscode.window.showInputBox({prompt:"Name of the DataType:"}).then(selection => {
+			
+			try {
+				napitemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
+				vscode.window.showInformationMessage(`Generated Node-API Template for ${selection}`);
+
+				if(exosas.replaceTypWithPackage(uri.fsPath, selection)) {
+					vscode.window.showInformationMessage(`Replaced ${path.basename(uri.fsPath)} with ${selection} Package. The file ${path.basename(uri.fsPath)} has been copied to the ${selection.substring(0,10)} Library`);
+				}
+				
+			} catch (error) {
+				vscode.window.showErrorMessage(error);	
+			}
+
+		});
+	});
+	context.subscriptions.push(generateNapiNodeJSTemplate);
+
 
 	if (isDebugMode()) 
 	{
