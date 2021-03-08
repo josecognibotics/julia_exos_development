@@ -24,6 +24,36 @@ function checkVarNames(fileName, typName) {
     }
 }
 
+function generateFun(fileName, typName) {
+
+    let template = configTemplate(fileName, typName);
+    let out = "";
+
+    out += `FUNCTION_BLOCK ${template.datamodel.structName}Cyclic\n`;
+    out += `	VAR_INPUT\n`;
+    out += `		Enable : BOOL;\n`;
+    out += `		Start : BOOL;\n`;
+    out += `        ${template.datamodel.varName} : REFERENCE TO ${typName};`;
+    out += `	END_VAR\n`;
+    out += `	VAR_OUTPUT\n`;
+    out += `		Connected : BOOL;\n`;
+    out += `		Operational : BOOL;\n`;
+    out += `		Error : BOOL;\n`;
+    out += `	END_VAR\n`;
+    out += `	VAR\n`;
+    out += `		_Handle : UDINT;\n`;
+    out += `		_Start : BOOL;\n`;
+    out += `		_Enable : BOOL;\n`;
+    out += `	END_VAR\n`;
+    out += `END_FUNCTION_BLOCK\n`;
+    out += `\n`;
+
+    out += `FUNCTION ${template.datamodel.structName}Exit : USINT\n`;
+    out += `END_FUNCTION\n`;
+
+    return out;
+}
+
 function generatePackage(typName, libName) {
     let out = "";
 
@@ -32,8 +62,8 @@ function generatePackage(typName, libName) {
     out += `<Package SubType="exosPackage" PackageType="exosPackage" xmlns="http://br-automation.co.at/AS/Package">\n`;
     out += `  <Objects>\n`;
     out += `    <Object Type="File">${typName}.exospkg</Object>\n`;
-    out += `    <Object Type="Program" Language="ANSIC">${libName}</Object>\n`;
-    out += `    <Object Type="Library" Language="ANSIC">lib${libName}</Object>\n`;
+    out += `    <Object Type="Program" Language="IEC">${libName}_0</Object>\n`;
+    out += `    <Object Type="Library" Language="ANSIC">${libName}</Object>\n`;
     out += `    <Object Type="Package">Linux</Object>\n`;
     out += `  </Objects>\n`;
     out += `</Package>\n`;
@@ -41,59 +71,70 @@ function generatePackage(typName, libName) {
     return out;
 }
 
-function generateCProgram(fileName, typName) {
+function generateIECProgram(typName) {
     let out = "";
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
     out += `<?AutomationStudio Version=4.9.1.69?>\n`;
-    out += `<Program SubType="ANSIC" xmlns="http://br-automation.co.at/AS/Program">\n`;
+    out += `<Program SubType="IEC" xmlns="http://br-automation.co.at/AS/Program">\n`;
     out += `  <Files>\n`;
-    out += `    <File Description="Init, cyclic, exit code">main.c</File>\n`;
-    out += `    <File Description="Enable dynamic heap">dynamic_heap.cpp</File>\n`;
-    out += `    <File Description="Data Model Definition">${fileName}</File>\n`;
-    out += `    <File Description="Local variables" Private="true">Variables.var</File>\n`;
+    out += `    <File Description="Init, cyclic, exit code">${typName}.st</File>\n`;
+    out += `    <File Description="Local variables" Private="true">${typName}.var</File>\n`;
     out += `  </Files>\n`;
     out += `</Program>\n`;
 
     return out;
 }
 
-function generateCProgramVar(fileName, typName) {
+function generateIECProgramVar(typName) {
     let out = "";
 
-    let template = configTemplate(fileName, typName);
-
     out += `VAR\n`;
-    out += `    Enable : BOOL;\n`;
-    out += `    _Enable : BOOL;\n`;
-    out += `    Connected : BOOL;\n`;
-    for (let dataset of template.datasets) {
-        if (!dataset.comment.includes("private")) {
-            let dataType = dataset.dataType;
-            if(dataset.arraySize > 0) {
-                dataType = `ARRAY[0..${dataset.arraySize-1}] OF ${dataset.dataType}`
-            }
-            if (dataset.comment.includes("SUB") || dataset.comment.includes("PUB")) {
-                out += `    ${dataset.structName} : ${dataType};\n`;
-            }
-        }
-    }
+    out += `    ${typName.toLowerCase()} : ${typName};\n`;
+    out += `    ${typName}Cyclic_0 : ${typName}Cyclic;\n`;
     out += `END_VAR\n`;
 
     return out;
 }
 
+function generateIECProgramST(typName) {
+    let out = "";
 
-function generateCLibrary(typName) {
+    out += `\n`;
+    out += `PROGRAM _INIT\n`;
+    out += `\n`;
+    out += `END_PROGRAM\n`;
+    out += `\n`;
+    out += `PROGRAM _CYCLIC\n`;
+    out += `\n`;
+    out += `    ${typName}Cyclic_0.${typName.toLowerCase()} := ADR(${typName.toLowerCase()});\n`;
+    out += `    ${typName}Cyclic_0();\n`;
+    out += `\n`;
+    out += `END_PROGRAM\n`;
+    out += `\n`;
+    out += `PROGRAM _EXIT\n`;
+    out += `\n`;
+    out += `    ${typName}Exit();\n`;
+    out += `\n`;
+    out += `END_PROGRAM\n`;
+
+    return out;
+}
+
+function generateCLibrary(fileName, typName) {
     let out = "";
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
     out += `<?AutomationStudio Version=4.6.3.55 SP?>\n`;
     out += `<Library SubType="ANSIC" xmlns="http://br-automation.co.at/AS/Library">\n`;
     out += `  <Files>\n`;
+    out += `    <File Description="Data Model Definition">${fileName}</File>\n`;
+    out += `    <File Description="Exported functions and function blocks">${typName.substring(0, 10)}.fun</File>\n`;
     out += `    <File Description="Generated exos headerfile">exos_${typName.toLowerCase()}.h</File>\n`;
+    out += `    <File Description="Main">main.c</File>\n`;
     out += `    <File Description="Header file">lib${typName.toLowerCase()}.h</File>\n`;
     out += `    <File Description="Implementation">lib${typName.toLowerCase()}.c</File>\n`;
+    out += `    <File Description="Enable dynamic heap">dynamic_heap.cpp</File>\n`;
     out += `  </Files>\n`;
     out += `  <Dependencies>\n`;
     out += `    <Dependency ObjectName="ExApi" />\n`;
@@ -184,8 +225,11 @@ function configTemplate(fileName, typName) {
 
 module.exports = {
     generatePackage,
-    generateCProgram,
-    generateCProgramVar,
     generateCLibrary,
-    checkVarNames
+    checkVarNames,
+    generateIECProgram,
+    generateIECProgramVar,
+    generateIECProgramST,
+    configTemplate,
+    generateFun
 }
