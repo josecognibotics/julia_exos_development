@@ -365,6 +365,7 @@ function generateMainAR(fileName, typName, libName, SUB, PUB) {
         if (dataset.comment.includes(SUB)) {
             out += `static void on_change_${dataset.varName}(void)\n`;
             out += `{\n`;
+            out += `    // Your code here...\n`;
             if(header.isScalarType(dataset.dataType) && dataset.arraySize == 0) {
                 out += `    cyclicInst->${template.datamodel.varName}->${dataset.structName} = ${template.datamodel.varName}->${dataset.structName}.value;\n`;
             }
@@ -377,15 +378,20 @@ function generateMainAR(fileName, typName, libName, SUB, PUB) {
 
     out += `_BUR_PUBLIC void ${template.datamodel.structName}Cyclic(struct ${template.datamodel.structName}Cyclic *inst)\n`;
     out += `{\n`;
+    out += `    // check if function block has been created before\n`;
     out += `    if(cyclicInst != NULL)\n`;
     out += `    {\n`;
+    out += `        // return error if more than one function blocks have been created\n`;
     out += `        if(inst != cyclicInst)\n`;
     out += `        {\n`;
+    out += `            inst->Operational = false;\n`;
+    out += `            inst->Connected = false;\n`;
     out += `            inst->Error = true;\n`;
     out += `            return;\n`;
     out += `        }\n`;
     out += `    }\n`;
     out += `    cyclicInst = inst;\n`;
+    out += `    // initialize library\n`;
     out += `    if(inst->_Handle == NULL || inst->_Handle != ${template.datamodel.varName})\n`;
     out += `    {\n`;
     out += `        //retrieve the ${template.datamodel.varName} structure\n`;
@@ -403,8 +409,11 @@ function generateMainAR(fileName, typName, libName, SUB, PUB) {
     out += `        inst->_Handle = ${template.datamodel.varName};\n`;
     out += `    }\n`;
 
+    out += `    // return error if reference to structure is not set on function block\n`;
     out += `    if(inst->${template.datamodel.varName} == NULL)\n`;
     out += `    {\n`;
+    out += `        inst->Operational = false;\n`;
+    out += `        inst->Connected = false;\n`;
     out += `        inst->Error = true;\n`;
     out += `        return;\n`;
     out += `    }\n`;
@@ -417,6 +426,7 @@ function generateMainAR(fileName, typName, libName, SUB, PUB) {
     out += `    if (!inst->Enable && inst->_Enable)\n`;
     out += `    {\n`;
     out += `        //disconnect from server\n`;
+    out += `        cyclicInst = NULL;\n`;
     out += `        ${template.datamodel.varName}->disconnect();\n`;
     out += `    }\n`;
     out += `    inst->_Enable = inst->Enable;\n\n`;
@@ -455,15 +465,10 @@ function generateMainAR(fileName, typName, libName, SUB, PUB) {
             out += "    \n";
         }
     }
+    out += `        // Your code here...\n`;
     out += `    }\n`;
     out += `    inst->Connected = ${template.datamodel.varName}->is_connected;\n`;
     out += `    inst->Operational = ${template.datamodel.varName}->is_operational;\n`;
-    out += `}\n\n`;
-
-    out += `_BUR_PUBLIC unsigned char ${template.datamodel.structName}Exit(void)\n`;
-    out += `{\n`;
-    out += `    ${template.datamodel.varName}->dispose();\n`
-    out += `    cyclicInst = NULL;\n`;
     out += `}\n\n`;
 
     out += `UINT _EXIT ProgramExit(unsigned long phase)\n`;
