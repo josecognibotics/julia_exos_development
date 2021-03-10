@@ -200,12 +200,20 @@ function activate(context) {
 				fse.removeSync(finalName);
 				swigtemplate.generateNodeJSTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
-				infoMessage += ` and 'C-Lib SWIG NodeJS'`;
+				infoMessage += `, 'C-Lib SWIG NodeJS'`;
 				vscode.debug.activeDebugConsole.appendLine('C-Lib SWIG NodeJS');
+
+				finalName = `${path.dirname(uri.fsPath)}/${selection}_napi`;
+				fse.removeSync(finalName);
+				napitemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
+				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
+				infoMessage += ` and 'Node-API'`;
+				vscode.debug.activeDebugConsole.appendLine('Node-API');
 
 				vscode.window.showInformationMessage(`${infoMessage}`);
 
 			} catch (error) {
+				vscode.debug.activeDebugConsole.appendLine(error);
 				vscode.window.showErrorMessage(error);
 			}
 		});
