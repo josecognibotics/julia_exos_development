@@ -114,9 +114,9 @@ function generateExosPkg(typName,libName,fileName) {
     out += `    <DataModelInstance Name="${typName}"/>\n`;
     out += `    <Build>\n`;
     out += `        <GenerateHeader FileName="${libName}\\${fileName}" TypeName="${typName}">\n`;
-    out += `            <SG4 Include="${fileName.split(".")[0].toLowerCase()}TYP.h"/>\n`;
+    out += `            <SG4 Include="${libName.toLowerCase()}.h"/>\n`;
     out += `            <Output Path="Linux"/>\n`;
-    out += `            <Output Path="lib${libName}"/>\n`;
+    out += `            <Output Path="${libName}"/>\n`;
     out += `        </GenerateHeader>\n`;
     out += `        <BuildCommand Command="C:\\Windows\\Sysnative\\wsl.exe" WorkingDirectory="Linux" Arguments="-d Debian -e sh build.sh">\n`;
     out += `            <Dependency FileName="Linux\\exos_${typName.toLowerCase()}.h"/>\n`;

@@ -353,60 +353,95 @@ function generateMainAR(fileName, typName, libName, SUB, PUB) {
     let template = configTemplate(fileName, typName);
 
     out += `#include <string.h>\n`;
-    out += `#include <bur/plctypes.h>\n`;
-    out += `#include "../lib${libName}/${template.libHeaderName}"\n\n`;
-    out += `#ifdef _DEFAULT_INCLUDES\n`;
-    out += `	#include <AsDefault.h>\n`;
-    out += `#endif\n\n`;
+    out += `#include <stdbool.h>\n`;
+    out += `#include "${template.libHeaderName}"\n\n`;
 
-    out += `static ${template.datamodel.libStructName}_t *${template.datamodel.varName};\n\n`
+    out += `static ${template.datamodel.libStructName}_t *${template.datamodel.varName};\n`;
+    out += `static struct ${template.datamodel.structName}Cyclic *cyclicInst;\n\n`;
 
     out += `static void on_connected_${template.datamodel.varName}(void)\n{\n}\n\n`;
-    //out += `static void on_disconnected_${template.datamodel.varName}(void)\n{\n}\n\n`;
-    //out += `static void on_operational_${template.datamodel.varName}(void)\n{\n}\n\n`;
 
     for (let dataset of template.datasets) {
         if (dataset.comment.includes(SUB)) {
             out += `static void on_change_${dataset.varName}(void)\n`;
             out += `{\n`;
+            out += `    // Your code here...\n`;
             if(header.isScalarType(dataset.dataType) && dataset.arraySize == 0) {
-                out += `    ${dataset.structName} = ${template.datamodel.varName}->${dataset.structName}.value;\n`;
+                out += `    cyclicInst->${template.datamodel.varName}->${dataset.structName} = ${template.datamodel.varName}->${dataset.structName}.value;\n`;
             }
             else {
-                out += `    memcpy(&${dataset.structName}, &(${template.datamodel.varName}->${dataset.structName}.value), sizeof(${dataset.structName}));\n`;
+                out += `    memcpy(&(cyclicInst->${template.datamodel.varName}->${dataset.structName})), &(${template.datamodel.varName}->${dataset.structName}.value), sizeof((cyclicInst->${template.datamodel.varName}->${dataset.structName})));\n`;
             }
             out += `}\n`;
         }
     }
 
-    out += `void _INIT ProgramInit(void)\n`;
+    out += `_BUR_PUBLIC void ${template.datamodel.structName}Cyclic(struct ${template.datamodel.structName}Cyclic *inst)\n`;
     out += `{\n`;
-    out += `    //retrieve the ${template.datamodel.varName} structure\n`;
-    out += `    ${template.datamodel.varName} = ${template.datamodel.libStructName}_init();\n\n`
-    out += `    //setup callbacks\n`;
-    out += `    ${template.datamodel.varName}->on_connected = on_connected_${template.datamodel.varName};\n`;
-    out += `    // ${template.datamodel.varName}->on_disconnected = .. ;\n`;
-    out += `    // ${template.datamodel.varName}->on_operational = .. ;\n`;
+    out += `    // check if function block has been created before\n`;
+    out += `    if(cyclicInst != NULL)\n`;
+    out += `    {\n`;
+    out += `        // return error if more than one function blocks have been created\n`;
+    out += `        if(inst != cyclicInst)\n`;
+    out += `        {\n`;
+    out += `            inst->Operational = false;\n`;
+    out += `            inst->Connected = false;\n`;
+    out += `            inst->Error = true;\n`;
+    out += `            return;\n`;
+    out += `        }\n`;
+    out += `    }\n`;
+    out += `    cyclicInst = inst;\n`;
+    out += `    // initialize library\n`;
+    out += `    if(inst->_Handle == NULL || inst->_Handle != ${template.datamodel.varName})\n`;
+    out += `    {\n`;
+    out += `        //retrieve the ${template.datamodel.varName} structure\n`;
+    out += `        ${template.datamodel.varName} = ${template.datamodel.libStructName}_init();\n\n`
+    out += `        //setup callbacks\n`;
+    out += `        ${template.datamodel.varName}->on_connected = on_connected_${template.datamodel.varName};\n`;
+    out += `        // ${template.datamodel.varName}->on_disconnected = .. ;\n`;
+    out += `        // ${template.datamodel.varName}->on_operational = .. ;\n`;
     for (let dataset of template.datasets) {
         if (dataset.comment.includes(SUB)) {
-            out += `    ${template.datamodel.varName}->${dataset.structName}.on_change = on_change_${dataset.varName};\n`;
+            out += `        ${template.datamodel.varName}->${dataset.structName}.on_change = on_change_${dataset.varName};\n`;
         }
     }
-    out += `}\n`;
     out += `\n`;
-    out += `void _CYCLIC ProgramCyclic(void)\n`;
-    out += `{\n`;
-    out += `    if (Enable && !_Enable)\n`;
+    out += `        inst->_Handle = ${template.datamodel.varName};\n`;
+    out += `    }\n`;
+
+    out += `    // return error if reference to structure is not set on function block\n`;
+    out += `    if(inst->${template.datamodel.varName} == NULL)\n`;
+    out += `    {\n`;
+    out += `        inst->Operational = false;\n`;
+    out += `        inst->Connected = false;\n`;
+    out += `        inst->Error = true;\n`;
+    out += `        return;\n`;
+    out += `    }\n`;
+
+    out += `    if (inst->Enable && !inst->_Enable)\n`;
     out += `    {\n`;
     out += `        //connect to the server\n`;
     out += `        ${template.datamodel.varName}->connect();\n`;
     out += `    }\n`;
-    out += `    if (!Enable && _Enable)\n`;
+    out += `    if (!inst->Enable && inst->_Enable)\n`;
     out += `    {\n`;
     out += `        //disconnect from server\n`;
+    out += `        cyclicInst = NULL;\n`;
     out += `        ${template.datamodel.varName}->disconnect();\n`;
     out += `    }\n`;
-    out += `    _Enable = Enable;\n\n`;
+    out += `    inst->_Enable = inst->Enable;\n\n`;
+    
+    out += `    if(inst->Start && !inst->_Start && ${template.datamodel.varName}->is_connected)\n`;
+    out += `    {\n`;
+    out += `        ${template.datamodel.varName}->set_operational();\n`;
+    out += `        inst->_Start = inst->Start;\n`;
+    out += `    }\n`;
+    out += `    if(!inst->Start)\n`;
+    out += `    {\n`;
+    out += `        inst->_Start = false;\n`;
+    out += `    }\n`;
+    out += `\n`;
+
     out += `    //trigger callbacks\n`;
     out += `    ${template.datamodel.varName}->process();\n\n`;
     out += `    if (${template.datamodel.varName}->is_connected)\n`;
@@ -414,31 +449,35 @@ function generateMainAR(fileName, typName, libName, SUB, PUB) {
     for (let dataset of template.datasets) {
         if (dataset.comment.includes(PUB)) {
             if(header.isScalarType(dataset.dataType)) {
-                out += `        if (${template.datamodel.varName}->${dataset.structName}.value != ${dataset.structName})\n`;
+                out += `        if (${template.datamodel.varName}->${dataset.structName}.value != inst->${template.datamodel.varName}->${dataset.structName})\n`;
                 out += `        {\n`;
-                out += `            ${template.datamodel.varName}->${dataset.structName}.value = ${dataset.structName};\n`;
+                out += `            ${template.datamodel.varName}->${dataset.structName}.value = inst->${template.datamodel.varName}->${dataset.structName};\n`;
                 out += `            ${template.datamodel.varName}->${dataset.structName}.publish();\n`;
                 out += `        }\n`;
             }
             else {
-                out += `        if (memcmp(&(${template.datamodel.varName}->${dataset.structName}.value), &${dataset.structName}, sizeof(${dataset.structName})))\n`;
+                out += `        if (memcmp(&(${template.datamodel.varName}->${dataset.structName}.value), &(inst->${template.datamodel.varName}->${dataset.structName}), sizeof(inst->${template.datamodel.varName}->${dataset.structName})))\n`;
                 out += `        {\n`;
-                out += `            memcpy(&(${template.datamodel.varName}->${dataset.structName}.value), &${dataset.structName}, sizeof(${dataset.structName}));\n`;
+                out += `            memcpy(&(${template.datamodel.varName}->${dataset.structName}.value), &(inst->${template.datamodel.varName}->${dataset.structName}), sizeof(${template.datamodel.varName}->${dataset.structName}.value));\n`;
                 out += `            ${template.datamodel.varName}->${dataset.structName}.publish();\n`;
                 out += `        }\n`;
             }
             out += "    \n";
         }
     }
+    out += `        // Your code here...\n`;
     out += `    }\n`;
-    out += `    Connected = ${template.datamodel.varName}->is_connected;\n`;
+    out += `    inst->Connected = ${template.datamodel.varName}->is_connected;\n`;
+    out += `    inst->Operational = ${template.datamodel.varName}->is_operational;\n`;
     out += `}\n\n`;
-    out += `void _EXIT ProgramExit(void)\n`;
+
+    out += `UINT _EXIT ProgramExit(unsigned long phase)\n`;
     out += `{\n`;
     out += `    //shutdown\n`;
-    out += `    ${template.datamodel.varName}->dispose();\n\n`
+    out += `    ${template.datamodel.varName}->dispose();\n`
+    out += `    cyclicInst = NULL;\n`;
+    out += `    return 0;\n`;
     out += `}\n`;
-
 
     return out;
 }
