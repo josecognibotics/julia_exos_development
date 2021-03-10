@@ -10,7 +10,7 @@ const path = require('path');
 
 function generatePythonTemplate(fileName, structName, outPath) {
 
-    let libName = structName.substring(0, 7);
+    let libName = structName.substring(0, 10);
 
     if (fs.existsSync(`${outPath}/${structName}`)) {
         throw(`folder ${outPath}/${structName} already exists, choose another output folder`);
@@ -20,19 +20,18 @@ function generatePythonTemplate(fileName, structName, outPath) {
 
     //AS dirs
     fs.mkdirSync(`${outPath}/${structName}`);
-    fs.mkdirSync(`${outPath}/${structName}/lib${libName}`);
     fs.mkdirSync(`${outPath}/${structName}/${libName}`);
+    fs.mkdirSync(`${outPath}/${structName}/${libName}_0`);
 
     //Linux dir
     fs.mkdirSync(`${outPath}/${structName}/Linux`);
     
     //headers
-    let out = header.generateHeader(fileName, structName, [`${path.basename(fileName).split(".")[0].toLowerCase()}TYP.h`]);
+    let out = header.generateHeader(fileName, structName, [`${path.basename(fileName).split(".")[0].toLowerCase()}.h`]);
     //AS header
-    fs.writeFileSync(`${outPath}/${structName}/lib${libName}/exos_${structName.toLowerCase()}.h`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.h`, out);
     //Linux header
     fs.writeFileSync(`${outPath}/${structName}/Linux/exos_${structName.toLowerCase()}.h`, out);
-
 
     // //AS files
     out = template_ar.generatePackage(structName,libName);
@@ -47,23 +46,29 @@ function generatePythonTemplate(fileName, structName, outPath) {
     out = template_linux_python.generateExosPkg(structName,libName,path.basename(fileName));
     fs.writeFileSync(`${outPath}/${structName}/${structName}.exospkg`, out);
 
-    out = template_ar.generateCLibrary(structName);
-    fs.writeFileSync(`${outPath}/${structName}/lib${libName}/ANSIC.lby`, out);
+    out = template_ar.generateCLibrary(path.basename(fileName), structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/ANSIC.lby`, out);
 
     out = template_lib.genenerateLibHeader(fileName, structName, "SUB", "PUB");
-    fs.writeFileSync(`${outPath}/${structName}/lib${libName}/lib${structName.toLowerCase()}.h`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/lib${structName.toLowerCase()}.h`, out);
 
     out = template_lib.generateTemplate(fileName, structName, "SUB", "PUB", `${structName}_AR`);
-    fs.writeFileSync(`${outPath}/${structName}/lib${libName}/lib${structName.toLowerCase()}.c`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/lib${structName.toLowerCase()}.c`, out);
 
-    out = template_ar.generateCProgram(path.basename(fileName), libName);
-    fs.writeFileSync(`${outPath}/${structName}/${libName}/ANSIC.prg`, out);
+    out = template_ar.generateIECProgram(libName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}_0/IEC.prg`, out);
     
-    out = template_ar.generateCProgramVar(fileName, structName);
-    fs.writeFileSync(`${outPath}/${structName}/${libName}/Variables.var`, out);
+    out = template_ar.generateIECProgramVar(structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}_0/${libName}.var`, out);
+    
+    out = template_ar.generateIECProgramST(structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}_0/${libName}.st`, out);
+
+    out = template_ar.generateFun(fileName, structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/${libName}.fun`, out);
 
     fs.writeFileSync(`${outPath}/${structName}/${libName}/dynamic_heap.cpp`, "unsigned long bur_heap_size = 100000;\n");
-    // copy the .typ file to the Program
+    // copy the .typ file to the Library
     fs.copyFileSync(fileName, `${outPath}/${structName}/${libName}/${path.basename(fileName)}`);
 
     out = template_lib.generateMainAR(fileName, structName, libName, "SUB", "PUB");
@@ -97,26 +102,26 @@ function generatePythonTemplate(fileName, structName, outPath) {
 
 function generateNodeJSTemplate(fileName, structName, outPath) {
 
-    let libName = structName.substring(0, 7);
+    let libName = structName.substring(0, 10);
 
     if (fs.existsSync(`${outPath}/${structName}`)) {
-        throw (`folder ${outPath}/${structName} already exists, choose another output folder`);
+        throw(`folder ${outPath}/${structName} already exists, choose another output folder`);
     }
 
     template_ar.checkVarNames(fileName, structName);
 
     //AS dirs
     fs.mkdirSync(`${outPath}/${structName}`);
-    fs.mkdirSync(`${outPath}/${structName}/lib${libName}`);
     fs.mkdirSync(`${outPath}/${structName}/${libName}`);
+    fs.mkdirSync(`${outPath}/${structName}/${libName}_0`);
 
     //Linux dir
     fs.mkdirSync(`${outPath}/${structName}/Linux`);
     
     //headers
-    let out = header.generateHeader(fileName, structName, [`${path.basename(fileName).split(".")[0].toLowerCase()}TYP.h`]);
+    let out = header.generateHeader(fileName, structName, [`${path.basename(fileName).split(".")[0].toLowerCase()}.h`]);
     //AS header
-    fs.writeFileSync(`${outPath}/${structName}/lib${libName}/exos_${structName.toLowerCase()}.h`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.h`, out);
     //Linux header
     fs.writeFileSync(`${outPath}/${structName}/Linux/exos_${structName.toLowerCase()}.h`, out);
 
@@ -134,23 +139,28 @@ function generateNodeJSTemplate(fileName, structName, outPath) {
     out = template_linux_nodejs.generateExosPkg(structName, libName, path.basename(fileName));
     fs.writeFileSync(`${outPath}/${structName}/${structName}.exospkg`, out);
 
-    out = template_ar.generateCLibrary(structName);
-    fs.writeFileSync(`${outPath}/${structName}/lib${libName}/ANSIC.lby`, out);
+    out = template_ar.generateCLibrary(path.basename(fileName), structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/ANSIC.lby`, out);
 
     out = template_lib.genenerateLibHeader(fileName, structName, "SUB", "PUB");
-    fs.writeFileSync(`${outPath}/${structName}/lib${libName}/lib${structName.toLowerCase()}.h`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/lib${structName.toLowerCase()}.h`, out);
 
     out = template_lib.generateTemplate(fileName, structName, "SUB", "PUB", `${structName}_AR`);
-    fs.writeFileSync(`${outPath}/${structName}/lib${libName}/lib${structName.toLowerCase()}.c`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/lib${structName.toLowerCase()}.c`, out);
 
-    out = template_ar.generateCProgram(path.basename(fileName), libName);
-    fs.writeFileSync(`${outPath}/${structName}/${libName}/ANSIC.prg`, out);
+    out = template_ar.generateIECProgram(libName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}_0/IEC.prg`, out);
     
-    out = template_ar.generateCProgramVar(fileName, structName);
-    fs.writeFileSync(`${outPath}/${structName}/${libName}/Variables.var`, out);
+    out = template_ar.generateIECProgramVar(structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}_0/${libName}.var`, out);
+    
+    out = template_ar.generateIECProgramST(structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}_0/${libName}.st`, out);
 
+    out = template_ar.generateFun(fileName, structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/${libName}.fun`, out);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/dynamic_heap.cpp`, "unsigned long bur_heap_size = 100000;\n");
-    // copy the .typ file to the Program
+    // copy the .typ file to the Library
     fs.copyFileSync(fileName, `${outPath}/${structName}/${libName}/${path.basename(fileName)}`);
 
     out = template_lib.generateMainAR(fileName, structName, libName, "SUB", "PUB");
