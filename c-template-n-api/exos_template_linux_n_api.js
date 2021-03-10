@@ -3,18 +3,19 @@
 //KNOWN ISSUES
 /*
     NO checks on values are made. NodeJS har as a javascript language only "numbers" that will be created from SINT, INT etc. 
-    This means that when writing from NodeJS to Automation Runtime, you should take care of that the value actually fits into the value assigned.
+    This means that when writing from NodeJS to Automation Runtime, you should take care of that the value actually fits into 
+    the value assigned.
     
     String arrays will most probably not work, as they are basically char[][]...
 
-    Stings are encoded as utf8 strings in NodeJS which means that special chars will reduce length of string. Adnd generate funny charachters in Automation
-    Runtime.
+    Strings are encoded as utf8 strings in NodeJS which means that special chars will reduce length of string. And generate funny 
+    charachters in Automation Runtime.
 
     PLCs WSTRING is not supported.
 
-    Deep nested data types för datasets will not work.
-
     Generally the generates code is not yet fully and understanably error handled. ex. if (napi_ok != .....
+
+    The code generated is NOT yet fully formatted to ones normal liking. There are missing indentations.
 */
 
 const header = require('../exos_header');
@@ -619,8 +620,8 @@ function generateValueCallbacks(fileName, template) {
             out += `        int32_t _latency = exos_datamodel_get_nettime(&deepnest_datamodel, NULL) - *(int32_t *)netTime_exos;\n`;
             out += `        napi_create_int32(env, *(int32_t *)netTime_exos, &netTime);\n`;
             out += `        napi_create_int32(env, _latency, &latency);\n`;
-            out += `        napi_set_named_property(env, ${dataset.structName}.value, "netTime", netTime);\n`;
-            out += `        napi_set_named_property(env, ${dataset.structName}.value, "latency", latency);\n`;
+            out += `        napi_set_named_property(env, ${dataset.structName}.object_value, "netTime", netTime);\n`;
+            out += `        napi_set_named_property(env, ${dataset.structName}.object_value, "latency", latency);\n`;
             out += `    if (napi_ok != napi_set_named_property(env, ${dataset.structName}.object_value, "value", ${dataset.structName}.value))\n`;
             out += `    {\n`;
             out += `        napi_throw_error(env, "EINVAL", "Can't get property");\n`;
@@ -977,6 +978,8 @@ function generateInitFunction(fileName, template) {
         if (dataset.comment.includes("PUB")) {
             out2 += `    napi_create_function(env, NULL, 0, ${dataset.structName}_onchange_init, NULL, &${dataset.structName}_onchange);\n`;
             out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "onChange", ${dataset.structName}_onchange);\n`;
+            out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "netTime", undefined);\n`;
+            out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "latency", undefined);\n`;
             pubsub = true;
         }
         if (dataset.comment.includes("SUB")) {
@@ -1203,6 +1206,25 @@ function generateLibTemplate(fileName, typName) {
 
     let template = configTemplate(fileName, typName);
 
+    //general info
+    out += `//KNOWN ISSUES\n`;
+    out += `/*\n`;
+    out += `NO checks on values are made. NodeJS har as a javascript language only "numbers" that will be created from SINT, INT etc.\n`;
+    out += `This means that when writing from NodeJS to Automation Runtime, you should take care of that the value actually fits into \n`;
+    out += `the value assigned.\n\n`;
+
+    out += `String arrays will most probably not work, as they are basically char[][]...\n\n`;
+
+    out += `Strings are encoded as utf8 strings in NodeJS which means that special chars will reduce length of string. And generate funny \n`;
+    out += `charachters in Automation Runtime.\n\n`;
+
+    out += `PLCs WSTRING is not supported.\n\n`;
+
+    out += `Generally the generates code is not yet fully and understanably error handled. ex. if (napi_ok != .....\n\n`;
+
+    out += `The code generated is NOT yet fully formatted to ones normal liking. There are missing indentations.\n`;
+    out += `*/\n\n`;
+
     //includes, defines, types and global variables
     out += `#define NAPI_VERSION 6\n`;
     out += `#include <node_api.h>\n`;
@@ -1310,14 +1332,36 @@ function generateIndexJS(fileName, typName) {
     out += `\n`;
 
     out += `//publishing of values\n`;
-    out += `if (1 === 0) {\n`
+    out += `if (1 === 0) {\n`;
     for (let i = 0; i < template.datasets.length; i++) {
         if (template.datasets[i].comment.includes("SUB")) {
             out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.value..\n`;
             out += `    ${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.publish();\n`;
         }
     }
-    out += `}\n`
+    out += `}\n\n`;
+
+    out += `/*
+All values in ${template.datamodel.structName}.dataModel that has a .onChange() callback will
+have the corresponding "netTime" and "latency" datas. These are initialized to "undefined" until
+the first data have arrived via the call to .onchange().
+
+- "latency" describes the time it took ´for the data to be transmitted from Automation Runtime 
+  (real time OS) to this application.
+- "netTime" describes the local timestamp (CLOCK_MONOTONIC) when the last data arrived to this 
+  application.
+
+To check the current time, call the ${template.datamodel.structName}.netTime() method that 
+returns current netTime.
+
+Note that ALL netTime and latency values are created from int32_t datatype and the wrapping of
+these values are not considered/handled in the imported module.
+*/\n`;
+
+    out += `setInterval(() => {\n`;
+    out += `    console.log("current netTime is: " + ${template.datamodel.structName}.netTime().toString());\n`;
+    out += `}, 2000);\n`;
+
 
     return out;
 }
