@@ -3,23 +3,23 @@
 //KNOWN ISSUES
 /*
     NO checks on values are made. NodeJS har as a javascript language only "numbers" that will be created from SINT, INT etc. 
-    This means that when writing from NodeJS to Automation Runtime, you should take care of that the value actually fits into the value assigned.
+    This means that when writing from NodeJS to Automation Runtime, you should take care of that the value actually fits into 
+    the value assigned.
     
     String arrays will most probably not work, as they are basically char[][]...
 
-    Stings are encoded as utf8 strings in NodeJS which means that special chars will reduce length of string. Adnd generate funny charachters in Automation
-    Runtime.
+    Strings are encoded as utf8 strings in NodeJS which means that special chars will reduce length of string. And generate funny 
+    charachters in Automation Runtime.
 
     PLCs WSTRING is not supported.
 
-    Deep nested data types för datasets will not work.
-
     Generally the generates code is not yet fully and understanably error handled. ex. if (napi_ok != .....
+
+    The code generated is NOT yet fully formatted to ones normal liking. There are missing indentations.
 */
 
 const header = require('../exos_header');
 const fs = require('fs');
-const { getHeapCodeStatistics } = require('v8');
 
 ///////////////
 //support stuff
@@ -43,8 +43,35 @@ class iteratorChar {
         if (this.i === "a") { this.i = "z"; }
     }
 }
+class objectIndexer {
+    constructor() {
+        this.reset();
+    }
 
-iterator = new iteratorChar;
+    reset() {
+        this.i = 0;
+        this.max = this.i;
+    }
+
+    next() {
+        this.i++;
+        if (this.i > this.max) this.max = this.i
+    }
+
+    prev() {
+        this.i--;
+    }
+
+    toString(offset) {
+        let o = this.i;
+        if ((offset != undefined) && (typeof offset === 'number')) { o = o + offset; }
+
+        return "object" + o.toString();
+    }
+}
+
+let iterator = new iteratorChar;
+let objectIdx = new objectIndexer;
 
 function readType(fileName, typName) {
     var template = {
@@ -221,7 +248,7 @@ function generateExosCallbacks(template) {
             out += `            if (${dataset.structName}.onchange_cb != NULL)\n`;
             out += `            {\n`;
             out += `                napi_acquire_threadsafe_function(${dataset.structName}.onchange_cb);\n`;
-            out += `                napi_call_threadsafe_function(${dataset.structName}.onchange_cb, &exos_data.${dataset.structName}, napi_tsfn_blocking);\n`;
+            out += `                napi_call_threadsafe_function(${dataset.structName}.onchange_cb, &dataset->nettime, napi_tsfn_blocking);\n`;
             out += `                napi_release_threadsafe_function(${dataset.structName}.onchange_cb, napi_tsfn_release);\n`;
             out += `            }\n`;
             out += `        }\n`;
@@ -449,7 +476,7 @@ function subSetLeafValue(type, srcVariable, destNapiVar) {
             break;
         case "REAL":
         case "LREAL":
-            out += `    if (napi_ok != napi_create_double(env, (double)${srcVariable}, &${destNapiVarName}))\n`;
+            out += `    if (napi_ok != napi_create_double(env, (double)${srcVariable}, &${destNapiVar}))\n`;
             out += `    {\n`;
             out += `        napi_throw_error(env, "EINVAL", "Can convert C-variable to double");\n`;
             out += `    }\n`;
@@ -471,12 +498,12 @@ function generateValuesSubscribeItem(fileName, srcVariable, destNapiVar, dataset
     if (header.isScalarType(dataset.dataType, true)) {
         if (dataset.arraySize > 0) {
             iterator.next();
-            out += `napi_create_array(env. &${destNapiVar})`
+            out += `napi_create_array(env, &${destNapiVar});`
             out += `for (uint32_t ${iterator.i} = 0; ${iterator.i} < (sizeof(${srcVariable})/sizeof(${srcVariable}[0])); ${iterator.i}++)\n`;
             out += `{\n`;
-            out += `    ` + subSetLeafValue(dataset.dataType, `${srcVariable}[${iterator.i}]`, `object`);
-            out += `    napi_set_element(env, ${destNapiVar}, ${iterator.i}, object);\n`;
-            out += `}\n\n`;
+            out += `    ` + subSetLeafValue(dataset.dataType, `${srcVariable}[${iterator.i}]`, `arrayItem`);
+            out += `    napi_set_element(env, ${destNapiVar}, ${iterator.i}, arrayItem);\n`;
+            out += `}\n`;
         } else {
             out += subSetLeafValue(dataset.dataType, `${srcVariable}`, `${destNapiVar}`);
         }
@@ -484,36 +511,58 @@ function generateValuesSubscribeItem(fileName, srcVariable, destNapiVar, dataset
         //resolve datatype and call self if there are sub-datatypes also at this level
         let types = readType(fileName, dataset.dataType);
 
+        objectIdx.next();
+
         if (dataset.arraySize > 0) {
             iterator.next();
             out += `napi_create_array(env, &${destNapiVar});\n`
             out += `for (uint32_t ${iterator.i} = 0; ${iterator.i} < (sizeof(${srcVariable})/sizeof(${srcVariable}[0])); ${iterator.i}++)\n`;
             out += `{\n`;
-            out += '    napi_create_object(env, &object);\n';
+            out += `    napi_create_object(env, &${objectIdx.toString()});\n`;
             for (let type of types.datasets) {
                 if (header.isScalarType(type.dataType, true)) {
-                    out += `    ` + subSetLeafValue(type.dataType, `${srcVariable}[${iterator.i}].${type.structName}`, `property`);
-                    out += `    napi_set_named_property(env, object, "${type.structName}", property);\n`;
+                    if (type.arraySize > 0) {
+                        objectIdx.next(); //force "max" property to ++1 in order to get declarations rigt.
+                        objectIdx.prev();
+                        let olditerator = iterator.i;
+                        out += generateValuesSubscribeItem(fileName, `${srcVariable}[${iterator.i}].${type.structName}`, `${objectIdx.toString(1)}`, type);
+                        iterator.i = olditerator;
+                        out += `    napi_set_named_property(env, ${objectIdx.toString()}, "${type.structName}", ${objectIdx.toString(1)});\n`;
+                    } else {
+                        out += `    ` + subSetLeafValue(type.dataType, `${srcVariable}[${iterator.i}].${type.structName}`, `property`);
+                        out += `    napi_set_named_property(env, ${objectIdx.toString()}, "${type.structName}", property);\n`;
+                    }
                 } else {
                     //subtype detected
-                    out += `    old_object = object;\n`;
-                    out += generateValuesSubscribeItem(fileName, `${srcVariable}[${iterator.i}].${type.structName}`, `property`, type);
-                    out += `    object = old_object;\n`;
+                    out += generateValuesSubscribeItem(fileName, `${srcVariable}[${iterator.i}].${type.structName}`, `${objectIdx.toString()}`, type);
+                    objectIdx.prev();
                 }
             }
-            out += `napi_set_element(env, ${destNapiVar}, ${iterator.i}, object);\n`;
-            out += `}\n\n`;
+            out += `napi_set_element(env, ${destNapiVar}, ${iterator.i}, ${objectIdx.toString()});\n`;
+            out += `}\n`;
         } else {
+            out += `    napi_create_object(env, &${objectIdx.toString()});\n`;
             for (let type of types.datasets) {
-                out += `    napi_get_named_property(env, object, "${type.structName}", &property);\n`;
                 if (header.isScalarType(type.dataType, true)) {
-                    out += subSetLeafValue(type.dataType, `${srcVariable}`, `property`);
+                    if (type.arraySize > 0) {
+                        objectIdx.next(); //force "max" property to ++1 in order to get declarations rigt.
+                        objectIdx.prev();
+                        out += generateValuesSubscribeItem(fileName, `${srcVariable}.${type.structName}`, `${objectIdx.toString(1)}`, type);
+                        out += `    napi_set_named_property(env, ${objectIdx.toString()}, "${type.structName}", ${objectIdx.toString(1)});\n`;
+                    } else {
+                        out += subSetLeafValue(type.dataType, `${srcVariable}.${type.structName}`, `property`);
+                        out += `    napi_set_named_property(env, ${objectIdx.toString()}, "${type.structName}", property);\n`;
+                    }
                 } else {
                     //subtype detected
-                    out += `    old_object = object;\n`;
-                    out += generateValuesSubscribeItem(fileName, `${srcVariable}.${type.structName}`, `object`, type);
-                    out += `    object = old_object;\n`;
+                    out += generateValuesSubscribeItem(fileName, `${srcVariable}.${type.structName}`, `${objectIdx.toString()}`, type);
+                    objectIdx.prev();
                 }
+            }
+            if (objectIdx.i != 0) {
+                out += `napi_set_named_property(env, ${destNapiVar}, "${dataset.structName}", ${objectIdx.toString()});\n`;
+            } else {
+                out += `${destNapiVar} = ${objectIdx.toString()};\n`;
             }
         }
     }
@@ -534,20 +583,32 @@ function generateValueCallbacks(fileName, template) {
             }
 
             iterator.reset();
+            objectIdx.reset();
+            objectIdx.prev();//initialize to -1
             out2 = generateValuesSubscribeItem(fileName, `exos_data.${dataset.structName}`, `${dataset.structName}.value`, dataset);
 
-            out += `static void ${dataset.structName}_onchange_js_cb(napi_env env, napi_value js_cb, void *context, void *data)\n`;
+            out += `static void ${dataset.structName}_onchange_js_cb(napi_env env, napi_value js_cb, void *context, void *netTime_exos)\n`;
             out += `{\n`;
-
             // check what variables to declare for the publish process in "out2" variable.
-            if (out2.includes(", &object")) { out += `    napi_value object;\n` }
-            if (out2.includes("old_object = object;")) { out += `    napi_value old_object;\n` }
+            if (out2.includes("&object")) {
+                out += `    napi_value `;
+                for (let i = 0; i <= objectIdx.max; i++) {
+                    if (i == 0) {
+                        out += `object${i}`;
+                    } else {
+                        out += `, object${i}`;
+                    }
+                }
+                out += `;\n`;
+            }
+            objectIdx.reset();
             if (out2.includes(", &property")) { out += `    napi_value property;\n` }
+            if (out2.includes(", &arrayItem")) { out += `    napi_value arrayItem;\n` }
             if (out2.includes(", &_r")) { out += `    size_t _r;\n` }
             if (out2.includes(", &_value")) { out += `    int32_t _value;\n` }
             if (out2.includes(", &__value")) { out += `    double __value;\n` }
 
-            out += `    napi_value undefined;\n`;
+            out += `    napi_value undefined, netTime, latency;\n`;
             out += `    napi_get_undefined(env, &undefined);\n\n`;
             out += `    if (napi_ok != napi_get_reference_value(env, ${dataset.structName}.ref, &${dataset.structName}.object_value))\n`;
             out += `    {\n`;
@@ -556,6 +617,11 @@ function generateValueCallbacks(fileName, template) {
 
             out += out2;
 
+            out += `        int32_t _latency = exos_datamodel_get_nettime(&deepnest_datamodel, NULL) - *(int32_t *)netTime_exos;\n`;
+            out += `        napi_create_int32(env, *(int32_t *)netTime_exos, &netTime);\n`;
+            out += `        napi_create_int32(env, _latency, &latency);\n`;
+            out += `        napi_set_named_property(env, ${dataset.structName}.object_value, "netTime", netTime);\n`;
+            out += `        napi_set_named_property(env, ${dataset.structName}.object_value, "latency", latency);\n`;
             out += `    if (napi_ok != napi_set_named_property(env, ${dataset.structName}.object_value, "value", ${dataset.structName}.value))\n`;
             out += `    {\n`;
             out += `        napi_throw_error(env, "EINVAL", "Can't get property");\n`;
@@ -608,7 +674,7 @@ function pubFetchLeaf(type, srcValue, destVarName) {
             out += `    {\n`;
             out += `        napi_throw_error(env, "EINVAL", "Expected bool");\n`;
             out += `        return NULL;\n`;
-            out += `    }\n\n`;
+            out += `    }\n`;
             break;
         case "BYTE":
         case "USINT":
@@ -622,7 +688,7 @@ function pubFetchLeaf(type, srcValue, destVarName) {
             out += `        napi_throw_error(env, "EINVAL", "Expected number convertable to 32bit integer");\n`;
             out += `        return NULL;\n`;
             out += `    }\n`;
-            out += `    ${destVarName} = (${header.convertPlcType(type)})_value;\n\n`;
+            out += `    ${destVarName} = (${header.convertPlcType(type)})_value;\n`;
             break;
         case "REAL":
         case "LREAL":
@@ -631,14 +697,14 @@ function pubFetchLeaf(type, srcValue, destVarName) {
             out += `        napi_throw_error(env, "EINVAL", "Expected number convertable to double float");\n`;
             out += `        return NULL;\n`;
             out += `    }\n`;
-            out += `    ${destVarName} = (${header.convertPlcType(type)})__value;\n\n`;
+            out += `    ${destVarName} = (${header.convertPlcType(type)})__value;\n`;
             break;
         case "STRING":
             out += `    if (napi_ok != napi_get_value_string_utf8(env, ${srcValue}, (char *)&${destVarName}, sizeof(${destVarName}), &_r))\n`;
             out += `    {\n`;
             out += `        napi_throw_error(env, "EINVAL", "Expected string");\n`;
             out += `        return NULL;\n`;
-            out += `    }\n\n`;
+            out += `    }\n`;
             break;
     }
 
@@ -646,7 +712,7 @@ function pubFetchLeaf(type, srcValue, destVarName) {
 }
 
 // recursive function that generates the actual copying of data from NodeJS to C struct
-function generateValuesPublishItem(fileName, srcobj, destvar, dataset) {
+function generateValuesPublishItem(rootCall, fileName, srcobj, destvar, dataset) {
     let out = "";
 
     if (header.isScalarType(dataset.dataType, true)) {
@@ -654,8 +720,8 @@ function generateValuesPublishItem(fileName, srcobj, destvar, dataset) {
             iterator.next();
             out += `for (uint32_t ${iterator.i} = 0; ${iterator.i} < (sizeof(${destvar})/sizeof(${destvar}[0])); ${iterator.i}++)\n`;
             out += `{\n`;
-            out += `    napi_get_element(env, ${srcobj}, ${iterator.i}, &value);\n`;
-            out += pubFetchLeaf(dataset.dataType, `value`, `${destvar}[${iterator.i}]`);
+            out += `    napi_get_element(env, ${srcobj}, ${iterator.i}, &arrayItem);\n`;
+            out += pubFetchLeaf(dataset.dataType, `arrayItem`, `${destvar}[${iterator.i}]`);
             out += `}\n\n`;
         } else {
             out += pubFetchLeaf(dataset.dataType, `${srcobj}`, `${destvar}`);
@@ -669,33 +735,46 @@ function generateValuesPublishItem(fileName, srcobj, destvar, dataset) {
             iterator.next();
             out += `for (uint32_t ${iterator.i} = 0; ${iterator.i} < (sizeof(${destvar})/sizeof(${destvar}[0])); ${iterator.i}++)\n`;
             out += `{\n`;
-            out += `    napi_get_element(env, ${srcobj}, ${iterator.i}, &value);\n\n`;
+            out += `    napi_get_element(env, ${srcobj}, ${iterator.i}, &${objectIdx.toString()});\n\n`;
 
             for (let type of types.datasets) {
-                out += `    napi_get_named_property(env, value, "${type.structName}", &property);\n`;
+                objectIdx.next();
+                out += `    napi_get_named_property(env, ${objectIdx.toString(-1)}, "${type.structName}", &${objectIdx.toString()});\n`;
                 if (header.isScalarType(type.dataType, true)) {
-                    out += pubFetchLeaf(type.dataType, `property`, `${destvar}[${iterator.i}].${type.structName}`);
+                    if (type.arraySize > 0) {
+                        let olditerator = iterator.i;
+                        out += generateValuesPublishItem(false, fileName, `${objectIdx.toString()}`, `${destvar}[${iterator.i}].${type.structName}`, type);
+                        iterator.i = olditerator;
+                    } else {
+                        out += pubFetchLeaf(type.dataType, `${objectIdx.toString()}`, `${destvar}[${iterator.i}].${type.structName}`);
+                    }
                 } else {
                     //subtype detected
-                    out += `    old_value = value;\n`;
-                    out += `    value = property;\n`;
-                    out += generateValuesPublishItem(fileName, `${srcobj}`, `${destvar}[${iterator.i}].${type.structName}`, type);
-                    out += `    value = old_value;\n`;
+                    out += generateValuesPublishItem(false, fileName, `${objectIdx.toString()}`, `${destvar}[${iterator.i}].${type.structName}`, type);
                 }
+                objectIdx.prev();
             }
             out += `}\n\n`;
         } else {
+            if (rootCall) {
+                rootCall = false;
+                out += `    object0 = ${srcobj};\n`;
+            }
+
             for (let type of types.datasets) {
-                out += `    napi_get_named_property(env, value, "${type.structName}", &property);\n`;
+                objectIdx.next();
+                out += `    napi_get_named_property(env, ${objectIdx.toString(-1)}, "${type.structName}", &${objectIdx.toString()});\n`;
                 if (header.isScalarType(type.dataType, true)) {
-                    out += pubFetchLeaf(type.dataType, `property`, `${destvar}.${type.structName}`);
+                    if (type.arraySize > 0) {
+                        out += generateValuesPublishItem(false, fileName, `${objectIdx.toString()}`, `${destvar}.${type.structName}`, type);
+                    } else {
+                        out += pubFetchLeaf(type.dataType, `${objectIdx.toString()}`, `${destvar}.${type.structName}`);
+                    }
                 } else {
                     //subtype detected
-                    out += `    old_value = value;\n`;
-                    out += `    value = property;\n`;
-                    out += generateValuesPublishItem(fileName, `${srcobj}`, `${destvar}.${type.structName}`, type);
-                    out += `    value = old_value;\n`;
+                    out += generateValuesPublishItem(false, fileName, `${objectIdx.toString()}`, `${destvar}.${type.structName}`, type);
                 }
+                objectIdx.prev();
             }
         }
     }
@@ -716,14 +795,26 @@ function generateValuesPublishMethods(fileName, template) {
                 atleastone = true;
             }
             iterator.reset();
-            out2 = generateValuesPublishItem(fileName, `${dataset.structName}.value`, `exos_data.${dataset.structName}`, dataset);
+            objectIdx.reset();
+            out2 = generateValuesPublishItem(true, fileName, `${dataset.structName}.value`, `exos_data.${dataset.structName}`, dataset);
 
             out += `napi_value ${dataset.structName}_publish_method(napi_env env, napi_callback_info info)\n`;
             out += `{\n`;
             // check what variables to declare for the publish process in "out2" variable.
-            if (out2.includes(", &value")) { out += `    napi_value value;\n` }
-            if (out2.includes("old_value = value;")) { out += `    napi_value old_value;\n` }
+            if (out2.includes("&object")) {
+                out += `    napi_value `;
+                for (let i = 0; i <= objectIdx.max; i++) {
+                    if (i == 0) {
+                        out += `object${i}`;
+                    } else {
+                        out += `, object${i}`;
+                    }
+                }
+                out += `;\n`;
+            }
+            objectIdx.reset();
             if (out2.includes(", &property")) { out += `    napi_value property;\n` }
+            if (out2.includes(", &arrayItem")) { out += `    napi_value arrayItem;\n` }
             if (out2.includes(", &_r")) { out += `    size_t _r;\n` }
             if (out2.includes(", &_value")) { out += `    int32_t _value;\n` }
             if (out2.includes(", &__value")) { out += `    double __value;\n` }
@@ -768,6 +859,20 @@ function generateCleanUpHookCyclic(template) {
     out += `    exos_datamodel_process(&${template.datamodel.varName}_datamodel); \n`;
     out += `}\n\n`;
 
+    out += `//read nettime for DataModel\n`;
+    out += `napi_value get_net_time(napi_env env, napi_callback_info info)\n`;
+    out += `{\n`;
+    out += `    napi_value netTime;\n\n`;
+    out += `    if (napi_ok == napi_create_int32(env, exos_datamodel_get_nettime(&${template.datamodel.varName}_datamodel, NULL), &netTime))\n`;
+    out += `    {\n`;
+    out += `        return netTime;\n`;
+    out += `    }\n`;
+    out += `    else\n`;
+    out += `    {\n`;
+    out += `        return NULL;\n`;
+    out += `    }\n`;
+    out += `}\n\n`;
+
     return out;
 }
 
@@ -781,17 +886,17 @@ function getDefaultValue(dataType) {
     }
 }
 
-function generateDataSetStructures(fileName, srcVariable, destNapiVar, dataset) {
+function generateDataSetStructures(rootCall, fileName, srcVariable, destNapiVar, dataset) {
     let out = "";
 
     if (header.isScalarType(dataset.dataType, true)) {
         if (dataset.arraySize > 0) {
             iterator.next();
-            out += `napi_create_array(env. &${destNapiVar})`
+            out += `napi_create_array(env, &${destNapiVar});\n`;
             out += `for (uint32_t ${iterator.i} = 0; ${iterator.i} < (sizeof(${srcVariable})/sizeof(${srcVariable}[0])); ${iterator.i}++)\n`;
             out += `{\n`;
             out += `    napi_set_element(env, ${destNapiVar}, ${iterator.i}, ${getDefaultValue(dataset.dataType)});\n`;
-            out += `}\n\n`;
+            out += `}\n`;
         } else {
             out += `${destNapiVar} = ${getDefaultValue(dataset.dataType)};\n`;
         }
@@ -804,32 +909,52 @@ function generateDataSetStructures(fileName, srcVariable, destNapiVar, dataset) 
             out += `napi_create_array(env, &${destNapiVar});\n`
             out += `for (uint32_t ${iterator.i} = 0; ${iterator.i} < (sizeof(${srcVariable})/sizeof(${srcVariable}[0])); ${iterator.i}++)\n`;
             out += `{\n`;
-            out += '    napi_create_object(env, &object);\n';
+            out += `    napi_create_object(env, &${objectIdx.toString()});\n`;
             for (let type of types.datasets) {
                 if (header.isScalarType(type.dataType, true)) {
-                    out += `    napi_set_named_property(env, object, "${type.structName}", ${getDefaultValue(type.dataType)});\n`;
+                    if (type.arraySize > 0) {
+                        let olditerator = iterator.i;
+                        objectIdx.next();
+                        out += `    ` + generateDataSetStructures(false, fileName, `${srcVariable}[${iterator.i}].${type.structName}`, `${objectIdx.toString()}`, type);
+                        iterator.i = olditerator;
+                        out += `    napi_set_named_property(env, ${objectIdx.toString(-1)}, "${type.structName}", ${objectIdx.toString()});\n`;
+                        objectIdx.prev();
+                    } else {
+                        out += `    napi_set_named_property(env, ${objectIdx.toString()}, "${type.structName}", ${getDefaultValue(type.dataType)});\n`;
+                    }
                 } else {
                     //subtype detected
-                    out += `    old_object = object;\n`;
-                    out += `    ` + generateDataSetStructures(fileName, `${srcVariable}[${iterator.i}].${type.structName}`, `property`, type);
-                    out += `    napi_set_named_property(env, old_object, "${type.structName}", object);\n`;
-                    out += `    object = old_object;\n`;
+                    objectIdx.next();
+                    out += `    ` + generateDataSetStructures(false, fileName, `${srcVariable}[${iterator.i}].${type.structName}`, `${objectIdx.toString()}`, type);
+                    out += `    napi_set_named_property(env, ${objectIdx.toString(-1)}, "${type.structName}", ${objectIdx.toString()});\n`;
+                    objectIdx.prev();
                 }
             }
-            out += `napi_set_element(env, ${destNapiVar}, ${iterator.i}, object);\n`;
-            out += `}\n\n`;
+            out += `napi_set_element(env, ${destNapiVar}, ${iterator.i}, ${objectIdx.toString()});\n`;
+            out += `}\n`;
         } else {
-            out += '    napi_create_object(env, &object);\n';
+            out += `    napi_create_object(env, &${objectIdx.toString()});\n`;
             for (let type of types.datasets) {
                 if (header.isScalarType(type.dataType, true)) {
-                    out += `    napi_set_named_property(env, object, "${type.structName}", ${getDefaultValue(type.dataType)});\n`;
+                    if (type.arraySize > 0) {
+                        objectIdx.next();
+                        out += `    ` + generateDataSetStructures(false, fileName, `${srcVariable}.${type.structName}`, `${objectIdx.toString()}`, type);
+                        out += `    napi_set_named_property(env, ${objectIdx.toString(-1)}, "${type.structName}", ${objectIdx.toString()});\n`;
+                        objectIdx.prev();
+                    } else {
+                        out += `    napi_set_named_property(env, ${objectIdx.toString()}, "${type.structName}", ${getDefaultValue(type.dataType)});\n`;
+                    }
                 } else {
                     //subtype detected
-                    out += `    old_object = object;\n`;
-                    out += `    ` + generateDataSetStructures(fileName, `${srcVariable}.${type.structName}`, `object`, type);
-                    out += `    napi_set_named_property(env, old_object, "${type.structName}", object);\n`;
-                    out += `    object = old_object;\n`;
+                    objectIdx.next();
+                    out += `    ` + generateDataSetStructures(false, fileName, `${srcVariable}.${type.structName}`, `${objectIdx.toString()}`, type);
+                    out += `    napi_set_named_property(env, ${objectIdx.toString(-1)}, "${type.structName}", ${objectIdx.toString()});\n`;
+                    objectIdx.prev();
                 }
+            }
+
+            if (rootCall) {
+                out += `    ${destNapiVar} = object0;\n`;
             }
         }
     }
@@ -844,6 +969,8 @@ function generateInitFunction(fileName, template) {
     let out3 = "";
     let out_structs = "";
 
+    objectIdx.reset();
+
     //generate .value object structures
     for (let dataset of template.datasets) {
         let pubsub = false
@@ -851,6 +978,8 @@ function generateInitFunction(fileName, template) {
         if (dataset.comment.includes("PUB")) {
             out2 += `    napi_create_function(env, NULL, 0, ${dataset.structName}_onchange_init, NULL, &${dataset.structName}_onchange);\n`;
             out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "onChange", ${dataset.structName}_onchange);\n`;
+            out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "netTime", undefined);\n`;
+            out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "latency", undefined);\n`;
             pubsub = true;
         }
         if (dataset.comment.includes("SUB")) {
@@ -860,7 +989,8 @@ function generateInitFunction(fileName, template) {
         }
         if (pubsub) {
             iterator.reset();
-            out1 = generateDataSetStructures(fileName, `exos_data.${dataset.structName}`, `${dataset.structName}_value`, dataset);
+            objectIdx.i = 0;
+            out1 = generateDataSetStructures(true, fileName, `exos_data.${dataset.structName}`, `${dataset.structName}_value`, dataset);
 
             out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "value", ${dataset.structName}_value);\n`;
 
@@ -940,19 +1070,26 @@ function generateInitFunction(fileName, template) {
     }
 
     // base variables needed
-    out += `\n    napi_value dataModel, undefined, def_bool, def_number, def_string`;
+    out += `\n    napi_value dataModel, getNetTime, undefined, def_bool, def_number, def_string;\n`;
     if (out_structs.includes("&object")) {
-        out += `, object`;
+        out += `    napi_value `;
+        for (let i = 0; i <= objectIdx.max; i++) {
+            if (i == 0) {
+                out += `object${i}`;
+            } else {
+                out += `, object${i}`;
+            }
+        }
+        out += `;\n\n`;
+        objectIdx.reset();
+    } else {
+        out += `\n`;
     }
-    if (out_structs.includes("old_object = object")) {
-        out += `, old_object`;
-    }
-    out += `;\n\n`;
 
-    out += `    napi_get_boolean(env, BUR_NAPI_DEFAULT_BOOL_INIT, & def_bool); \n`;
-    out += `    napi_create_int32(env, BUR_NAPI_DEFAULT_NUM_INIT, & def_number); \n`;
-    out += `    napi_create_string_utf8(env, BUR_NAPI_DEFAULT_STRING_INIT, sizeof(BUR_NAPI_DEFAULT_STRING_INIT), & def_string); \n`;
-    out += `    napi_get_undefined(env, & undefined); \n\n`;
+    out += `    napi_get_boolean(env, BUR_NAPI_DEFAULT_BOOL_INIT, &def_bool); \n`;
+    out += `    napi_create_int32(env, BUR_NAPI_DEFAULT_NUM_INIT, &def_number); \n`;
+    out += `    napi_create_string_utf8(env, BUR_NAPI_DEFAULT_STRING_INIT, sizeof(BUR_NAPI_DEFAULT_STRING_INIT), &def_string); \n`;
+    out += `    napi_get_undefined(env, &undefined); \n\n`;
 
     //base objects
     out += `    // create base objects\n`;
@@ -972,9 +1109,11 @@ function generateInitFunction(fileName, template) {
         out += `    napi_set_named_property(env, dataModel, "${template.datasets[i].structName}", ${template.datasets[i].structName}.value); \n`;
     }
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "dataModel", dataModel); \n`;
-    out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_connonchange_init, NULL, & ${template.datamodel.varName}_conn_change); \n`;
+    out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_connonchange_init, NULL, &${template.datamodel.varName}_conn_change); \n`;
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionOnChange", ${template.datamodel.varName}_conn_change); \n`;
-    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionState", undefined); \n\n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionState", undefined);\n`;
+    out += `    napi_create_function(env, NULL, 0, get_net_time, NULL, &getNetTime);\n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "netTime", getNetTime);\n`;
 
     //export the application
     out += `    // export application object\n`;
@@ -982,14 +1121,14 @@ function generateInitFunction(fileName, template) {
 
     //save references to objects
     out += `    // save references to object as globals for this C-file\n`;
-    out += `    if (napi_ok != napi_create_reference(env, ${template.datamodel.varName}.value, ${template.datamodel.varName}.ref_count, & ${template.datamodel.varName}.ref)) \n`;
+    out += `    if (napi_ok != napi_create_reference(env, ${template.datamodel.varName}.value, ${template.datamodel.varName}.ref_count, &${template.datamodel.varName}.ref)) \n`;
     out += `    {
         \n`;
     out += `        napi_throw_error(env, "EINVAL", "Can't create ${template.datamodel.varName} reference"); \n`;
     out += `        return NULL; \n`;
     out += `    } \n`;
     for (let i = 0; i < template.datasets.length; i++) {
-        out += `    if (napi_ok != napi_create_reference(env, ${template.datasets[i].structName}.value, ${template.datasets[i].structName}.ref_count, & ${template.datasets[i].structName}.ref)) \n`;
+        out += `    if (napi_ok != napi_create_reference(env, ${template.datasets[i].structName}.value, ${template.datasets[i].structName}.ref_count, &${template.datasets[i].structName}.ref)) \n`;
         out += `    {
         \n`;
         out += `        napi_throw_error(env, "EINVAL", "Can't create ${template.datasets[i].structName} reference"); \n`;
@@ -1010,7 +1149,7 @@ function generateInitFunction(fileName, template) {
     // exOS inits
     out += `    // exOS\n`;
     out += `    // exOS inits\n`;
-    out += `    if (EXOS_ERROR_OK != exos_datamodel_init(& ${template.datamodel.varName}_datamodel, "${template.datamodel.structName}", "${template.datamodel.structName}_NodeJS")) \n`;
+    out += `    if (EXOS_ERROR_OK != exos_datamodel_init(&${template.datamodel.varName}_datamodel, "${template.datamodel.structName}", "${template.datamodel.structName}_NodeJS")) \n`;
     out += `    {\n`;
     out += `        napi_throw_error(env, "EINVAL", "Can't initialize ${template.datamodel.structName}"); \n`;
     out += `    } \n`;
@@ -1018,7 +1157,7 @@ function generateInitFunction(fileName, template) {
     out += `    ${template.datamodel.varName}_datamodel.user_tag = 0; \n\n`;
 
     for (let i = 0; i < template.datasets.length; i++) {
-        out += `    if (EXOS_ERROR_OK != exos_dataset_init(& ${template.datasets[i].structName}_dataset, & ${template.datamodel.varName}_datamodel, "${template.datasets[i].structName}", & exos_data.${template.datasets[i].structName}, sizeof(exos_data.${template.datasets[i].structName}))) \n`;
+        out += `    if (EXOS_ERROR_OK != exos_dataset_init(&${template.datasets[i].structName}_dataset, &${template.datamodel.varName}_datamodel, "${template.datasets[i].structName}", &exos_data.${template.datasets[i].structName}, sizeof(exos_data.${template.datasets[i].structName}))) \n`;
         out += `    {\n`;
         out += `        napi_throw_error(env, "EINVAL", "Can't initialize ${template.datasets[i].structName}"); \n`;
         out += `    }\n`;
@@ -1036,7 +1175,7 @@ function generateInitFunction(fileName, template) {
     // register datasets
     out += `    // exOS register datasets\n`;
     for (let i = 0; i < template.datasets.length; i++) {
-        out += `    if (EXOS_ERROR_OK != exos_dataset_connect(& ${template.datasets[i].structName}_dataset, `;
+        out += `    if (EXOS_ERROR_OK != exos_dataset_connect(&${template.datasets[i].structName}_dataset, `;
         if (template.datasets[i].comment.includes("PUB")) {
             out += `EXOS_DATASET_SUBSCRIBE`;
             if (template.datasets[i].comment.includes("SUB")) {
@@ -1052,8 +1191,8 @@ function generateInitFunction(fileName, template) {
     }
 
     out += `    // start up module\n`;
-    out += `\n    uv_idle_init(uv_default_loop(), & cyclic_h); \n`;
-    out += `    uv_idle_start(& cyclic_h, cyclic); \n\n`;
+    out += `\n    uv_idle_init(uv_default_loop(), &cyclic_h); \n`;
+    out += `    uv_idle_start(&cyclic_h, cyclic); \n\n`;
 
     out += `    return exports; \n`;
 
@@ -1066,6 +1205,25 @@ function generateLibTemplate(fileName, typName) {
     let out = "";
 
     let template = configTemplate(fileName, typName);
+
+    //general info
+    out += `//KNOWN ISSUES\n`;
+    out += `/*\n`;
+    out += `NO checks on values are made. NodeJS har as a javascript language only "numbers" that will be created from SINT, INT etc.\n`;
+    out += `This means that when writing from NodeJS to Automation Runtime, you should take care of that the value actually fits into \n`;
+    out += `the value assigned.\n\n`;
+
+    out += `String arrays will most probably not work, as they are basically char[][]...\n\n`;
+
+    out += `Strings are encoded as utf8 strings in NodeJS which means that special chars will reduce length of string. And generate funny \n`;
+    out += `charachters in Automation Runtime.\n\n`;
+
+    out += `PLCs WSTRING is not supported.\n\n`;
+
+    out += `Generally the generates code is not yet fully and understanably error handled. ex. if (napi_ok != .....\n\n`;
+
+    out += `The code generated is NOT yet fully formatted to ones normal liking. There are missing indentations.\n`;
+    out += `*/\n\n`;
 
     //includes, defines, types and global variables
     out += `#define NAPI_VERSION 6\n`;
@@ -1174,14 +1332,36 @@ function generateIndexJS(fileName, typName) {
     out += `\n`;
 
     out += `//publishing of values\n`;
-    out += `if (1 === 0) {\n`
+    out += `if (1 === 0) {\n`;
     for (let i = 0; i < template.datasets.length; i++) {
         if (template.datasets[i].comment.includes("SUB")) {
             out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.value..\n`;
             out += `    ${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.publish();\n`;
         }
     }
-    out += `}\n`
+    out += `}\n\n`;
+
+    out += `/*
+All values in ${template.datamodel.structName}.dataModel that has a .onChange() callback will
+have the corresponding "netTime" and "latency" datas. These are initialized to "undefined" until
+the first data have arrived via the call to .onchange().
+
+- "latency" describes the time it took ´for the data to be transmitted from Automation Runtime 
+  (real time OS) to this application.
+- "netTime" describes the local timestamp (CLOCK_MONOTONIC) when the last data arrived to this 
+  application.
+
+To check the current time, call the ${template.datamodel.structName}.netTime() method that 
+returns current netTime.
+
+Note that ALL netTime and latency values are created from int32_t datatype and the wrapping of
+these values are not considered/handled in the imported module.
+*/\n`;
+
+    out += `setInterval(() => {\n`;
+    out += `    console.log("current netTime is: " + ${template.datamodel.structName}.netTime().toString());\n`;
+    out += `}, 2000);\n`;
+
 
     return out;
 }

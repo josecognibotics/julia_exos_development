@@ -40,13 +40,13 @@
 		{
 			"name": "Debug Generator N-Api",
 			"type": "node",
-			"preLaunchTask": "Remove MyApp",
+			"preLaunchTask": "Remove DeepNest",
 			"request": "launch",
 			"cwd": "${workspaceFolder}/c-template-n-api/",
 			"program": "${workspaceFolder}/c-template-n-api/exos_template.js",
 			"args": [
-				"MyApp.typ",
-				"MyApp",
+				"DeepNest.typ",
+				"DeepNest",
 				"."
 			]
 		}
