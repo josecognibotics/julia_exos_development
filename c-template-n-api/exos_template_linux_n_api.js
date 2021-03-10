@@ -247,7 +247,7 @@ function generateExosCallbacks(template) {
             out += `            if (${dataset.structName}.onchange_cb != NULL)\n`;
             out += `            {\n`;
             out += `                napi_acquire_threadsafe_function(${dataset.structName}.onchange_cb);\n`;
-            out += `                napi_call_threadsafe_function(${dataset.structName}.onchange_cb, &exos_data.${dataset.structName}, napi_tsfn_blocking);\n`;
+            out += `                napi_call_threadsafe_function(${dataset.structName}.onchange_cb, &dataset->nettime, napi_tsfn_blocking);\n`;
             out += `                napi_release_threadsafe_function(${dataset.structName}.onchange_cb, napi_tsfn_release);\n`;
             out += `            }\n`;
             out += `        }\n`;
@@ -586,7 +586,7 @@ function generateValueCallbacks(fileName, template) {
             objectIdx.prev();//initialize to -1
             out2 = generateValuesSubscribeItem(fileName, `exos_data.${dataset.structName}`, `${dataset.structName}.value`, dataset);
 
-            out += `static void ${dataset.structName}_onchange_js_cb(napi_env env, napi_value js_cb, void *context, void *data)\n`;
+            out += `static void ${dataset.structName}_onchange_js_cb(napi_env env, napi_value js_cb, void *context, void *netTime_exos)\n`;
             out += `{\n`;
             // check what variables to declare for the publish process in "out2" variable.
             if (out2.includes("&object")) {
@@ -607,7 +607,7 @@ function generateValueCallbacks(fileName, template) {
             if (out2.includes(", &_value")) { out += `    int32_t _value;\n` }
             if (out2.includes(", &__value")) { out += `    double __value;\n` }
 
-            out += `    napi_value undefined;\n`;
+            out += `    napi_value undefined, netTime, latency;\n`;
             out += `    napi_get_undefined(env, &undefined);\n\n`;
             out += `    if (napi_ok != napi_get_reference_value(env, ${dataset.structName}.ref, &${dataset.structName}.object_value))\n`;
             out += `    {\n`;
@@ -616,6 +616,11 @@ function generateValueCallbacks(fileName, template) {
 
             out += out2;
 
+            out += `        int32_t _latency = exos_datamodel_get_nettime(&deepnest_datamodel, NULL) - *(int32_t *)netTime_exos;\n`;
+            out += `        napi_create_int32(env, *(int32_t *)netTime_exos, &netTime);\n`;
+            out += `        napi_create_int32(env, _latency, &latency);\n`;
+            out += `        napi_set_named_property(env, ${dataset.structName}.value, "netTime", netTime);\n`;
+            out += `        napi_set_named_property(env, ${dataset.structName}.value, "latency", latency);\n`;
             out += `    if (napi_ok != napi_set_named_property(env, ${dataset.structName}.object_value, "value", ${dataset.structName}.value))\n`;
             out += `    {\n`;
             out += `        napi_throw_error(env, "EINVAL", "Can't get property");\n`;
@@ -853,6 +858,20 @@ function generateCleanUpHookCyclic(template) {
     out += `    exos_datamodel_process(&${template.datamodel.varName}_datamodel); \n`;
     out += `}\n\n`;
 
+    out += `//read nettime for DataModel\n`;
+    out += `napi_value get_net_time(napi_env env, napi_callback_info info)\n`;
+    out += `{\n`;
+    out += `    napi_value netTime;\n\n`;
+    out += `    if (napi_ok == napi_create_int32(env, exos_datamodel_get_nettime(&${template.datamodel.varName}_datamodel, NULL), &netTime))\n`;
+    out += `    {\n`;
+    out += `        return netTime;\n`;
+    out += `    }\n`;
+    out += `    else\n`;
+    out += `    {\n`;
+    out += `        return NULL;\n`;
+    out += `    }\n`;
+    out += `}\n\n`;
+
     return out;
 }
 
@@ -1048,7 +1067,7 @@ function generateInitFunction(fileName, template) {
     }
 
     // base variables needed
-    out += `\n    napi_value dataModel, undefined, def_bool, def_number, def_string;\n`;
+    out += `\n    napi_value dataModel, getNetTime, undefined, def_bool, def_number, def_string;\n`;
     if (out_structs.includes("&object")) {
         out += `    napi_value `;
         for (let i = 0; i <= objectIdx.max; i++) {
@@ -1064,10 +1083,10 @@ function generateInitFunction(fileName, template) {
         out += `\n`;
     }
 
-    out += `    napi_get_boolean(env, BUR_NAPI_DEFAULT_BOOL_INIT, & def_bool); \n`;
-    out += `    napi_create_int32(env, BUR_NAPI_DEFAULT_NUM_INIT, & def_number); \n`;
-    out += `    napi_create_string_utf8(env, BUR_NAPI_DEFAULT_STRING_INIT, sizeof(BUR_NAPI_DEFAULT_STRING_INIT), & def_string); \n`;
-    out += `    napi_get_undefined(env, & undefined); \n\n`;
+    out += `    napi_get_boolean(env, BUR_NAPI_DEFAULT_BOOL_INIT, &def_bool); \n`;
+    out += `    napi_create_int32(env, BUR_NAPI_DEFAULT_NUM_INIT, &def_number); \n`;
+    out += `    napi_create_string_utf8(env, BUR_NAPI_DEFAULT_STRING_INIT, sizeof(BUR_NAPI_DEFAULT_STRING_INIT), &def_string); \n`;
+    out += `    napi_get_undefined(env, &undefined); \n\n`;
 
     //base objects
     out += `    // create base objects\n`;
@@ -1087,9 +1106,11 @@ function generateInitFunction(fileName, template) {
         out += `    napi_set_named_property(env, dataModel, "${template.datasets[i].structName}", ${template.datasets[i].structName}.value); \n`;
     }
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "dataModel", dataModel); \n`;
-    out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_connonchange_init, NULL, & ${template.datamodel.varName}_conn_change); \n`;
+    out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_connonchange_init, NULL, &${template.datamodel.varName}_conn_change); \n`;
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionOnChange", ${template.datamodel.varName}_conn_change); \n`;
-    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionState", undefined); \n\n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionState", undefined);\n`;
+    out += `    napi_create_function(env, NULL, 0, get_net_time, NULL, &getNetTime);\n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "netTime", getNetTime);\n`;
 
     //export the application
     out += `    // export application object\n`;
@@ -1097,14 +1118,14 @@ function generateInitFunction(fileName, template) {
 
     //save references to objects
     out += `    // save references to object as globals for this C-file\n`;
-    out += `    if (napi_ok != napi_create_reference(env, ${template.datamodel.varName}.value, ${template.datamodel.varName}.ref_count, & ${template.datamodel.varName}.ref)) \n`;
+    out += `    if (napi_ok != napi_create_reference(env, ${template.datamodel.varName}.value, ${template.datamodel.varName}.ref_count, &${template.datamodel.varName}.ref)) \n`;
     out += `    {
         \n`;
     out += `        napi_throw_error(env, "EINVAL", "Can't create ${template.datamodel.varName} reference"); \n`;
     out += `        return NULL; \n`;
     out += `    } \n`;
     for (let i = 0; i < template.datasets.length; i++) {
-        out += `    if (napi_ok != napi_create_reference(env, ${template.datasets[i].structName}.value, ${template.datasets[i].structName}.ref_count, & ${template.datasets[i].structName}.ref)) \n`;
+        out += `    if (napi_ok != napi_create_reference(env, ${template.datasets[i].structName}.value, ${template.datasets[i].structName}.ref_count, &${template.datasets[i].structName}.ref)) \n`;
         out += `    {
         \n`;
         out += `        napi_throw_error(env, "EINVAL", "Can't create ${template.datasets[i].structName} reference"); \n`;
@@ -1125,7 +1146,7 @@ function generateInitFunction(fileName, template) {
     // exOS inits
     out += `    // exOS\n`;
     out += `    // exOS inits\n`;
-    out += `    if (EXOS_ERROR_OK != exos_datamodel_init(& ${template.datamodel.varName}_datamodel, "${template.datamodel.structName}", "${template.datamodel.structName}_NodeJS")) \n`;
+    out += `    if (EXOS_ERROR_OK != exos_datamodel_init(&${template.datamodel.varName}_datamodel, "${template.datamodel.structName}", "${template.datamodel.structName}_NodeJS")) \n`;
     out += `    {\n`;
     out += `        napi_throw_error(env, "EINVAL", "Can't initialize ${template.datamodel.structName}"); \n`;
     out += `    } \n`;
@@ -1133,7 +1154,7 @@ function generateInitFunction(fileName, template) {
     out += `    ${template.datamodel.varName}_datamodel.user_tag = 0; \n\n`;
 
     for (let i = 0; i < template.datasets.length; i++) {
-        out += `    if (EXOS_ERROR_OK != exos_dataset_init(& ${template.datasets[i].structName}_dataset, & ${template.datamodel.varName}_datamodel, "${template.datasets[i].structName}", & exos_data.${template.datasets[i].structName}, sizeof(exos_data.${template.datasets[i].structName}))) \n`;
+        out += `    if (EXOS_ERROR_OK != exos_dataset_init(&${template.datasets[i].structName}_dataset, &${template.datamodel.varName}_datamodel, "${template.datasets[i].structName}", &exos_data.${template.datasets[i].structName}, sizeof(exos_data.${template.datasets[i].structName}))) \n`;
         out += `    {\n`;
         out += `        napi_throw_error(env, "EINVAL", "Can't initialize ${template.datasets[i].structName}"); \n`;
         out += `    }\n`;
@@ -1151,7 +1172,7 @@ function generateInitFunction(fileName, template) {
     // register datasets
     out += `    // exOS register datasets\n`;
     for (let i = 0; i < template.datasets.length; i++) {
-        out += `    if (EXOS_ERROR_OK != exos_dataset_connect(& ${template.datasets[i].structName}_dataset, `;
+        out += `    if (EXOS_ERROR_OK != exos_dataset_connect(&${template.datasets[i].structName}_dataset, `;
         if (template.datasets[i].comment.includes("PUB")) {
             out += `EXOS_DATASET_SUBSCRIBE`;
             if (template.datasets[i].comment.includes("SUB")) {
@@ -1167,8 +1188,8 @@ function generateInitFunction(fileName, template) {
     }
 
     out += `    // start up module\n`;
-    out += `\n    uv_idle_init(uv_default_loop(), & cyclic_h); \n`;
-    out += `    uv_idle_start(& cyclic_h, cyclic); \n\n`;
+    out += `\n    uv_idle_init(uv_default_loop(), &cyclic_h); \n`;
+    out += `    uv_idle_start(&cyclic_h, cyclic); \n\n`;
 
     out += `    return exports; \n`;
 
