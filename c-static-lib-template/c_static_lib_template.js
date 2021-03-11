@@ -365,13 +365,14 @@ function generateMainAR(fileName, typName, libName, SUB, PUB) {
         if (dataset.comment.includes(SUB)) {
             out += `static void on_change_${dataset.varName}(void)\n`;
             out += `{\n`;
-            out += `    // Your code here...\n`;
             if(header.isScalarType(dataset.dataType) && dataset.arraySize == 0) {
                 out += `    cyclicInst->${template.datamodel.varName}->${dataset.structName} = ${template.datamodel.varName}->${dataset.structName}.value;\n`;
             }
             else {
-                out += `    memcpy(&(cyclicInst->${template.datamodel.varName}->${dataset.structName})), &(${template.datamodel.varName}->${dataset.structName}.value), sizeof((cyclicInst->${template.datamodel.varName}->${dataset.structName})));\n`;
+                out += `    memcpy(&(cyclicInst->${template.datamodel.varName}->${dataset.structName}), &(${template.datamodel.varName}->${dataset.structName}.value), sizeof(cyclicInst->${template.datamodel.varName}->${dataset.structName}));\n`;
             }
+            out += `    \n`;
+            out += `    // Your code here...\n`;
             out += `}\n`;
         }
     }
