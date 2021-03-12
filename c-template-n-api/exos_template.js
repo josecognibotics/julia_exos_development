@@ -75,6 +75,9 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_linux.generateShBuild();
     fs.writeFileSync(`${outPath}/${structName}/Linux/build.sh`, out);
 
+    out = template_linux.generateCMakeLists(structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/CMakeLists.txt`, out);
+
     out = template_linux.generateGyp(structName);
     fs.writeFileSync(`${outPath}/${structName}/Linux/binding.gyp`, out);
 
@@ -87,6 +90,11 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_linux.generateIndexJS(fileName, structName);
     fs.writeFileSync(`${outPath}/${structName}/Linux/index.js`, out);
 
+    out = template_linux.generatePackageJSON(fileName, structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/package.json`, out);
+
+    out = template_linux.generatePackageLockJSON(fileName, structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/package-lock.json`, out);
 }
 
 if (require.main === module) {
