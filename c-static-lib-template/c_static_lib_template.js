@@ -1,7 +1,7 @@
 const header = require('../exos_header');
 const fs = require('fs');
 
-function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
+function generateTemplate(fileName, typName, PubSubSwap, userAlias, dynamic) {
     let out = "";
 
     let template = configTemplate(fileName, typName);
@@ -28,7 +28,7 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
     out += `    ${template.datamodel.libStructName}_t ext_${template.datamodel.varName};\n`;
     out += `    exos_datamodel_handle_t ${template.datamodel.varName};\n\n`;
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes(PUB) || dataset.comment.includes(SUB)) {
+        if (dataset.isPub || dataset.isSub) {
             out += `    exos_dataset_handle_t ${dataset.varName};\n`;
         }
     }
@@ -43,7 +43,7 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
     out += `        //handle each subscription dataset separately\n`;
     var atleastone = false;
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes(SUB)) {
+        if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
             if (atleastone) {
                 out += `        else `;
             }
@@ -113,7 +113,7 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
 
 
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes(PUB)) {
+        if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
             out += `static void ${template.datamodel.libStructName}_publish_${dataset.varName}(void)\n`;
             out += `{\n`;
             out += `    exos_dataset_publish(&${template.datamodel.handleName}.${dataset.varName});\n`;
@@ -130,8 +130,8 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
 
     out += `    //connect datasets\n`;
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes(SUB)) {
-            if (dataset.comment.includes(PUB)) {
+        if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+            if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
                 out += `    EXOS_ASSERT_OK(exos_dataset_connect(&(${template.datamodel.handleName}.${dataset.varName}), EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, ${template.datamodel.libStructName}_datasetEvent));\n`;
             }
             else {
@@ -139,7 +139,7 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
             }
         }
         else {
-            if (dataset.comment.includes(PUB)) {
+            if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isPub)) {
                 out += `    EXOS_ASSERT_OK(exos_dataset_connect(&(${template.datamodel.handleName}.${dataset.varName}), EXOS_DATASET_PUBLISH, ${template.datamodel.libStructName}_datasetEvent));\n`;
             }
         }
@@ -213,7 +213,7 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
     out += `    memset(&${template.datamodel.handleName},0,sizeof(${template.datamodel.handleName}));\n\n`;
 
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes(PUB)) {
+        if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
             out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.${dataset.structName}.publish = ${template.datamodel.libStructName}_publish_${dataset.varName};\n`;
         }
     }
@@ -243,7 +243,7 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
     out += `    ${template.datamodel.handleName}.${template.datamodel.varName}.user_tag = 0; //not used\n\n`;
 
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes(PUB) || dataset.comment.includes(SUB)) {
+        if (dataset.isPub || dataset.isSub) {
             out += `    EXOS_ASSERT_OK(exos_dataset_init(&${template.datamodel.handleName}.${dataset.varName}, &${template.datamodel.handleName}.${template.datamodel.varName}, "${dataset.structName}", &${template.datamodel.handleName}.ext_${template.datamodel.varName}.${dataset.structName}.value, sizeof(${template.datamodel.handleName}.ext_${template.datamodel.varName}.${dataset.structName}.value)));\n`;
             out += `    ${template.datamodel.handleName}.${dataset.varName}.user_context = NULL; //not used\n`;
             out += `    ${template.datamodel.handleName}.${dataset.varName}.user_tag = 0; //not used\n\n`;
@@ -257,7 +257,7 @@ function generateTemplate(fileName, typName, SUB, PUB, userAlias, dynamic) {
     return out;
 }
 
-function genenerateLibHeader(fileName, typName, SUB, PUB) {
+function genenerateLibHeader(fileName, typName, PubSubSwap) {
     let out = "";
 
     let template = configTemplate(fileName, typName);
@@ -273,32 +273,24 @@ function genenerateLibHeader(fileName, typName, SUB, PUB) {
     out += `typedef void (*${template.datamodel.libStructName}_log_fn)(char *log_entry);\n\n`;
 
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes(SUB)) {
+        if (dataset.isSub || dataset.isPub) {
             out += `typedef struct ${dataset.libDataType}\n`;
             out += `{\n`;
-            if (dataset.comment.includes(PUB)) {
+            if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
                 out += `    ${template.datamodel.libStructName}_method_fn publish;\n`;
             }
+            if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
             out += `    ${template.datamodel.libStructName}_event_cb on_change;\n`;
-            if (dataset.dataType.includes("STRING")) {
-                out += `    ${header.convertPlcType(dataset.dataType)} value[${parseInt(dataset.stringLength)}];\n`;
-            } else {
-                out += `    ${header.convertPlcType(dataset.dataType)} value;\n`;
-            }
             out += `    int32_t nettime;\n`;
-            out += `} ${dataset.libDataType}_t;\n\n`;
         }
+            out += `    ${header.convertPlcType(dataset.dataType)} value`;
+            if (dataset.arraySize > 0) { // array comes before string length in c (unlike AS typ editor where it would be: STRING[80][0..1])
+                out += `[${parseInt(dataset.arraySize)}]`;
     }
-
-    for (let dataset of template.datasets) {
-        if (dataset.comment.includes(PUB) && !dataset.comment.includes(SUB)) {
-            out += `typedef struct ${dataset.libDataType}\n`;
-            out += `{\n`;
-            out += `    ${template.datamodel.libStructName}_method_fn publish;\n`;
             if (dataset.dataType.includes("STRING")) {
-                out += `    ${header.convertPlcType(dataset.dataType)} value[${parseInt(dataset.stringLength)}];\n`;
+                out += `[${parseInt(dataset.stringLength)}];\n`;
             } else {
-                out += `    ${header.convertPlcType(dataset.dataType)} value;\n`;
+                out += `;\n`;
             }
             out += `} ${dataset.libDataType}_t;\n\n`;
         }
@@ -326,7 +318,7 @@ function genenerateLibHeader(fileName, typName, SUB, PUB) {
     out += `    bool is_connected;\n`;
     out += `    bool is_operational;\n`;
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes(PUB) || dataset.comment.includes(SUB)) {
+        if (dataset.isPub || dataset.isSub) {
             out += `    ${dataset.libDataType}_t ${dataset.structName};\n`;
         }
     }
@@ -348,7 +340,7 @@ function genenerateLibHeader(fileName, typName, SUB, PUB) {
     return out;
 }
 
-function generateMainAR(fileName, typName, libName, SUB, PUB) {
+function generateMainAR(fileName, typName, libName, PubSubSwap) {
     let out = "";
     let template = configTemplate(fileName, typName);
 
@@ -362,7 +354,7 @@ function generateMainAR(fileName, typName, libName, SUB, PUB) {
     out += `static void on_connected_${template.datamodel.varName}(void)\n{\n}\n\n`;
 
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes(SUB)) {
+        if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
             out += `static void on_change_${dataset.varName}(void)\n`;
             out += `{\n`;
             if(header.isScalarType(dataset.dataType) && dataset.arraySize == 0) {
@@ -402,7 +394,7 @@ function generateMainAR(fileName, typName, libName, SUB, PUB) {
     out += `        // ${template.datamodel.varName}->on_disconnected = .. ;\n`;
     out += `        // ${template.datamodel.varName}->on_operational = .. ;\n`;
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes(SUB)) {
+        if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
             out += `        ${template.datamodel.varName}->${dataset.structName}.on_change = on_change_${dataset.varName};\n`;
         }
     }
@@ -448,8 +440,8 @@ function generateMainAR(fileName, typName, libName, SUB, PUB) {
     out += `    if (${template.datamodel.varName}->is_connected)\n`;
     out += `    {\n`;
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes(PUB)) {
-            if(header.isScalarType(dataset.dataType)) {
+        if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+            if(header.isScalarType(dataset.dataType) && dataset.arraySize == 0) {
                 out += `        if (${template.datamodel.varName}->${dataset.structName}.value != inst->${template.datamodel.varName}->${dataset.structName})\n`;
                 out += `        {\n`;
                 out += `            ${template.datamodel.varName}->${dataset.structName}.value = inst->${template.datamodel.varName}->${dataset.structName};\n`;
@@ -483,14 +475,15 @@ function generateMainAR(fileName, typName, libName, SUB, PUB) {
     return out;
 }
 
-function generateMain(fileName, typName, SUB, PUB) {
+function generateMain(fileName, typName, PubSubSwap) {
     let out = "";
 
     let template = configTemplate(fileName, typName);
 
     out += `#include <unistd.h>\n`;
     out += `#include "${template.libHeaderName}"\n`
-    out += `#include "termination.h"\n\n`;
+    out += `#include "termination.h"\n`;
+    out += `#include <stdio.h>\n\n`;
 
     out += `static ${template.datamodel.libStructName}_t *${template.datamodel.varName};\n\n`
 
@@ -499,10 +492,21 @@ function generateMain(fileName, typName, SUB, PUB) {
     //out += `static void on_operational_${template.datamodel.varName}(void)\n{\n}\n\n`;
 
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes(SUB)) {
+        if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
             out += `static void on_change_${dataset.varName}(void)\n`;
             out += `{\n`;
-            out += `   // .. = ${template.datamodel.varName}->${dataset.structName}.value;\n`;
+            if(dataset.arraySize == 0) {
+                out += `   printf("on_change: ${template.datamodel.varName}->${dataset.structName}: ${header.convertPlcTypePrintf(dataset.dataType)}\\n", ${template.datamodel.varName}->${dataset.structName}.value);\n`;
+            } else {
+                out += `   uint32_t i;\n`;
+                out += `   printf("on_change: ${template.datamodel.varName}->${dataset.structName}: Array of ${header.convertPlcType(dataset.dataType)}${dataset.dataType.includes("STRING")?"[]":""}:\\n");\n`;
+                out += `   for(i = 0; i < sizeof(${template.datamodel.varName}->${dataset.structName}.value) / sizeof(${template.datamodel.varName}->${dataset.structName}.value[0]); i++ )\n`;
+                out += `   {\n`;
+                out += `       printf("  Index %i: ${header.convertPlcTypePrintf(dataset.dataType)}\\n", i, ${template.datamodel.varName}->${dataset.structName}.value[i]);\n`;
+                out += `   }\n`;
+            }
+            out += `   \n`;
+            out += `   // Your code here...\n`;
             out += `}\n`;
         }
     }
@@ -516,7 +520,7 @@ function generateMain(fileName, typName, SUB, PUB) {
     out += `    // ${template.datamodel.varName}->on_operational = .. ;\n`;
     
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes(SUB)) {
+        if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
             out += `    ${template.datamodel.varName}->${dataset.structName}.on_change = on_change_${dataset.varName};\n`;
         }
     }
@@ -530,13 +534,8 @@ function generateMain(fileName, typName, SUB, PUB) {
     out += `        // if (${template.datamodel.varName}->is_connected)\n`;
     out += `        // {\n`;
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes(PUB)) {
-            if(header.isScalarType(dataset.dataType)) {
-                out += `        //     ${template.datamodel.varName}->${dataset.structName}.value = .. ;\n`;
-            }
-            else {
-                out += `        //     ${template.datamodel.varName}->${dataset.structName}.value. .. = .. ;\n`;
-            }
+        if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+            out += `        //     ${template.datamodel.varName}->${dataset.structName}.value${dataset.arraySize > 0 ? "[..]" : ""}${header.isScalarType(dataset.dataType) ? "" : ". .."} = .. ;\n`;
             out += `        //     ${template.datamodel.varName}->${dataset.structName}.publish();\n`;
             out += "        \n";
         }
@@ -592,28 +591,18 @@ function configTemplate(fileName, typName) {
 
         //check if toLowerCase is same as struct name, then extend it with _dataset
         for (let child of types.children) {
-            if (child.attributes.name == child.attributes.name.toLowerCase()) {
-                let object = {};
-                object["structName"] = child.attributes.name;
-                object["varName"] = child.attributes.name.toLowerCase() + "_dataset";
-                object["dataType"] = child.attributes.dataType;
-                object["arraySize"] = child.attributes.arraySize;
-                object["comment"] = child.attributes.comment;
-                object["libDataType"] = template.datamodel.libStructName + child.attributes.name;
-                if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
-                template.datasets.push(object);
-            }
-            else {
-                let object = {};
-                object["structName"] = child.attributes.name;
-                object["varName"] = child.attributes.name.toLowerCase();
-                object["dataType"] = child.attributes.dataType;
-                object["arraySize"] = child.attributes.arraySize;
-                object["comment"] = child.attributes.comment;
-                object["libDataType"] = template.datamodel.libStructName + child.attributes.name;
-                if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
-                template.datasets.push(object);
-            }
+            let object = {};
+            object["structName"] = child.attributes.name;
+            object["varName"] = child.attributes.name.toLowerCase() + (child.attributes.name == child.attributes.name.toLowerCase() ? "_dataset" : "");
+            object["dataType"] = child.attributes.dataType;
+            object["arraySize"] = child.attributes.arraySize;
+            object["comment"] = child.attributes.comment;
+            object["isPub"] = child.attributes.comment.includes("PUB");
+            object["isSub"] = child.attributes.comment.includes("SUB");
+            object["isPrivate"] = child.attributes.comment.includes("private");
+            object["libDataType"] = template.datamodel.libStructName + child.attributes.name;
+            if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
+            template.datasets.push(object);
         }
 
         // initialize non-string comments to "" and missing arraysizes to 0

@@ -307,6 +307,24 @@ function convertPlcType(type) {
     }
 }
 
+function convertPlcTypePrintf(type) {
+    switch (type) {
+        case "BOOL": return "%i";
+        case "USINT": return "%u";
+        case "SINT": return "%i";
+        case "UINT": return "%u";
+        case "INT": return "%i";
+        case "UDINT": return "%u";
+        case "DINT": return "%i";
+        case "REAL": return "%f";
+        case "LREAL": return "%f";
+        case "BYTE": return "%i";
+        case "STRING": return "%s";
+        default: // inserting a struct will give you the address in hex
+            return "0x%.8x";
+    }
+}
+
 function outputMember(type, name, arrays, comment) {
     let out = "";
     out += `    ${type} ${name}`
@@ -739,5 +757,6 @@ module.exports = {
     parseTypFile,
     generateHeader,
     convertPlcType,
+    convertPlcTypePrintf,
     isScalarType
 }

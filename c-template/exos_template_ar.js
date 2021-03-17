@@ -120,7 +120,7 @@ function generateFun(fileName, typName) {
     out += `		Handle : UDINT;\n`;
     out += `		Start : BOOL;\n`;
     for (let dataset of template.datasets) {
-        if (!dataset.comment.includes("private")) {
+        if (!dataset.isPrivate) {
             let dataType = dataset.dataType;
 
             if (dataType === "STRING" && (dataset.hasOwnProperty("stringLength"))) {
@@ -131,8 +131,8 @@ function generateFun(fileName, typName) {
                 dataType = `ARRAY[0..${dataset.arraySize - 1}] OF ${dataType}`
             }
 
-            if (dataset.comment.includes("PUB")) {
-                if (dataset.comment.includes("SUB")) {
+            if (dataset.isPub) {
+                if (dataset.isSub) {
                     out += `		${dataset.structName} : REFERENCE TO ${dataType};\n`;
                 }
                 else {
@@ -150,7 +150,7 @@ function generateFun(fileName, typName) {
     out += `		Operational : BOOL;\n`;
     out += `		Aborted : BOOL;\n`;
     for (let dataset of template.datasets) {
-        if (!dataset.comment.includes("private")) {
+        if (!dataset.isPrivate) {
             let dataType = dataset.dataType;
 
             if (dataType === "STRING" && (dataset.hasOwnProperty("stringLength"))) {
@@ -161,7 +161,7 @@ function generateFun(fileName, typName) {
                 dataType = `ARRAY[0..${dataset.arraySize - 1}] OF ${dataType}`
             }
 
-            if (dataset.comment.includes("SUB") && !dataset.comment.includes("PUB")) {
+            if (dataset.isSub && !dataset.isPub) {
                 out += `		${dataset.structName} : ${dataType};\n`;
             }
         }
@@ -238,7 +238,7 @@ function generateExosHandle(template) {
             dataset.comment = "";
         }
 
-        if (dataset.comment.includes("SUB") || dataset.comment.includes("PUB")) {
+        if (dataset.isSub || dataset.isPub) {
             out += `    exos_dataset_handle_t ${dataset.varName};\n`;
         }
     }
@@ -259,8 +259,8 @@ function generateExosCallbacks(template) {
     out += `        //handle each subscription dataset separately\n`;
     var atleastone = false;
     for (let dataset of template.datasets) {
-        if(!dataset.comment.includes("private")) {
-            if (dataset.comment.includes("SUB")) {
+        if(!dataset.isPrivate) {
+            if (dataset.isSub) {
                 if (atleastone) {
                     out += `        else `;
                 }
@@ -270,7 +270,7 @@ function generateExosCallbacks(template) {
                 }
                 out += `if(0 == strcmp(dataset->name, "${dataset.structName}"))\n`;
                 out += `        {\n`;
-                if(dataset.comment.includes("PUB")) {
+                if(dataset.isPub) {
                     out += `            if(NULL != inst->${dataset.structName})\n`;
                     out += `            {\n`;
                     if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
@@ -293,7 +293,7 @@ function generateExosCallbacks(template) {
             }
         }
         else {
-            if (dataset.comment.includes("SUB")) {
+            if (dataset.isSub) {
                 if (atleastone) {
                     out += `        else `;
                 }
@@ -315,7 +315,7 @@ function generateExosCallbacks(template) {
     out += `        //handle each published dataset separately\n`;
     atleastone = false;
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes("PUB")) {
+        if (dataset.isPub) {
             if (atleastone) {
                 out += `        else `;
             }
@@ -336,7 +336,7 @@ function generateExosCallbacks(template) {
     out += `        //handle each published dataset separately\n`;
     atleastone = false;
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes("PUB")) {
+        if (dataset.isPub) {
             if (atleastone) {
                 out += `        else `;
             }
@@ -426,7 +426,7 @@ function generateExosInit(template) {
     out += `    \n`;
     out += `    exos_datamodel_handle_t *${template.datamodel.varName} = &${template.handle.name}->${template.datamodel.varName};\n`;
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes("SUB") || dataset.comment.includes("PUB")) {
+        if (dataset.isSub || dataset.isPub) {
             out += `    exos_dataset_handle_t *${dataset.varName} = &${template.handle.name}->${dataset.varName};\n`;
         }
     }
@@ -434,7 +434,7 @@ function generateExosInit(template) {
     //initialization
     out += `    EXOS_ASSERT_OK(exos_datamodel_init(${template.datamodel.varName}, "${template.datamodel.structName}", "${template.datamodel.structName}_AR"));\n\n`;
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes("SUB") || dataset.comment.includes("PUB")) {
+        if (dataset.isSub || dataset.isPub) {
             out += `    EXOS_ASSERT_OK(exos_dataset_init(${dataset.varName}, ${template.datamodel.varName}, "${dataset.structName}", &${template.handle.name}->data.${dataset.structName}, sizeof(${template.handle.name}->data.${dataset.structName})));\n`;
         }
     }
@@ -469,7 +469,7 @@ function generateExosCyclic(template) {
     out += `    ${template.datamodel.varName}->user_context = inst; //set it cyclically in case the program using the FUB is retransferred\n`;
     out += `    ${template.datamodel.varName}->user_tag = 0; //user defined\n\n`;
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes("SUB") || dataset.comment.includes("PUB")) {
+        if (dataset.isSub || dataset.isPub) {
             out += `    exos_dataset_handle_t *${dataset.varName} = &${template.handle.name}->${dataset.varName};\n`;
             out += `    ${dataset.varName}->user_context = NULL; //user defined\n`;
             out += `    ${dataset.varName}->user_tag = 0; //user defined\n\n`;
@@ -499,15 +499,15 @@ function generateExosCyclic(template) {
     out += `        EXOS_ASSERT_OK(exos_datamodel_connect_${template.datamodel.structName.toLowerCase()}(${template.datamodel.varName}, datamodelEvent));\n`;
     
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes("SUB")) {
-            if (dataset.comment.includes("PUB")) {
+        if (dataset.isSub) {
+            if (dataset.isPub) {
                 out += `        EXOS_ASSERT_OK(exos_dataset_connect(${dataset.varName}, EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, datasetEvent));\n`;
             }
             else {
                 out += `        EXOS_ASSERT_OK(exos_dataset_connect(${dataset.varName}, EXOS_DATASET_SUBSCRIBE, datasetEvent));\n`;
             }
         }
-        else if (dataset.comment.includes("PUB")) {
+        else if (dataset.isPub) {
             out += `        EXOS_ASSERT_OK(exos_dataset_connect(${dataset.varName}, EXOS_DATASET_PUBLISH, datasetEvent));\n`;
         }   
     }
@@ -531,9 +531,9 @@ function generateExosCyclic(template) {
     out += `        EXOS_ASSERT_OK(exos_datamodel_process(${template.datamodel.varName}));\n`;
     out += `        //put your cyclic code here!\n\n`;
     for (let dataset of template.datasets) {
-        if (!dataset.comment.includes("private")) {
-            if (dataset.comment.includes("PUB")) {
-                if (dataset.comment.includes("SUB")) {
+        if (!dataset.isPrivate) {
+            if (dataset.isPub) {
+                if (dataset.isSub) {
                     out += `        if (NULL != inst->${dataset.structName})\n`;
                     out += `        {\n`;
                     out += `            //publish the ${dataset.varName} dataset as soon as there are changes\n`;
@@ -682,27 +682,17 @@ function configTemplate(fileName, typName) {
 
         //check if toLowerCase is same as struct name, then extend it with _dataset
         for (let child of types.children) {
-            if (child.attributes.name == child.attributes.name.toLowerCase()) {
-                let object = {}
-                object["structName"] = child.attributes.name;
-                object["varName"] = child.attributes.name.toLowerCase() + "_dataset";
-                object["dataType"] = child.attributes.dataType;
-                object["arraySize"] = child.attributes.arraySize;
-                object["comment"] = child.attributes.comment;
-                if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
-                template.datasets.push(object);
-            }
-            else {
-                let object = {}
-                object["structName"] = child.attributes.name;
-                object["varName"] = child.attributes.name.toLowerCase();
-                object["dataType"] = child.attributes.dataType;
-                object["arraySize"] = child.attributes.arraySize;
-                object["comment"] = child.attributes.comment;
-                if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
-                template.datasets.push(object);
-                ;
-            }
+            let object = {};
+            object["structName"] = child.attributes.name;
+            object["varName"] = child.attributes.name.toLowerCase() + (child.attributes.name == child.attributes.name.toLowerCase() ? "_dataset" : "");
+            object["dataType"] = child.attributes.dataType;
+            object["arraySize"] = child.attributes.arraySize;
+            object["comment"] = child.attributes.comment;
+            object["isPub"] = child.attributes.comment.includes("PUB");
+            object["isSub"] = child.attributes.comment.includes("SUB");
+            object["isPrivate"] = child.attributes.comment.includes("private");
+            if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
+            template.datasets.push(object);
         }
 
         // initialize non-string comments to "" and missing arraysizes to 0

@@ -84,27 +84,17 @@ function readType(fileName, typName) {
 
         //check if toLowerCase is same as struct name, then extend it with _dataset
         for (let child of types.children) {
-            if (child.attributes.name == child.attributes.name.toLowerCase()) {
-                let object = {}
-                object["structName"] = child.attributes.name;
-                object["varName"] = child.attributes.name.toLowerCase() + "_dataset";
-                object["dataType"] = child.attributes.dataType;
-                object["arraySize"] = child.attributes.arraySize;
-                object["comment"] = child.attributes.comment;
-                if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
-                template.datasets.push(object);
-            }
-            else {
-                let object = {}
-                object["structName"] = child.attributes.name;
-                object["varName"] = child.attributes.name.toLowerCase();
-                object["dataType"] = child.attributes.dataType;
-                object["arraySize"] = child.attributes.arraySize;
-                object["comment"] = child.attributes.comment;
-                if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
-                template.datasets.push(object);
-                ;
-            }
+            let object = {};
+            object["structName"] = child.attributes.name;
+            object["varName"] = child.attributes.name.toLowerCase() + (child.attributes.name == child.attributes.name.toLowerCase() ? "_dataset" : "");
+            object["dataType"] = child.attributes.dataType;
+            object["arraySize"] = child.attributes.arraySize;
+            object["comment"] = child.attributes.comment;
+            object["isPub"] = child.attributes.comment.includes("PUB");
+            object["isSub"] = child.attributes.comment.includes("SUB");
+            object["isPrivate"] = child.attributes.comment.includes("private");
+            if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
+            template.datasets.push(object);
         }
 
         // initialize non-string comments to "" and missing arraysizes to 0
@@ -296,7 +286,7 @@ function generateExosCallbacks(template) {
     out += `    case EXOS_DATASET_EVENT_UPDATED:\n`;
     var atleastone = false;
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes("PUB")) {
+        if (dataset.isPub) {
             if (atleastone) {
                 out += `        else `;
             }
@@ -321,7 +311,7 @@ function generateExosCallbacks(template) {
     out += `    case EXOS_DATASET_EVENT_DELIVERED:\n`;
     atleastone = false;
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes("SUB")) {
+        if (dataset.isSub) {
             if (atleastone) {
                 out += `        else `;
             }
@@ -637,7 +627,7 @@ function generateValueCallbacks(fileName, template) {
     let atleastone = false;
 
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes("PUB")) {
+        if (dataset.isPub) {
             if (atleastone === false) {
                 out += `// js value callbacks\n`;;
                 atleastone = true;
@@ -714,7 +704,7 @@ function generateCallbackInits(template) {
     }
 
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes("PUB")) {
+        if (dataset.isPub) {
             out += `napi_value ${dataset.structName}_onchange_init(napi_env env, napi_callback_info info)\n`;
             out += `{\n`;
             out += `    return init_napi_onchange(env, info, "${dataset.structName} dataset change", ${dataset.structName}_onchange_js_cb, &${dataset.structName}.onchange_cb);\n`;
@@ -850,7 +840,7 @@ function generateValuesPublishMethods(fileName, template) {
     let atleastone = false;
 
     for (let dataset of template.datasets) {
-        if (dataset.comment.includes("SUB")) {
+        if (dataset.isSub) {
             if (atleastone === false) {
                 out += `// publish methods\n`;
                 atleastone = true;
@@ -1036,14 +1026,14 @@ function generateInitFunction(fileName, template) {
     for (let dataset of template.datasets) {
         let pubsub = false
         out2 = out3 = "";
-        if (dataset.comment.includes("PUB")) {
+        if (dataset.isPub) {
             out2 += `    napi_create_function(env, NULL, 0, ${dataset.structName}_onchange_init, NULL, &${dataset.structName}_onchange);\n`;
             out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "onChange", ${dataset.structName}_onchange);\n`;
             out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "netTime", undefined);\n`;
             out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "latency", undefined);\n`;
             pubsub = true;
         }
-        if (dataset.comment.includes("SUB")) {
+        if (dataset.isSub) {
             out3 += `    napi_create_function(env, NULL, 0, ${dataset.structName}_publish_method, NULL, &${dataset.structName}_publish);\n`;
             out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "publish", ${dataset.structName}_publish);\n`;
             pubsub = true;
@@ -1494,27 +1484,17 @@ function configTemplate(fileName, typName) {
 
         //check if toLowerCase is same as struct name, then extend it with _dataset
         for (let child of types.children) {
-            if (child.attributes.name == child.attributes.name.toLowerCase()) {
-                let object = {}
-                object["structName"] = child.attributes.name;
-                object["varName"] = child.attributes.name.toLowerCase() + "_dataset";
-                object["dataType"] = child.attributes.dataType;
-                object["arraySize"] = child.attributes.arraySize;
-                object["comment"] = child.attributes.comment;
-                if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
-                template.datasets.push(object);
-            }
-            else {
-                let object = {}
-                object["structName"] = child.attributes.name;
-                object["varName"] = child.attributes.name.toLowerCase();
-                object["dataType"] = child.attributes.dataType;
-                object["arraySize"] = child.attributes.arraySize;
-                object["comment"] = child.attributes.comment;
-                if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
-                template.datasets.push(object);
-                ;
-            }
+            let object = {};
+            object["structName"] = child.attributes.name;
+            object["varName"] = child.attributes.name.toLowerCase() + (child.attributes.name == child.attributes.name.toLowerCase() ? "_dataset" : "");
+            object["dataType"] = child.attributes.dataType;
+            object["arraySize"] = child.attributes.arraySize;
+            object["comment"] = child.attributes.comment;
+            object["isPub"] = child.attributes.comment.includes("PUB");
+            object["isSub"] = child.attributes.comment.includes("SUB");
+            object["isPrivate"] = child.attributes.comment.includes("private");
+            if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
+            template.datasets.push(object);
         }
 
         // initialize non-string comments to "" and missing arraysizes to 0

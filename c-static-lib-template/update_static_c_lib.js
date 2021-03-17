@@ -74,20 +74,20 @@ function updateLibrary(fileName, swig_type) {
     //ok were good to go, regenerate
     let out = "";
 
-    out = template_lib.genenerateLibHeader(typFile, structName, "SUB", "PUB");
+    out = template_lib.genenerateLibHeader(typFile, structName, false);
     fs.writeFileSync(`${libAR}.h`, out);
 
-    out = template_lib.generateTemplate(typFile, structName, "SUB", "PUB", `${structName}_AR`);
+    out = template_lib.generateTemplate(typFile, structName, false, `${structName}_AR`);
     fs.writeFileSync(`${libAR}.c`, out);
 
-    out = template_lib.genenerateLibHeader(typFile, structName, "PUB", "SUB");
+    out = template_lib.genenerateLibHeader(typFile, structName, true);
     fs.writeFileSync(`${libLinux}.h`, out);
 
-    out = template_lib.generateTemplate(typFile, structName, "PUB", "SUB", `${structName}_Linux`, (swig_type !== undefined && swig_type == "python"));
+    out = template_lib.generateTemplate(typFile, structName, true, `${structName}_Linux`, (swig_type !== undefined && swig_type == "python"));
     fs.writeFileSync(`${libLinux}.c`, out);
 
     if(swig_type !== undefined && swig_type == "python") {
-        out = template_swig.generateSwigInclude(typFile, structName, "PUB", "SUB");
+        out = template_swig.generateSwigInclude(typFile, structName, true);
         fs.writeFileSync(`${libLinux}.i`, out);
     }
 

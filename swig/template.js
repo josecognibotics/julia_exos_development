@@ -49,10 +49,10 @@ function generatePythonTemplate(fileName, structName, outPath) {
     out = template_ar.generateCLibrary(path.basename(fileName), structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/ANSIC.lby`, out);
 
-    out = template_lib.genenerateLibHeader(fileName, structName, "SUB", "PUB");
+    out = template_lib.genenerateLibHeader(fileName, structName, false);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/lib${structName.toLowerCase()}.h`, out);
 
-    out = template_lib.generateTemplate(fileName, structName, "SUB", "PUB", `${structName}_AR`);
+    out = template_lib.generateTemplate(fileName, structName, false, `${structName}_AR`);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/lib${structName.toLowerCase()}.c`, out);
 
     out = template_ar.generateIECProgram(libName);
@@ -71,19 +71,19 @@ function generatePythonTemplate(fileName, structName, outPath) {
     // copy the .typ file to the Library
     fs.copyFileSync(fileName, `${outPath}/${structName}/${libName}/${path.basename(fileName)}`);
 
-    out = template_lib.generateMainAR(fileName, structName, libName, "SUB", "PUB");
+    out = template_lib.generateMainAR(fileName, structName, libName, false);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/main.c`, out);
 
     //Linux Files
-    out = template_lib.genenerateLibHeader(fileName, structName, "PUB", "SUB");
+    out = template_lib.genenerateLibHeader(fileName, structName, true);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.h`, out);
     
-    out = template_lib.generateTemplate(fileName, structName, "PUB", "SUB", `${structName}_Linux`, true);
+    out = template_lib.generateTemplate(fileName, structName, true, `${structName}_Linux`, true);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.c`, out);
 
 
     //Swig Files
-    out = template_swig.generateSwigInclude(fileName, structName, "PUB", "SUB");
+    out = template_swig.generateSwigInclude(fileName, structName, true);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.i`, out);
 
     out = template_linux_python.generateLinuxPackage(structName);
@@ -95,7 +95,7 @@ function generatePythonTemplate(fileName, structName, outPath) {
     out = template_linux_python.generateCMakeLists(structName);
     fs.writeFileSync(`${outPath}/${structName}/Linux/CMakeLists.txt`, out);
         
-    out = template_swig.generatePythonMain(fileName, structName, "PUB", "SUB");
+    out = template_swig.generatePythonMain(fileName, structName, true);
     fs.writeFileSync(`${outPath}/${structName}/Linux/${structName.toLowerCase()}.py`, out);
 
 }
@@ -142,10 +142,10 @@ function generateNodeJSTemplate(fileName, structName, outPath) {
     out = template_ar.generateCLibrary(path.basename(fileName), structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/ANSIC.lby`, out);
 
-    out = template_lib.genenerateLibHeader(fileName, structName, "SUB", "PUB");
+    out = template_lib.genenerateLibHeader(fileName, structName, false);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/lib${structName.toLowerCase()}.h`, out);
 
-    out = template_lib.generateTemplate(fileName, structName, "SUB", "PUB", `${structName}_AR`);
+    out = template_lib.generateTemplate(fileName, structName, false, `${structName}_AR`);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/lib${structName.toLowerCase()}.c`, out);
 
     out = template_ar.generateIECProgram(libName);
@@ -163,19 +163,19 @@ function generateNodeJSTemplate(fileName, structName, outPath) {
     // copy the .typ file to the Library
     fs.copyFileSync(fileName, `${outPath}/${structName}/${libName}/${path.basename(fileName)}`);
 
-    out = template_lib.generateMainAR(fileName, structName, libName, "SUB", "PUB");
+    out = template_lib.generateMainAR(fileName, structName, libName, false);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/main.c`, out);
 
     //Linux Files
-    out = template_lib.genenerateLibHeader(fileName, structName, "PUB", "SUB");
+    out = template_lib.genenerateLibHeader(fileName, structName, true);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.h`, out);
     
-    out = template_lib.generateTemplate(fileName, structName, "PUB", "SUB", `${structName}_Linux`, true);
+    out = template_lib.generateTemplate(fileName, structName, true, `${structName}_Linux`, true);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.c`, out);
 
 
     //Swig Files
-    out = template_swig.generateSwigInclude(fileName, structName, "PUB", "SUB");
+    out = template_swig.generateSwigInclude(fileName, structName, true);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.i`, out);
 
     out = template_linux_nodejs.generateLinuxPackage(structName);
@@ -187,7 +187,7 @@ function generateNodeJSTemplate(fileName, structName, outPath) {
     out = template_linux_nodejs.generateGypFile(structName);
     fs.writeFileSync(`${outPath}/${structName}//Linux/binding.gyp`, out);
         
-    out = template_swig.generateNodeJSMain(fileName, structName, "PUB", "SUB");
+    out = template_swig.generateNodeJSMain(fileName, structName, true);
     fs.writeFileSync(`${outPath}/${structName}/Linux/${structName.toLowerCase()}.js`, out);
 
 }
