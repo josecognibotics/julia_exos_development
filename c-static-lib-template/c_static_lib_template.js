@@ -385,7 +385,7 @@ function generateMainAR(fileName, typName, libName, PubSubSwap) {
     out += `    }\n`;
     out += `    cyclicInst = inst;\n`;
     out += `    // initialize library\n`;
-    out += `    if(inst->_Handle == NULL || inst->_Handle != ${template.datamodel.varName})\n`;
+    out += `    if((${template.datamodel.libStructName}_t *)inst->_Handle == NULL || (${template.datamodel.libStructName}_t *)inst->_Handle != ${template.datamodel.varName})\n`;
     out += `    {\n`;
     out += `        //retrieve the ${template.datamodel.varName} structure\n`;
     out += `        ${template.datamodel.varName} = ${template.datamodel.libStructName}_init();\n\n`
@@ -399,7 +399,7 @@ function generateMainAR(fileName, typName, libName, PubSubSwap) {
         }
     }
     out += `\n`;
-    out += `        inst->_Handle = ${template.datamodel.varName};\n`;
+    out += `        inst->_Handle = (UDINT)${template.datamodel.varName};\n`;
     out += `    }\n`;
 
     out += `    // return error if reference to structure is not set on function block\n`;
