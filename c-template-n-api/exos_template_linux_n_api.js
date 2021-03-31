@@ -214,11 +214,10 @@ function generateExosPkg(typName, libName, fileName) {
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
     out += `<ComponentPackage Version="1.0.0" ErrorHandling="Ignore" StartupTimeout="0">\n`;
-    out += `    <File Name="exos-comp-${typName.toLowerCase()}" FileName="Linux\\exos-comp-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
     out += `    <Service Name="${typName} Runtime Service" Executable="/usr/bin/npm" Arguments="start --prefix /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <DataModelInstance Name="${typName}"/>\n`;
-    out += `    <File Name="main-script" FileName="Linux\\index.js" Type="Project"/>\n`;
     out += `    <File Name="${typName.toLowerCase()}-installer" FileName="Linux\\exos-comp-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
+    out += `    <File Name="main-script" FileName="Linux\\index.js" Type="Project"/>\n`;
     out += `    <Installation Type="Preinst" Command="mkdir /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/index.js /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <Installation Type="Postrm" Command="rm -r /home/user/${typName.toLowerCase()}"/>\n`;
