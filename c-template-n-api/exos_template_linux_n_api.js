@@ -667,7 +667,7 @@ function generateValueCallbacks(fileName, template) {
 
             out += out2;
 
-            out += `        int32_t _latency = exos_datamodel_get_nettime(&deepnest_datamodel, NULL) - *(int32_t *)netTime_exos;\n`;
+            out += `        int32_t _latency = exos_datamodel_get_nettime(&${template.datamodel.varName}_datamodel, NULL) - *(int32_t *)netTime_exos;\n`;
             out += `        napi_create_int32(env, *(int32_t *)netTime_exos, &netTime);\n`;
             out += `        napi_create_int32(env, _latency, &latency);\n`;
             out += `        napi_set_named_property(env, ${dataset.structName}.object_value, "netTime", netTime);\n`;
