@@ -144,8 +144,11 @@ function generateLinuxPackage(typName) {
 function generateShBuild() {
     let out = "";
 
-
     out += `#!/bin/sh\n\n`;
+
+    out += `rm -f l_*.node\n`;
+    out += `rm -f *.deb\n\n`;
+
     out += `finalize() {\n`;
     out += `    rm -rf build/*\n`;
     out += `    rm -r build\n`;
@@ -155,31 +158,35 @@ function generateShBuild() {
     out += `    sync\n`;
     out += `    exit $1\n`;
     out += `}\n\n`;
-    out += `node-gyp rebuild\n`;
+
+    out += `npm install\n`;
     out += `if [ "$?" -ne 0 ] ; then\n`;
     out += `    finalize 1\n`;
     out += `fi\n\n`;
+
     out += `cp -f build/Release/l_*.node .\n\n`;
+
     out += `rm -rf build/*\n`;
-    out += `rm -r build\n\n`;
-    out += `npm install\n\n`;
-    out += `mkdir build\n`;
-    out += `mkdir node_modules\n\n`;
+
     out += `cd build\n\n`;
+
     out += `cmake -Wno-dev ..\n`;
     out += `if [ "$?" -ne 0 ] ; then\n`;
     out += `    cd ..\n`;
     out += `    finalize 2\n`;
     out += `fi\n\n`;
+
     out += `cpack\n`;
     out += `if [ "$?" -ne 0 ] ; then\n`;
     out += `    cd ..\n`;
-    out += `    finalize \n`; 3
+    out += `    finalize\n`;
     out += `fi\n\n`;
-    out += `cp -f exos-comp-*.deb ..\n\n`;
-    out += `cd ..\n\n`;
-    out += `finalize 0\n\n`;
 
+    out += `cp -f exos-comp-*.deb ..\n\n`;
+
+    out += `cd ..\n\n`;
+
+    out += `finalize 0\n\n`;
     return out;
 }
 
@@ -1441,8 +1448,7 @@ function generatePackageJSON(fileName, typName) {
     out += `  "description": "implementation of exOS data exchange deined by datatype ${template.datamodel.structName} from file ${fileName}",\n`;
     out += `  "main": "index.js",\n`;
     out += `  "scripts": {\n`;
-    out += `    "start": "node index.js",\n`;
-    out += `    "install": "echo \\"No installation specified\\" && exit 0"\n`;
+    out += `    "start": "node index.js"\n`;
     out += `  },\n`;
     out += `  "author": "NN",\n`;
     out += `  "license": "MIT"\n`;
