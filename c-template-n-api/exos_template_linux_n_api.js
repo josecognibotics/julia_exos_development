@@ -13,6 +13,8 @@
 
     PLCs WSTRING is not supported.
 
+    Enums deined in typ file will parse to DINT (uint32_t). Enums are not supported in JavaScript.
+
     Generally the generates code is not yet fully and understanably error handled. ex. if (napi_ok != .....
 
     The code generated is NOT yet fully formatted to ones normal liking. There are missing indentations.
@@ -75,11 +77,15 @@ let objectIdx = new objectIndexer;
 
 function readType(fileName, typName) {
     var template = {
+        type: "",
         datasets: [],
     }
 
     if (fs.existsSync(fileName)) {
         var types = header.parseTypFile(fileName, typName);
+
+        if (types.name === "enum") template.type = "enum";
+        else if (types.name === "struct") template.type = "struct";
 
         for (let child of types.children) {
             let object = {};
@@ -163,6 +169,8 @@ function generateShBuild() {
     out += `fi\n\n`;
 
     out += `cp -f build/Release/l_*.node .\n\n`;
+
+    out += `mkdir node_modules #make sure the folder exists even if no submodules are needed\n\n`;
 
     out += `rm -rf build/*\n`;
 
@@ -550,6 +558,12 @@ function subSetLeafValue(type, srcVariable, destNapiVar) {
 function generateValuesSubscribeItem(fileName, srcVariable, destNapiVar, dataset) {
     let out = "";
 
+    //check if the type is an enum and change enums to DINT
+    if (!header.isScalarType(dataset.dataType, true)) {
+        let t = readType(fileName, dataset.dataType);
+        if (t.type === "enum") dataset.dataType = "DINT";
+    }
+
     if (header.isScalarType(dataset.dataType, true)) {
         if (dataset.arraySize > 0) {
             iterator.next();
@@ -770,6 +784,12 @@ function pubFetchLeaf(type, srcValue, destVarName) {
 function generateValuesPublishItem(rootCall, fileName, srcobj, destvar, dataset) {
     let out = "";
 
+    //check if the type is an enum and change enums to DINT
+    if (!header.isScalarType(dataset.dataType, true)) {
+        let t = readType(fileName, dataset.dataType);
+        if (t.type === "enum") dataset.dataType = "DINT";
+    }
+
     if (header.isScalarType(dataset.dataType, true)) {
         if (dataset.arraySize > 0) {
             iterator.next();
@@ -943,6 +963,12 @@ function getDefaultValue(dataType) {
 
 function generateDataSetStructures(rootCall, fileName, srcVariable, destNapiVar, dataset) {
     let out = "";
+
+    //check if the type is an enum and change enums to DINT
+    if (!header.isScalarType(dataset.dataType, true)) {
+        let t = readType(fileName, dataset.dataType);
+        if (t.type === "enum") dataset.dataType = "DINT";
+    }
 
     if (header.isScalarType(dataset.dataType, true)) {
         if (dataset.arraySize > 0) {
@@ -1274,6 +1300,8 @@ function generateLibTemplate(fileName, typName) {
     out += `charachters in Automation Runtime.\n\n`;
 
     out += `PLCs WSTRING is not supported.\n\n`;
+
+    out += `Enums deined in typ file will parse to DINT (uint32_t). Enums are not supported in JavaScript.\n\n`;
 
     out += `Generally the generates code is not yet fully and understanably error handled. ex. if (napi_ok != .....\n\n`;
 
