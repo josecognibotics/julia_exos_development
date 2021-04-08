@@ -151,10 +151,13 @@ function parseStructMember(fileLines, index) {
         else {
             type = fileLines[index].split(":")[1].trim();
         }
-        let comment = "";
         if (type.includes("(*")) {
-            comment = takeout(type, "(*", "*)");
             type = type.split("(*")[0].trim();
+        }
+
+        let comment = "";
+        if (fileLines[index].includes("(*")) {
+            comment = takeout(fileLines[index], "(*", "*)");
         }
 
         if (type.includes("STRING")) {
