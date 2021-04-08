@@ -79,34 +79,32 @@ function readType(fileName, typName) {
     }
 
     if (fs.existsSync(fileName)) {
-
         var types = header.parseTypFile(fileName, typName);
 
-        //check if toLowerCase is same as struct name, then extend it with _dataset
         for (let child of types.children) {
             let object = {};
             object["structName"] = child.attributes.name;
             object["varName"] = child.attributes.name.toLowerCase() + (child.attributes.name == child.attributes.name.toLowerCase() ? "_dataset" : "");
             object["dataType"] = child.attributes.dataType;
-            object["arraySize"] = child.attributes.arraySize;
+            if (typeof child.attributes.arraySize === "number") {
+                object["arraySize"] = child.attributes.arraySize;
+            } else {
+                object["arraySize"] = 0;
+            }
             object["comment"] = child.attributes.comment;
-            object["isPub"] = child.attributes.comment.includes("PUB");
-            object["isSub"] = child.attributes.comment.includes("SUB");
-            object["isPrivate"] = child.attributes.comment.includes("private");
+            if (typeof child.attributes.comment === "string") {
+                object["isPub"] = child.attributes.comment.includes("PUB");
+                object["isSub"] = child.attributes.comment.includes("SUB");
+                object["isPrivate"] = child.attributes.comment.includes("private");
+            } else {
+                object["comment"] = "";
+                object["isPub"] = false;
+                object["isSub"] = false;
+                object["isPrivate"] = false;
+            }
             if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
             template.datasets.push(object);
         }
-
-        // initialize non-string comments to "" and missing arraysizes to 0
-        for (let dataset of template.datasets) {
-            if (typeof dataset.comment !== 'string') {
-                dataset.comment = "";
-            }
-            if (typeof dataset.arraySize !== 'number') {
-                dataset.arraySize = 0;
-            }
-        }
-
     } else {
         throw (`file '${fileName}' not found.`);
     }
@@ -1487,31 +1485,30 @@ function configTemplate(fileName, typName) {
             template.datamodel.varName = types.attributes.dataType.toLowerCase();
         }
 
-        //check if toLowerCase is same as struct name, then extend it with _dataset
         for (let child of types.children) {
             let object = {};
             object["structName"] = child.attributes.name;
             object["varName"] = child.attributes.name.toLowerCase() + (child.attributes.name == child.attributes.name.toLowerCase() ? "_dataset" : "");
             object["dataType"] = child.attributes.dataType;
-            object["arraySize"] = child.attributes.arraySize;
+            if (typeof child.attributes.arraySize === "number") {
+                object["arraySize"] = child.attributes.arraySize;
+            } else {
+                object["arraySize"] = 0;
+            }
             object["comment"] = child.attributes.comment;
-            object["isPub"] = child.attributes.comment.includes("PUB");
-            object["isSub"] = child.attributes.comment.includes("SUB");
-            object["isPrivate"] = child.attributes.comment.includes("private");
+            if (typeof child.attributes.comment === "string") {
+                object["isPub"] = child.attributes.comment.includes("PUB");
+                object["isSub"] = child.attributes.comment.includes("SUB");
+                object["isPrivate"] = child.attributes.comment.includes("private");
+            } else {
+                object["comment"] = "";
+                object["isPub"] = false;
+                object["isSub"] = false;
+                object["isPrivate"] = false;
+            }
             if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
             template.datasets.push(object);
         }
-
-        // initialize non-string comments to "" and missing arraysizes to 0
-        for (let dataset of template.datasets) {
-            if (typeof dataset.comment !== 'string') {
-                dataset.comment = "";
-            }
-            if (typeof dataset.arraySize !== 'number') {
-                dataset.arraySize = 0;
-            }
-        }
-
     } else {
         throw (`file '${fileName}' not found.`);
     }
