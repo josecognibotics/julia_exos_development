@@ -13,7 +13,7 @@
 
     PLCs WSTRING is not supported.
 
-    Enums deined in typ file will parse to DINT (uint32_t). Enums are not supported in JavaScript.
+    Enums defined in typ file will parse to DINT (uint32_t). Enums are not supported in JavaScript.
 
     Generally the generates code is not yet fully and understanably error handled. ex. if (napi_ok != .....
 
@@ -1301,7 +1301,7 @@ function generateLibTemplate(fileName, typName) {
 
     out += `PLCs WSTRING is not supported.\n\n`;
 
-    out += `Enums deined in typ file will parse to DINT (uint32_t). Enums are not supported in JavaScript.\n\n`;
+    out += `Enums defined in typ file will parse to DINT (uint32_t). Enums are not supported in JavaScript.\n\n`;
 
     out += `Generally the generates code is not yet fully and understanably error handled. ex. if (napi_ok != .....\n\n`;
 
