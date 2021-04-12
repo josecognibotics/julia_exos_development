@@ -21,6 +21,7 @@
 */
 
 const header = require('../exos_header');
+const path = require('path');
 const fs = require('fs');
 
 ///////////////
@@ -229,11 +230,9 @@ function generateExosPkg(typName, libName, fileName) {
     out += `<ComponentPackage Version="1.0.0" ErrorHandling="Ignore" StartupTimeout="0">\n`;
     out += `    <Service Name="${typName} Runtime Service" Executable="/usr/bin/npm" Arguments="start --prefix /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <DataModelInstance Name="${typName}"/>\n`;
-    out += `    <File Name="${typName.toLowerCase()}-installer" FileName="Linux\\exos-comp-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
+    out += `    <File Name="exod-comp-${typName.toLowerCase()}" FileName="Linux\\exos-comp-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
     out += `    <File Name="main-script" FileName="Linux\\index.js" Type="Project"/>\n`;
-    out += `    <Installation Type="Preinst" Command="mkdir /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/index.js /home/user/${typName.toLowerCase()}/"/>\n`;
-    out += `    <Installation Type="Postrm" Command="rm -r /home/user/${typName.toLowerCase()}"/>\n`;
     out += `    <Build>\n`;
     out += `        <GenerateHeader FileName="${typName}\\${typName}.typ" TypeName="${typName}">\n`;
     out += `            <SG4 Include="${fileName.split(".")[0].toLowerCase()}.h"/>\n`;
@@ -257,6 +256,9 @@ function generateExosPkg(typName, libName, fileName) {
 
 function generateCMakeLists(typName) {
     let out = "";
+    out += `\n`;
+    out += `project(${typName.toLowerCase()})\n`;
+    out += `cmake_minimum_required(VERSION 3.0)\n`;
     out += `\n`;
     out += `SET(${typName.toUpperCase()}_MODULE_FILES\n`;
     out += `    l_${typName}.node\n`;
@@ -1471,7 +1473,7 @@ function generatePackageJSON(fileName, typName) {
     out += `{\n`;
     out += `  "name": "${template.datamodel.varName}",\n`;
     out += `  "version": "1.0.0",\n`;
-    out += `  "description": "implementation of exOS data exchange deined by datatype ${template.datamodel.structName} from file ${fileName}",\n`;
+    out += `  "description": "implementation of exOS data exchange defined by datatype ${template.datamodel.structName} from file ${path.basename(fileName)}",\n`;
     out += `  "main": "index.js",\n`;
     out += `  "scripts": {\n`;
     out += `    "start": "node index.js"\n`;

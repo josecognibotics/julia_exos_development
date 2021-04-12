@@ -1,6 +1,10 @@
 # Changelog
 ## [1.1.5] - 2021-04-12
 - Support for arrays in static C-lib including SWIG
+
+- Node.js generator added. Uses the Node-API version 6. Some limitations are known and is mentioned in top of the created Linux/lib"yourname".c file. Major things are that value ranges are not checked, multidimentional arrays are not supported and that error checking is not yet fully implemented in a nice way.  
+Tested with Node.js version 10 (latest).  
+Needs node-gyp, python 3.x, npm to be installed in the build environment (WSL).
 ## [1.1.4] - 2021-03-04
 ### Added
 - This changelog (copied earlier entries from Readme/Details), lets try this: [Keep a Changelog](http://keepachangelog.com/)
