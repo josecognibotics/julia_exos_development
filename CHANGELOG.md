@@ -1,6 +1,6 @@
 # Changelog
-## [Unreleased]
-Support for arrays in static C-lib including SWIG
+## [1.1.5] - 2021-04-12
+- Support for arrays in static C-lib including SWIG
 ## [1.1.4] - 2021-03-04
 ### Added
 - This changelog (copied earlier entries from Readme/Details), lets try this: [Keep a Changelog](http://keepachangelog.com/)
