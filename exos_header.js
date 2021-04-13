@@ -687,14 +687,14 @@ function generateHeader(fileName, typName, SG4Includes) {
 
     out += `#ifndef EXOS_INCLUDE_ONLY_DATATYPE\n`;
     out += `#ifdef EXOS_STATIC_INCLUDE\n`;
-    out += `EXOS_ERROR_CODE exos_datamodel_connect_${typName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback);\n`;
+    out += `extern inline EXOS_ERROR_CODE exos_datamodel_connect_${typName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback);\n`;
     out += `#else\n`;
     out += `const char config_${typName.toLowerCase()}[] = "${jsonConfig}";\n\n`; // one liner with escapes on "
     //out += `const char config_${typName.toLowerCase()}[] = "${JSON.stringify(types,null,4).split('"').join('\\"').split('\n').join(' \\\n')}";\n\n`; // pretty print with escapes on " and \ for multiline string
     //out += `const char config_${typName.toLowerCase()}[] = "${JSON.stringify(types,null,4)}";\n\n`; // pretty print without escapes (wont compile)
 
     out += `/*Connect the ${typName} datamodel to the server*/\n`;
-    out += `EXOS_ERROR_CODE exos_datamodel_connect_${typName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback)\n{\n`;
+    out += `extern inline EXOS_ERROR_CODE exos_datamodel_connect_${typName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback)\n{\n`;
     out += `    ${typName} data;\n`;
     out += `    exos_dataset_info_t datasets[] = {\n`;
     out += `        {EXOS_DATASET_BROWSE_NAME_INIT,{}},\n`;

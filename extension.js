@@ -8,12 +8,13 @@ const clibtemplate = require('./c-static-lib-template/template');
 const clibupdate = require('./c-static-lib-template/update_static_c_lib');
 const swigtemplate = require('./swig/template')
 const napitemplate = require('./c-template-n-api/exos_template')
+const cpptemplate = require('./cpp-template/exos_template');
 const path = require('path');
 const fs = require('fs');
 const fse = require('fs-extra');
 const { dir } = require('console');
 
-const isDebugMode = () => process.env.VSCODE_DEBUG_MODE === "true";
+const isDebugMode = () => true;
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -156,6 +157,25 @@ function activate(context) {
 	});
 	context.subscriptions.push(generateNapiNodeJSTemplate);
 
+	let generateCppTemplate = vscode.commands.registerCommand('exos-component-extension.generateCppTemplate', function (uri) {
+		vscode.window.showInputBox({prompt:"Name of the DataType:"}).then(selection => {
+			
+			try {
+				cpptemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
+				vscode.window.showInformationMessage(`Generated C++ Template for ${selection}`);
+
+				if(exosas.replaceTypWithPackage(uri.fsPath, selection)) {
+					vscode.window.showInformationMessage(`Replaced ${path.basename(uri.fsPath)} with ${selection} Package. The file ${path.basename(uri.fsPath)} has been copied to the ${selection.substring(0,10)} Library`);
+				}
+				
+			} catch (error) {
+				vscode.window.showErrorMessage(error);	
+			}
+
+		});
+	});
+	context.subscriptions.push(generateCppTemplate);
+
 
 	if (isDebugMode()) 
 	{
@@ -207,8 +227,15 @@ function activate(context) {
 				fse.removeSync(finalName);
 				napitemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
-				infoMessage += ` and 'Node-API'`;
+				infoMessage += `, 'Node-API'`;
 				vscode.debug.activeDebugConsole.appendLine('Node-API');
+
+				finalName = `${path.dirname(uri.fsPath)}/${selection}_cpp`;
+				fse.removeSync(finalName);
+				cpptemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
+				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
+				infoMessage += ` and 'C++'`;
+				vscode.debug.activeDebugConsole.appendLine('C++');
 
 				vscode.window.showInformationMessage(`${infoMessage}`);
 

@@ -39,6 +39,10 @@
 				"title": "exOS: Generate Node-API Template"
 			},
 			{
+				"command": "exos-component-extension.generateCppTemplate",
+				"title": "exOS: Generate C++ Template"
+			},
+			{
 				"command": "exos-component-extension.generateSwigPythonTemplate",
 				"title": "exOS: Generate Static C-Lib SWIG Python Template"
 			},
@@ -76,6 +80,11 @@
 				{
 					"when": "filesExplorerFocus && resourceExtname == .typ",
 					"command": "exos-component-extension.generateNapiNodeJSTemplate",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .typ",
+					"command": "exos-component-extension.generateCppTemplate",
 					"group": "2_workspace"
 				},
 				{
