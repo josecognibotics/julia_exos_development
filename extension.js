@@ -14,7 +14,7 @@ const fs = require('fs');
 const fse = require('fs-extra');
 const { dir } = require('console');
 
-const isDebugMode = () => true;
+const isDebugMode = () => process.env.VSCODE_DEBUG_MODE === "true";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
