@@ -224,12 +224,12 @@ function generateTemplate(fileName, typName, PubSubSwap, userAlias, dynamic) {
     out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.set_operational = ${template.datamodel.libStructName}_set_operational;\n`;
     out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.dispose = ${template.datamodel.libStructName}_dispose;\n`;
     out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.get_nettime = ${template.datamodel.libStructName}_get_nettime;\n`;
-    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log_error = ${template.datamodel.libStructName}_log_error;\n`;
-    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log_warning = ${template.datamodel.libStructName}_log_warning;\n`;
-    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log_success = ${template.datamodel.libStructName}_log_success;\n`;
-    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log_info = ${template.datamodel.libStructName}_log_info;\n`;
-    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log_debug = ${template.datamodel.libStructName}_log_debug;\n`;
-    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log_verbose = ${template.datamodel.libStructName}_log_verbose;\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log.error = ${template.datamodel.libStructName}_log_error;\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log.warning = ${template.datamodel.libStructName}_log_warning;\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log.success = ${template.datamodel.libStructName}_log_success;\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log.info = ${template.datamodel.libStructName}_log_info;\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log.debug = ${template.datamodel.libStructName}_log_debug;\n`;
+    out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.log.verbose = ${template.datamodel.libStructName}_log_verbose;\n`;
 
     out += `    \n`;
 
@@ -295,6 +295,15 @@ function genenerateLibHeader(fileName, typName, PubSubSwap) {
             out += `} ${dataset.libDataType}_t;\n\n`;
         }
     }
+    out += `typedef struct ${template.datamodel.libStructName}_log\n`;
+    out += `{\n`;
+    out += `    ${template.datamodel.libStructName}_log_fn error;\n`;
+    out += `    ${template.datamodel.libStructName}_log_fn warning;\n`;
+    out += `    ${template.datamodel.libStructName}_log_fn success;\n`;
+    out += `    ${template.datamodel.libStructName}_log_fn info;\n`;
+    out += `    ${template.datamodel.libStructName}_log_fn debug;\n`;
+    out += `    ${template.datamodel.libStructName}_log_fn verbose;\n`;  
+    out += `} ${template.datamodel.libStructName}_log_t;\n\n`;
 
     out += `typedef struct ${template.datamodel.libStructName}\n`;
     out += `{\n`;
@@ -304,14 +313,7 @@ function genenerateLibHeader(fileName, typName, PubSubSwap) {
     out += `    ${template.datamodel.libStructName}_method_fn set_operational;\n`;
     out += `    ${template.datamodel.libStructName}_method_fn dispose;\n`;
     out += `    ${template.datamodel.libStructName}_get_nettime_fn get_nettime;\n`;
-    out += `    ${template.datamodel.libStructName}_log_fn log_error;\n`;
-    out += `    ${template.datamodel.libStructName}_log_fn log_warning;\n`;
-    out += `    ${template.datamodel.libStructName}_log_fn log_success;\n`;
-    out += `    ${template.datamodel.libStructName}_log_fn log_info;\n`;
-    out += `    ${template.datamodel.libStructName}_log_fn log_debug;\n`;
-    out += `    ${template.datamodel.libStructName}_log_fn log_verbose;\n`;
-
-
+    out += `    ${template.datamodel.libStructName}_log_t log;\n`;  
     out += `    ${template.datamodel.libStructName}_event_cb on_connected;\n`;
     out += `    ${template.datamodel.libStructName}_event_cb on_disconnected;\n`;
     out += `    ${template.datamodel.libStructName}_event_cb on_operational;\n`;
@@ -349,7 +351,7 @@ function generateMainAR(fileName, typName, libName, PubSubSwap) {
     out += `#include "${template.libHeaderName}"\n\n`;
 
     out += `static ${template.datamodel.libStructName}_t *${template.datamodel.varName};\n`;
-    out += `static struct ${template.datamodel.structName}Cyclic *cyclicInst;\n\n`;
+    out += `static struct ${template.datamodel.structName}Cyclic *cyclic_inst;\n\n`;
 
     out += `static void on_connected_${template.datamodel.varName}(void)\n{\n}\n\n`;
 
@@ -358,10 +360,10 @@ function generateMainAR(fileName, typName, libName, PubSubSwap) {
             out += `static void on_change_${dataset.varName}(void)\n`;
             out += `{\n`;
             if (header.isScalarType(dataset.dataType) && dataset.arraySize == 0) {
-                out += `    cyclicInst->${template.datamodel.varName}->${dataset.structName} = ${template.datamodel.varName}->${dataset.structName}.value;\n`;
+                out += `    cyclic_inst->p${template.datamodel.structName}->${dataset.structName} = ${template.datamodel.varName}->${dataset.structName}.value;\n`;
             }
             else {
-                out += `    memcpy(&(cyclicInst->${template.datamodel.varName}->${dataset.structName}), &(${template.datamodel.varName}->${dataset.structName}.value), sizeof(cyclicInst->${template.datamodel.varName}->${dataset.structName}));\n`;
+                out += `    memcpy(&(cyclic_inst->p${template.datamodel.structName}->${dataset.structName}), &(${template.datamodel.varName}->${dataset.structName}.value), sizeof(cyclic_inst->p${template.datamodel.structName}->${dataset.structName}));\n`;
             }
             out += `    \n`;
             out += `    // Your code here...\n`;
@@ -372,10 +374,10 @@ function generateMainAR(fileName, typName, libName, PubSubSwap) {
     out += `_BUR_PUBLIC void ${template.datamodel.structName}Cyclic(struct ${template.datamodel.structName}Cyclic *inst)\n`;
     out += `{\n`;
     out += `    // check if function block has been created before\n`;
-    out += `    if(cyclicInst != NULL)\n`;
+    out += `    if(cyclic_inst != NULL)\n`;
     out += `    {\n`;
     out += `        // return error if more than one function blocks have been created\n`;
-    out += `        if(inst != cyclicInst)\n`;
+    out += `        if(inst != cyclic_inst)\n`;
     out += `        {\n`;
     out += `            inst->Operational = false;\n`;
     out += `            inst->Connected = false;\n`;
@@ -383,7 +385,7 @@ function generateMainAR(fileName, typName, libName, PubSubSwap) {
     out += `            return;\n`;
     out += `        }\n`;
     out += `    }\n`;
-    out += `    cyclicInst = inst;\n`;
+    out += `    cyclic_inst = inst;\n`;
     out += `    // initialize library\n`;
     out += `    if((${template.datamodel.libStructName}_t *)inst->_Handle == NULL || (${template.datamodel.libStructName}_t *)inst->_Handle != ${template.datamodel.varName})\n`;
     out += `    {\n`;
@@ -403,7 +405,7 @@ function generateMainAR(fileName, typName, libName, PubSubSwap) {
     out += `    }\n`;
 
     out += `    // return error if reference to structure is not set on function block\n`;
-    out += `    if(inst->${template.datamodel.varName} == NULL)\n`;
+    out += `    if(inst->p${template.datamodel.structName} == NULL)\n`;
     out += `    {\n`;
     out += `        inst->Operational = false;\n`;
     out += `        inst->Connected = false;\n`;
@@ -419,7 +421,7 @@ function generateMainAR(fileName, typName, libName, PubSubSwap) {
     out += `    if (!inst->Enable && inst->_Enable)\n`;
     out += `    {\n`;
     out += `        //disconnect from server\n`;
-    out += `        cyclicInst = NULL;\n`;
+    out += `        cyclic_inst = NULL;\n`;
     out += `        ${template.datamodel.varName}->disconnect();\n`;
     out += `    }\n`;
     out += `    inst->_Enable = inst->Enable;\n\n`;
@@ -442,16 +444,16 @@ function generateMainAR(fileName, typName, libName, PubSubSwap) {
     for (let dataset of template.datasets) {
         if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
             if (header.isScalarType(dataset.dataType) && dataset.arraySize == 0) {
-                out += `        if (${template.datamodel.varName}->${dataset.structName}.value != inst->${template.datamodel.varName}->${dataset.structName})\n`;
+                out += `        if (${template.datamodel.varName}->${dataset.structName}.value != inst->p${template.datamodel.structName}->${dataset.structName})\n`;
                 out += `        {\n`;
-                out += `            ${template.datamodel.varName}->${dataset.structName}.value = inst->${template.datamodel.varName}->${dataset.structName};\n`;
+                out += `            ${template.datamodel.varName}->${dataset.structName}.value = inst->p${template.datamodel.structName}->${dataset.structName};\n`;
                 out += `            ${template.datamodel.varName}->${dataset.structName}.publish();\n`;
                 out += `        }\n`;
             }
             else {
-                out += `        if (memcmp(&(${template.datamodel.varName}->${dataset.structName}.value), &(inst->${template.datamodel.varName}->${dataset.structName}), sizeof(inst->${template.datamodel.varName}->${dataset.structName})))\n`;
+                out += `        if (memcmp(&(${template.datamodel.varName}->${dataset.structName}.value), &(inst->p${template.datamodel.structName}->${dataset.structName}), sizeof(inst->p${template.datamodel.structName}->${dataset.structName})))\n`;
                 out += `        {\n`;
-                out += `            memcpy(&(${template.datamodel.varName}->${dataset.structName}.value), &(inst->${template.datamodel.varName}->${dataset.structName}), sizeof(${template.datamodel.varName}->${dataset.structName}.value));\n`;
+                out += `            memcpy(&(${template.datamodel.varName}->${dataset.structName}.value), &(inst->p${template.datamodel.structName}->${dataset.structName}), sizeof(${template.datamodel.varName}->${dataset.structName}.value));\n`;
                 out += `            ${template.datamodel.varName}->${dataset.structName}.publish();\n`;
                 out += `        }\n`;
             }
@@ -468,7 +470,7 @@ function generateMainAR(fileName, typName, libName, PubSubSwap) {
     out += `{\n`;
     out += `    //shutdown\n`;
     out += `    ${template.datamodel.varName}->dispose();\n`
-    out += `    cyclicInst = NULL;\n`;
+    out += `    cyclic_inst = NULL;\n`;
     out += `    return 0;\n`;
     out += `}\n`;
 
@@ -487,7 +489,10 @@ function generateMain(fileName, typName, PubSubSwap) {
 
     out += `static ${template.datamodel.libStructName}_t *${template.datamodel.varName};\n\n`
 
-    out += `static void on_connected_${template.datamodel.varName}(void)\n{\n}\n\n`;
+    out += `static void on_connected_${template.datamodel.varName}(void)\n{\n`;
+    out += `   ${template.datamodel.varName}->log.success("${template.datamodel.varName} connected!");\n`;
+    out += `}\n\n`;
+
     //out += `static void on_disconnected_${template.datamodel.varName}(void)\n{\n}\n\n`;
     //out += `static void on_operational_${template.datamodel.varName}(void)\n{\n}\n\n`;
 
@@ -495,17 +500,20 @@ function generateMain(fileName, typName, PubSubSwap) {
         if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
             out += `static void on_change_${dataset.varName}(void)\n`;
             out += `{\n`;
-            if (dataset.arraySize == 0) {
-                out += `   printf("on_change: ${template.datamodel.varName}->${dataset.structName}: ${header.convertPlcTypePrintf(dataset.dataType)}\\n", ${template.datamodel.varName}->${dataset.structName}.value);\n`;
-            } else {
-                out += `   uint32_t i;\n`;
-                out += `   printf("on_change: ${template.datamodel.varName}->${dataset.structName}: Array of ${header.convertPlcType(dataset.dataType)}${dataset.dataType.includes("STRING") ? "[]" : ""}:\\n");\n`;
-                out += `   for(i = 0; i < sizeof(${template.datamodel.varName}->${dataset.structName}.value) / sizeof(${template.datamodel.varName}->${dataset.structName}.value[0]); i++ )\n`;
-                out += `   {\n`;
-                out += `       printf("  Index %i: ${header.convertPlcTypePrintf(dataset.dataType)}\\n", i, ${template.datamodel.varName}->${dataset.structName}.value[i]);\n`;
-                out += `   }\n`;
+            out += `   ${template.datamodel.varName}->log.verbose("${template.datamodel.varName}->${dataset.structName} changed!");\n`;
+            if(process.env.VSCODE_DEBUG_MODE) {    
+                if (dataset.arraySize == 0) {
+                    out += `   printf("on_change: ${template.datamodel.varName}->${dataset.structName}: ${header.convertPlcTypePrintf(dataset.dataType)}\\n", ${template.datamodel.varName}->${dataset.structName}.value);\n`;
+                } else {
+                    out += `   uint32_t i;\n`;
+                    out += `   printf("on_change: ${template.datamodel.varName}->${dataset.structName}: Array of ${header.convertPlcType(dataset.dataType)}${dataset.dataType.includes("STRING") ? "[]" : ""}:\\n");\n`;
+                    out += `   for(i = 0; i < sizeof(${template.datamodel.varName}->${dataset.structName}.value) / sizeof(${template.datamodel.varName}->${dataset.structName}.value[0]); i++ )\n`;
+                    out += `   {\n`;
+                    out += `       printf("  Index %i: ${header.convertPlcTypePrintf(dataset.dataType)}\\n", i, ${template.datamodel.varName}->${dataset.structName}.value[i]);\n`;
+                    out += `   }\n`;
+                }
+                out += `   \n`;
             }
-            out += `   \n`;
             out += `   // Your code here...\n`;
             out += `}\n`;
         }
@@ -529,7 +537,7 @@ function generateMain(fileName, typName, PubSubSwap) {
 
     out += `    catch_termination();\n`;
     out += `    while (!is_terminated())\n    {\n`;
-    out += `        //trigger callbacks\n`;
+    out += `        //trigger callbacks and synchronize with AR\n`;
     out += `        ${template.datamodel.varName}->process();\n\n`;
     out += `        // if (${template.datamodel.varName}->is_connected)\n`;
     out += `        // {\n`;
@@ -594,6 +602,7 @@ function configTemplate(fileName, typName) {
             object["structName"] = child.attributes.name;
             object["varName"] = child.attributes.name.toLowerCase() + (child.attributes.name == child.attributes.name.toLowerCase() ? "_dataset" : "");
             object["dataType"] = child.attributes.dataType;
+            object["libDataType"] = "lib" + child.attributes.name;
             if (typeof child.attributes.arraySize === "number") {
                 object["arraySize"] = child.attributes.arraySize;
             } else {

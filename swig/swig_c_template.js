@@ -115,6 +115,16 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
         }
     }
 
+    out += `typedef struct ${template.datamodel.libStructName}_log\n`;
+    out += `{\n`;
+    out += `    void error(char *log_entry);\n`;
+    out += `    void warning(char *log_entry);\n`;
+    out += `    void success(char *log_entry);\n`;
+    out += `    void info(char *log_entry);\n`;
+    out += `    void debug(char *log_entry);\n`;
+    out += `    void verbose(char *log_entry);\n`; 
+    out += `} ${template.datamodel.libStructName}_log_t;\n\n`;
+
     out += `typedef struct ${template.datamodel.libStructName}\n`;
     out += `{\n`;
     out += `    void connect(void);\n`;
@@ -123,13 +133,7 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
     out += `    void set_operational(void);\n`;
     out += `    void dispose(void);\n`;
     out += `    int32_t get_nettime(void);\n`;
-    out += `    void log_error(char *log_entry);\n`;
-    out += `    void log_warning(char *log_entry);\n`;
-    out += `    void log_success(char *log_entry);\n`;
-    out += `    void log_info(char *log_entry);\n`;
-    out += `    void log_debug(char *log_entry);\n`;
-    out += `    void log_verbose(char *log_entry);\n`;
-
+    out += `    ${template.datamodel.libStructName}_log_t log;\n`;
     out += `    void on_connected(void);\n`;
     out += `    void on_disconnected(void);\n`;
     out += `    void on_operational(void);\n`;
@@ -159,8 +163,8 @@ function generatePythonMain(fileName, typName, PubSubSwap) {
     out += `    def __init__(self):\n`;
     out += `        ${template.datamodel.libStructName}.${template.datamodel.dataType}EventHandler.__init__(self)\n`;
     out += `\n`;
-    out += `    # def on_connected(self):\n`;
-    out += `    #     self.${template.datamodel.varName}. ..\n`;
+    out += `    def on_connected(self):\n`;
+    out += `        self.${template.datamodel.varName}.log.success("python ${template.datamodel.varName} connected!")\n`;
     out += `\n`;
     out += `    # def on_disconnected(self):\n`;
     out += `    #     self.${template.datamodel.varName}. ..\n`;
@@ -170,7 +174,8 @@ function generatePythonMain(fileName, typName, PubSubSwap) {
     out += `\n`;
     for (let dataset of template.datasets) {
         if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
-            out += `    # def on_change_${dataset.structName}(self):\n`;
+            out += `    def on_change_${dataset.structName}(self):\n`;
+            out += `        self.${template.datamodel.varName}.log.verbose("python dataset ${dataset.structName} changed!")\n`;
             out += `    #     .. = self.${template.datamodel.varName}.${dataset.structName}.value\n`;
             out += "    \n";
         }

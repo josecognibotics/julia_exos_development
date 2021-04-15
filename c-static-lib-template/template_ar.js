@@ -6,22 +6,18 @@ const { features } = require('process');
 
 
 function checkVarNames(fileName, typName) {
-    let out = "";
-
-    if (fs.existsSync(fileName)) {
-
-        let types = header.parseTypFile(fileName, typName);
-
-        for (let child of types.children) {
-            if (child.attributes.comment.includes("SUB") || child.attributes.comment.includes("PUB")) {
-                switch (child.attributes.name) {
-                    case "Enable": 
-                    case "_Enable": 
-                        throw(`Member name ${child.attributes.name} is not allowed as a PUB/SUB dataset. Keyword is in use`);
-                }
-            }
-        }
-    }
+    // if (fs.existsSync(fileName)) {
+    //     let types = header.parseTypFile(fileName, typName);
+    //     for (let child of types.children) {
+    //         if (child.attributes.comment.includes("SUB") || child.attributes.comment.includes("PUB")) {
+    //             switch (child.attributes.name) {
+    //                 case "Enable": 
+    //                 case "_Enable": 
+    //                     throw(`Member name ${child.attributes.name} is not allowed as a PUB/SUB dataset. Keyword is in use`);
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 function generateFun(fileName, typName) {
@@ -33,7 +29,7 @@ function generateFun(fileName, typName) {
     out += `	VAR_INPUT\n`;
     out += `		Enable : BOOL;\n`;
     out += `		Start : BOOL;\n`;
-    out += `        ${template.datamodel.varName} : REFERENCE TO ${typName};`;
+    out += `        p${template.datamodel.structName} : REFERENCE TO ${typName};`;
     out += `	END_VAR\n`;
     out += `	VAR_OUTPUT\n`;
     out += `		Connected : BOOL;\n`;
@@ -87,7 +83,7 @@ function generateIECProgramVar(typName) {
     let out = "";
 
     out += `VAR\n`;
-    out += `    ${typName.toLowerCase()} : ${typName};\n`;
+    out += `    ${typName}_0 : ${typName};\n`;
     out += `    ${typName}Cyclic_0 : ${typName}Cyclic;\n`;
     out += `END_VAR\n`;
 
@@ -104,7 +100,7 @@ function generateIECProgramST(typName) {
     out += `\n`;
     out += `PROGRAM _CYCLIC\n`;
     out += `\n`;
-    out += `    ${typName}Cyclic_0.${typName.toLowerCase()} := ADR(${typName.toLowerCase()});\n`;
+    out += `    ${typName}Cyclic_0.p${typName} := ADR(${typName}_0);\n`;
     out += `    ${typName}Cyclic_0();\n`;
     out += `\n`;
     out += `END_PROGRAM\n`;
