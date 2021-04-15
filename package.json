@@ -20,31 +20,31 @@
 		"commands": [
 			{
 				"command": "exos-component-extension.generateTemplate",
-				"title": "exOS: Generate Dynamic C-Lib, C-Executable Template"
-			},
-			{
-				"command": "exos-component-extension.generateCLibTemplate",
-				"title": "exOS: Generate Static C-Lib Template"
-			},
-			{
-				"command": "exos-component-extension.updateCLib",
-				"title": "exOS: Update Static C-Lib"
-			},
-			{
-				"command": "exos-component-extension.updateCLib_py",
-				"title": "exOS: Update Static C-Lib SWIG Python"
+				"title": "exOS: Generate Instantiatable C Template"
 			},
 			{
 				"command": "exos-component-extension.generateNapiNodeJSTemplate",
-				"title": "exOS: Generate Node-API Template"
+				"title": "exOS: Generate Instantiatable N-API NodeJS Template"
+			},
+			{
+				"command": "exos-component-extension.generateCLibTemplate",
+				"title": "exOS: Generate Singleton C Template"
+			},
+			{
+				"command": "exos-component-extension.updateCLib",
+				"title": "exOS: Update Singleton C Template"
+			},
+			{
+				"command": "exos-component-extension.updateCLib_py",
+				"title": "exOS: Update Singleton SWIG Python Template"
 			},
 			{
 				"command": "exos-component-extension.generateSwigPythonTemplate",
-				"title": "exOS: Generate Static C-Lib SWIG Python Template"
+				"title": "exOS: Generate Singleton SWIG Python Template"
 			},
 			{
 				"command": "exos-component-extension.generateSwigNodeJSTemplate",
-				"title": "exOS: Generate Static C-Lib SWIG NodeJS Template"
+				"title": "exOS: Generate Singleton SWIG NodeJS Template"
 			},
 			{
 				"command": "exos-component-extension.generateEverythingDebug",
