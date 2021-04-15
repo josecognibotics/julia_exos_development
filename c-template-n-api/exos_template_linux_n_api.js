@@ -392,7 +392,7 @@ function generateExosCallbacks(template) {
     out += `        case EXOS_STATE_CONNECTED:\n`;
     out += `        case EXOS_STATE_OPERATIONAL:\n`;
     out += `        case EXOS_STATE_ABORTED:\n`;
-    out += `            break;\n;`;
+    out += `            break;\n`;
     out += `        }\n`;
     out += `        break;\n`;
     out += `    }\n`;
@@ -1392,6 +1392,7 @@ function generateJSmodule(fileName, typName) {
     let template = configTemplate(fileName, typName);
 
     out += `var binding = require("./l_${template.datamodel.structName}.node");\n\n`;
+
     out += `module.exports = binding.${template.datamodel.structName};\n`;
 
     return out;
