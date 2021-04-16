@@ -488,6 +488,16 @@ function generateConnectionCallbacks(template) {
     out += `        napi_throw_error(env, "EINVAL", "Can't call connectionOnChange callback - ${template.datamodel.varName}");\n`;
     out += `}\n\n`;
 
+    out += `static void ${template.datamodel.varName}_onprocessed_js_cb(napi_env env, napi_value js_cb, void *context, void *data)\n`;
+    out += `{\n`;
+    out += `    napi_value undefined;\n\n`;
+
+    out += `    napi_get_undefined(env, &undefined);\n\n`;
+
+    out += `    if (napi_ok != napi_call_function(env, undefined, js_cb, 0, NULL, NULL))\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Can't call onProcessed - ${template.datamodel.varName}");\n`;
+    out += `}\n\n`;
+
     //datasets
     for (let dataset of template.datasets) {
         if (dataset.isSub || dataset.isPub) {
@@ -719,6 +729,10 @@ function generateCallbackInits(template) {
     out += `{\n`;
     out += `    return init_napi_onchange(env, info, "${template.datamodel.structName} connection change", ${template.datamodel.varName}_connonchange_js_cb, &${template.datamodel.varName}.connectiononchange_cb);\n`;
     out += `}\n\n`;
+    out += `napi_value ${template.datamodel.varName}_onprocessed_init(napi_env env, napi_callback_info info)\n`;
+    out += `{\n`;
+    out += `    return init_napi_onchange(env, info, "${template.datamodel.structName} onProcessed", ${template.datamodel.varName}_onprocessed_js_cb, &${template.datamodel.varName}.onprocessed_cb);\n`;
+    out += `}\n\n`;
 
     for (let dataset of template.datasets) {
         if (dataset.isPub || dataset.isSub) {
@@ -939,7 +953,11 @@ function generateCleanUpHookCyclic(template) {
 
     out += `void cyclic(uv_idle_t * handle) \n`;
     out += `{\n`;
-    out += `    exos_datamodel_process(&${template.datamodel.varName}_datamodel); \n`;
+    out += `    int dummy = 0;\n`;
+    out += `    exos_datamodel_process(&${template.datamodel.varName}_datamodel);\n`;
+    out += `    napi_acquire_threadsafe_function(${template.datamodel.varName}.onprocessed_cb);\n`;
+    out += `    napi_call_threadsafe_function(${template.datamodel.varName}.onprocessed_cb, &dummy, napi_tsfn_blocking);\n`;
+    out += `    napi_release_threadsafe_function(${template.datamodel.varName}.onprocessed_cb, napi_tsfn_release);\n`;
     out += `}\n\n`;
 
     out += `//read nettime for DataModel\n`;
@@ -1082,7 +1100,7 @@ function generateInitFunction(fileName, template) {
 
             out3 += `    napi_create_function(env, NULL, 0, ${dataset.structName}_connonchange_init, NULL, &${dataset.structName}_conn_change);\n`;
             out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "connectionOnChange", ${dataset.structName}_conn_change);\n`;
-            out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "connectionState", undefined);\n\n`;
+            out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "connectionState", def_string);\n\n`;
 
             out_structs += out1 + out2 + out3;
         }
@@ -1094,7 +1112,7 @@ function generateInitFunction(fileName, template) {
 
     // declarations
     out += `    napi_value `;
-    out += `${template.datamodel.varName}_conn_change,`;
+    out += `${template.datamodel.varName}_conn_change, ${template.datamodel.varName}_onprocessed,`;
     for (let i = 0; i < template.datasets.length; i++) {
         if (template.datasets[i].isPub || template.datasets[i].isSub) {
             out += ` ${template.datasets[i].structName}_conn_change`;
@@ -1177,7 +1195,7 @@ function generateInitFunction(fileName, template) {
 
     out += `    napi_get_boolean(env, BUR_NAPI_DEFAULT_BOOL_INIT, &def_bool); \n`;
     out += `    napi_create_int32(env, BUR_NAPI_DEFAULT_NUM_INIT, &def_number); \n`;
-    out += `    napi_create_string_utf8(env, BUR_NAPI_DEFAULT_STRING_INIT, sizeof(BUR_NAPI_DEFAULT_STRING_INIT), &def_string); \n`;
+    out += `    napi_create_string_utf8(env, BUR_NAPI_DEFAULT_STRING_INIT, strlen(BUR_NAPI_DEFAULT_STRING_INIT), &def_string);\n`;
     out += `    napi_get_undefined(env, &undefined); \n\n`;
 
     //base objects
@@ -1200,7 +1218,9 @@ function generateInitFunction(fileName, template) {
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "dataModel", dataModel); \n`;
     out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_connonchange_init, NULL, &${template.datamodel.varName}_conn_change); \n`;
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionOnChange", ${template.datamodel.varName}_conn_change); \n`;
-    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionState", undefined);\n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionState", def_string);\n`;
+    out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_onprocessed_init, NULL, &${template.datamodel.varName}_onprocessed); \n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "onProcessed", ${template.datamodel.varName}_onprocessed); \n`;
     out += `    napi_create_function(env, NULL, 0, get_net_time, NULL, &getNetTime);\n`;
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "netTime", getNetTime);\n`;
 
@@ -1337,10 +1357,11 @@ function generateLibTemplate(fileName, typName) {
     out += `\n`;
     out += `typedef struct\n`;
     out += `{\n`;
-    out += `    napi_ref ref; \n`;
-    out += `    uint32_t ref_count; \n`;
-    out += `    napi_threadsafe_function onchange_cb; \n`;
-    out += `    napi_threadsafe_function connectiononchange_cb; \n`;
+    out += `    napi_ref ref;\n`;
+    out += `    uint32_t ref_count;\n`;
+    out += `    napi_threadsafe_function onchange_cb;\n`;
+    out += `    napi_threadsafe_function connectiononchange_cb;\n`;
+    out += `    napi_threadsafe_function onprocessed_cb; //used only for datamodel\n`;
     out += `    napi_value object_value; //volatile placeholder.\n`;
     out += `    napi_value value;        //volatile placeholder.\n`;
     out += `} obj_handles;\n`;
@@ -1392,7 +1413,6 @@ function generateJSmodule(fileName, typName) {
     let template = configTemplate(fileName, typName);
 
     out += `var binding = require("./l_${template.datamodel.structName}.node");\n\n`;
-
     out += `module.exports = binding.${template.datamodel.structName};\n`;
 
     return out;
@@ -1419,7 +1439,7 @@ function generateIndexJS(fileName, typName) {
 
     out += `\n`;
 
-    out += `//value callbacks\n`;
+    out += `//value callbacks from Automation Runtime\n`;
     for (let i = 0; i < template.datasets.length; i++) {
         if (template.datasets[i].isPub) {
             out += `${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.onChange(() => {\n`;
@@ -1429,16 +1449,10 @@ function generateIndexJS(fileName, typName) {
     }
 
     out += `\n`;
-
-    out += `//publishing of values\n`;
-    out += `if (1 === 0) {\n`;
-    for (let i = 0; i < template.datasets.length; i++) {
-        if (template.datasets[i].isSub) {
-            out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.value..\n`;
-            out += `    ${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.publish();\n`;
-        }
-    }
-    out += `}\n\n`;
+    out += `//read current nettime\n`;
+    out += `setInterval(() => {\n`;
+    out += `    //console.log("current netTime is: " + ${template.datamodel.structName}.netTime().toString());\n`;
+    out += `}, 2000);\n\n`;
 
     out += `/*
 All values in ${template.datamodel.structName}.dataModel that has a .onChange() callback will
@@ -1455,12 +1469,22 @@ returns current netTime.
 
 Note that ALL netTime and latency values are created from int32_t datatype and the wrapping of
 these values are not considered/handled in the imported module.
-*/\n`;
+*/\n\n`;
 
-    out += `setInterval(() => {\n`;
-    out += `    //console.log("current netTime is: " + ${template.datamodel.structName}.netTime().toString());\n`;
-    out += `}, 2000);\n`;
+    out += `//Cyclic call from Automation Runtime\n`;
+    out += `${template.datamodel.structName}.onProcessed(() => {\n`;
+    out += `    //Code placed here will be called in sync with Automation Runtime.\n`;
+    out += `});\n\n`;
 
+    out += `//publishing of values to Automation Runtime\n`;
+    out += `if (1 === 0) {\n`;
+    for (let i = 0; i < template.datasets.length; i++) {
+        if (template.datasets[i].isSub) {
+            out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.value = ..\n`;
+            out += `    ${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.publish();\n`;
+        }
+    }
+    out += `}\n\n`;
 
     return out;
 }
