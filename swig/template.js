@@ -181,12 +181,21 @@ function generateNodeJSTemplate(fileName, structName, outPath) {
     out = template_linux_nodejs.generateLinuxPackage(structName);
     fs.writeFileSync(`${outPath}/${structName}/Linux/Package.pkg`, out);
 
+    out = template_linux_nodejs.generateCMakeLists(structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/CMakeLists.txt`, out);
+    
     out = template_linux_nodejs.generateShBuild(structName);
     fs.writeFileSync(`${outPath}/${structName}/Linux/build.sh`, out);
 
     out = template_linux_nodejs.generateGypFile(structName);
-    fs.writeFileSync(`${outPath}/${structName}//Linux/binding.gyp`, out);
-        
+    fs.writeFileSync(`${outPath}/${structName}/Linux/binding.gyp`, out);
+
+    out = template_linux_nodejs.generatePackageJSON(structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/package.json`, out);
+
+    out = template_linux_nodejs.generatePackageLockJSON(structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/package-lock.json`, out);
+    
     out = template_swig.generateNodeJSMain(fileName, structName, true);
     fs.writeFileSync(`${outPath}/${structName}/Linux/${structName.toLowerCase()}.js`, out);
 
