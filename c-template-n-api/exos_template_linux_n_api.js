@@ -260,7 +260,7 @@ function generateCMakeLists(typName) {
     out += `project(${typName.toLowerCase()})\n`;
     out += `cmake_minimum_required(VERSION 3.0)\n`;
     out += `\n`;
-    out += `SET(${typName.toUpperCase()}_MODULE_FILES\n`;
+    out += `set(${typName.toUpperCase()}_MODULE_FILES\n`;
     out += `    l_${typName}.node\n`;
     out += `    ${typName.toLowerCase()}.js\n`;
     out += `    package.json\n`;
@@ -1492,7 +1492,7 @@ function generatePackageJSON(fileName, typName) {
     out += `  "scripts": {\n`;
     out += `    "start": "node index.js"\n`;
     out += `  },\n`;
-    out += `  "author": "NN",\n`;
+    out += `  "author": "your name",\n`;
     out += `  "license": "MIT"\n`;
     out += `}\n`;
 
