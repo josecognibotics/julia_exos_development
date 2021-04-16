@@ -368,11 +368,11 @@ function generateExosInit(template) {
         }
     }
     out += `    \n`;
-    out += `    exos_log_init(&${template.logname}, "${template.datamodel.structName}_Linux");\n\n`;
+    out += `    exos_log_init(&${template.logname}, "${template.datamodel.structName}_0");\n\n`;
     out += `    SUCCESS("starting ${template.datamodel.structName} application..");\n\n`;
 
     //initialization
-    out += `    EXOS_ASSERT_OK(exos_datamodel_init(&${template.datamodel.varName}, "${template.datamodel.structName}", "${template.datamodel.structName}_Linux"));\n\n`;
+    out += `    EXOS_ASSERT_OK(exos_datamodel_init(&${template.datamodel.varName}, "${template.datamodel.structName}", "${template.datamodel.structName}_0"));\n\n`;
     out += `    //set the user_context to access custom data in the callbacks\n`;
     out += `    ${template.datamodel.varName}.user_context = NULL; //user defined\n`;
     out += `    ${template.datamodel.varName}.user_tag = 0; //user defined\n\n`;

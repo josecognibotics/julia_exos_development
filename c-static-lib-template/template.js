@@ -52,7 +52,7 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_lib.genenerateLibHeader(fileName, structName, false);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/lib${structName.toLowerCase()}.h`, out);
 
-    out = template_lib.generateTemplate(fileName, structName, false, `${structName}_AR`);
+    out = template_lib.generateTemplate(fileName, structName, false, `${structName}_0`);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/lib${structName.toLowerCase()}.c`, out);
 
     out = template_ar.generateIECProgram(libName);
@@ -79,7 +79,7 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_lib.genenerateLibHeader(fileName, structName, true);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.h`, out);
     
-    out = template_lib.generateTemplate(fileName, structName, true, `${structName}_Linux`);
+    out = template_lib.generateTemplate(fileName, structName, true, `${structName}_0`);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.c`, out);
 
     out = template_linux.generateLinuxPackage(structName);

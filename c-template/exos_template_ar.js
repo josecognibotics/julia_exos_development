@@ -5,29 +5,27 @@ const fs = require('fs');
 
 
 function checkVarNames(fileName, typName) {
-    let out = "";
+    // if (fs.existsSync(fileName)) {
 
-    if (fs.existsSync(fileName)) {
+    //     let types = header.parseTypFile(fileName, typName);
 
-        let types = header.parseTypFile(fileName, typName);
-
-        for (let child of types.children) {
-            if (child.attributes.comment.includes("SUB") || child.attributes.comment.includes("PUB")) {
-                switch (child.attributes.name) {
-                    case "Enable": 
-                    case "Handle": 
-                    case "Start":
-                    case "Active":
-                    case "Error":
-                    case "Disconnected":
-                    case "Connected":
-                    case "Aborted":
-                    case "_state":
-                        throw(`Member name ${child.attributes.name} is not allowed as a PUB/SUB dataset. Keyword is in use`);
-                }
-            }
-        }
-    }
+    //     for (let child of types.children) {
+    //         if (child.attributes.comment.includes("SUB") || child.attributes.comment.includes("PUB")) {
+    //             switch (child.attributes.name) {
+    //                 case "Enable": 
+    //                 case "Handle": 
+    //                 case "Start":
+    //                 case "Active":
+    //                 case "Error":
+    //                 case "Disconnected":
+    //                 case "Connected":
+    //                 case "Aborted":
+    //                 case "_state":
+    //                     throw(`Member name ${child.attributes.name} is not allowed as a PUB/SUB dataset. Keyword is in use`);
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 function generatePackage(typName, libName) {
@@ -69,6 +67,7 @@ function generateIECProgramVar(typName) {
     out += `    ${typName}Init_0 : ${typName}Init;\n`;
     out += `    ${typName}Cyclic_0 : ${typName}Cyclic;\n`;
     out += `    ${typName}Exit_0 : ${typName}Exit;\n`;
+    out += `    ${typName}_0 : ${typName};\n`;
     out += `END_VAR\n`;
 
     return out;
@@ -86,7 +85,7 @@ function generateIECProgramST(typName) {
     out += `\n`;
     out += `PROGRAM _CYCLIC\n`;
     out += `\n`;
-    out += `    ${typName}Cyclic_0(Handle := ${typName}Init_0.Handle);\n`;
+    out += `    ${typName}Cyclic_0(Handle := ${typName}Init_0.Handle, p${typName} := ADR(${typName}_0));\n`;
     out += `\n`;
     out += `END_PROGRAM\n`;
     out += `\n`;
@@ -119,28 +118,7 @@ function generateFun(fileName, typName) {
     out += `		Enable : BOOL;\n`;
     out += `		Handle : UDINT;\n`;
     out += `		Start : BOOL;\n`;
-    for (let dataset of template.datasets) {
-        if (!dataset.isPrivate) {
-            let dataType = dataset.dataType;
-
-            if (dataType === "STRING" && (dataset.hasOwnProperty("stringLength"))) {
-                dataType = dataType + `[${dataset.stringLength - 1}]`;
-            }
-
-            if (dataset.arraySize > 0) {
-                dataType = `ARRAY[0..${dataset.arraySize - 1}] OF ${dataType}`
-            }
-
-            if (dataset.isPub) {
-                if (dataset.isSub) {
-                    out += `		${dataset.structName} : REFERENCE TO ${dataType};\n`;
-                }
-                else {
-                    out += `		${dataset.structName} : ${dataType};\n`;
-                }
-            }
-        }
-    }
+    out += `		p${template.datamodel.structName} : REFERENCE TO ${template.datamodel.structName};\n`;
     out += `	END_VAR\n`;
     out += `	VAR_OUTPUT\n`;
     out += `		Active : BOOL;\n`;
@@ -149,23 +127,6 @@ function generateFun(fileName, typName) {
     out += `		Connected : BOOL;\n`;
     out += `		Operational : BOOL;\n`;
     out += `		Aborted : BOOL;\n`;
-    for (let dataset of template.datasets) {
-        if (!dataset.isPrivate) {
-            let dataType = dataset.dataType;
-
-            if (dataType === "STRING" && (dataset.hasOwnProperty("stringLength"))) {
-                dataType = dataType + `[${dataset.stringLength - 1}]`;
-            }
-
-            if (dataset.arraySize > 0) {
-                dataType = `ARRAY[0..${dataset.arraySize - 1}] OF ${dataType}`
-            }
-
-            if (dataset.isSub && !dataset.isPub) {
-                out += `		${dataset.structName} : ${dataType};\n`;
-            }
-        }
-    }
     out += `	END_VAR\n`;
     out += `	VAR\n`;
     out += `		_state : USINT;\n`;
@@ -259,53 +220,23 @@ function generateExosCallbacks(template) {
     out += `        //handle each subscription dataset separately\n`;
     var atleastone = false;
     for (let dataset of template.datasets) {
-        if(!dataset.isPrivate) {
-            if (dataset.isSub) {
-                if (atleastone) {
-                    out += `        else `;
-                }
-                else {
-                    out += `        `;
-                    atleastone = true;
-                }
-                out += `if(0 == strcmp(dataset->name, "${dataset.structName}"))\n`;
-                out += `        {\n`;
-                if(dataset.isPub) {
-                    out += `            if(NULL != inst->${dataset.structName})\n`;
-                    out += `            {\n`;
-                    if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
-                        out += `                *inst->${dataset.structName} = *(${dataset.dataType} *)dataset->data;\n`;
-                    }
-                    else {
-                        out += `                memcpy(inst->${dataset.structName}, dataset->data, dataset->size);\n`;
-                    }
-                    out += `            }\n`;
-                }
-                else {
-                    if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
-                        out += `            inst->${dataset.structName} = *(${dataset.dataType} *)dataset->data;\n`;
-                    }
-                    else {
-                        out += `            memcpy(&inst->${dataset.structName}, dataset->data, dataset->size);\n`;
-                    }
-                }
-                out += `        }\n`;
+        if (dataset.isSub) {
+            if (atleastone) {
+                out += `        else `;
             }
-        }
-        else {
-            if (dataset.isSub) {
-                if (atleastone) {
-                    out += `        else `;
-                }
-                else {
-                    out += `        `;
-                    atleastone = true;
-                }
-                out += `if(0 == strcmp(dataset->name, "${dataset.structName}"))\n`;
-                out += `        {\n`;
-                out += `            // ${dataset.dataType} *${dataset.varName} = (${dataset.dataType} *)dataset->data;\n`;
-                out += `        }\n`;
+            else {
+                out += `        `;
+                atleastone = true;
             }
+            out += `if(0 == strcmp(dataset->name, "${dataset.structName}"))\n`;
+            out += `        {\n`;
+            if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
+                out += `            inst->p${template.datamodel.structName}->${dataset.structName} = *(${dataset.dataType} *)dataset->data;\n`;
+            }
+            else {
+                out += `            memcpy(&inst->p${template.datamodel.structName}->${dataset.structName}, dataset->data, dataset->size);\n`;
+            }
+            out += `        }\n`;
         }
     }
     out += `        break;\n\n`;
@@ -421,7 +352,7 @@ function generateExosInit(template) {
     out += `    }\n\n`;
     out += `    memset(&${template.handle.name}->data, 0, sizeof(${template.handle.name}->data));\n`;
     out += `    ${template.handle.name}->self = ${template.handle.name};\n\n`;
-    out += `    exos_log_init(&${template.handle.name}->${template.logname}, "${template.datamodel.structName}_AR");\n\n`;
+    out += `    exos_log_init(&${template.handle.name}->${template.logname}, "${template.datamodel.structName}_0");\n\n`;
     out += `    \n`;
     out += `    \n`;
     out += `    exos_datamodel_handle_t *${template.datamodel.varName} = &${template.handle.name}->${template.datamodel.varName};\n`;
@@ -432,7 +363,7 @@ function generateExosInit(template) {
     }
 
     //initialization
-    out += `    EXOS_ASSERT_OK(exos_datamodel_init(${template.datamodel.varName}, "${template.datamodel.structName}", "${template.datamodel.structName}_AR"));\n\n`;
+    out += `    EXOS_ASSERT_OK(exos_datamodel_init(${template.datamodel.varName}, "${template.datamodel.structName}", "${template.datamodel.structName}_0"));\n\n`;
     for (let dataset of template.datasets) {
         if (dataset.isSub || dataset.isPub) {
             out += `    EXOS_ASSERT_OK(exos_dataset_init(${dataset.varName}, ${template.datamodel.varName}, "${dataset.structName}", &${template.handle.name}->data.${dataset.structName}, sizeof(${template.handle.name}->data.${dataset.structName})));\n`;
@@ -452,12 +383,12 @@ function generateExosCyclic(template) {
 
     out += `    ${template.handle.dataType} *${template.handle.name} = (${template.handle.dataType} *)inst->Handle;\n\n`;
     out += `    inst->Error = false;\n`;
-    out += `    if (NULL == handle)\n`;
+    out += `    if (NULL == ${template.handle.name} || NULL == inst->p${template.datamodel.structName})\n`;
     out += `    {\n`;
     out += `        inst->Error = true;\n`;
     out += `        return;\n`;
     out += `    }\n`;
-    out += `    if ((void *)handle != handle->self)\n`;
+    out += `    if ((void *)${template.handle.name} != ${template.handle.name}->self)\n`;
     out += `    {\n`;
     out += `        inst->Error = true;\n`;
     out += `        return;\n`;
@@ -467,12 +398,25 @@ function generateExosCyclic(template) {
     out += `    exos_datamodel_handle_t *${template.datamodel.varName} = &${template.handle.name}->${template.datamodel.varName};\n`;
     out += `    //the user context of the datamodel points to the ${template.datamodel.structName}Cyclic instance\n`;
     out += `    ${template.datamodel.varName}->user_context = inst; //set it cyclically in case the program using the FUB is retransferred\n`;
-    out += `    ${template.datamodel.varName}->user_tag = 0; //user defined\n\n`;
+    out += `    ${template.datamodel.varName}->user_tag = 0; //user defined\n`;
+    out += `    //handle online download of the library\n`;
+    out += `    if(NULL != ${template.datamodel.varName}->datamodel_event_callback && ${template.datamodel.varName}->datamodel_event_callback != datamodelEvent)\n`;
+    out += `    {\n`;
+    out += `        ${template.datamodel.varName}->datamodel_event_callback = datamodelEvent;\n`;
+    out += `        exos_log_delete(&${template.handle.name}->${template.logname});\n`;
+    out += `        exos_log_init(&${template.handle.name}->${template.logname}, "${template.datamodel.structName}_0");\n`;
+    out += `    }\n\n`;
+
     for (let dataset of template.datasets) {
         if (dataset.isSub || dataset.isPub) {
             out += `    exos_dataset_handle_t *${dataset.varName} = &${template.handle.name}->${dataset.varName};\n`;
             out += `    ${dataset.varName}->user_context = NULL; //user defined\n`;
-            out += `    ${dataset.varName}->user_tag = 0; //user defined\n\n`;
+            out += `    ${dataset.varName}->user_tag = 0; //user defined\n`;
+            out += `    //handle online download of the library\n`;
+            out += `    if(NULL != ${dataset.varName}->dataset_event_callback && ${dataset.varName}->dataset_event_callback != datasetEvent)\n`;
+            out += `    {\n`;
+            out += `        ${dataset.varName}->dataset_event_callback = datasetEvent;\n`;
+            out += `    }\n\n`;
         }
     }
     out += `    //unregister on disable\n`;
@@ -531,49 +475,24 @@ function generateExosCyclic(template) {
     out += `        EXOS_ASSERT_OK(exos_datamodel_process(${template.datamodel.varName}));\n`;
     out += `        //put your cyclic code here!\n\n`;
     for (let dataset of template.datasets) {
-        if (!dataset.isPrivate) {
-            if (dataset.isPub) {
-                if (dataset.isSub) {
-                    out += `        if (NULL != inst->${dataset.structName})\n`;
-                    out += `        {\n`;
-                    out += `            //publish the ${dataset.varName} dataset as soon as there are changes\n`;
-                    if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
-                        out += `            if (*inst->${dataset.structName} != data->${dataset.structName})\n`;
-                        out += `            {\n`;
-                        out += `                data->${dataset.structName} = *inst->${dataset.structName};\n`;
-                        out += `                exos_dataset_publish(${dataset.varName});\n`;
-                        out += `            }\n`;
-                        out += `        }\n`;
-                    }
-                    else {
-                        out += `            if (0 != memcmp(inst->${dataset.structName}, &data->${dataset.structName}, sizeof(data->${dataset.structName})))\n`;
-                        out += `            {\n`;
-                        out += `                memcpy(&data->${dataset.structName}, inst->${dataset.structName}, sizeof(data->${dataset.structName}));\n`;
-                        out += `                exos_dataset_publish(${dataset.varName});\n`;
-                        out += `            }\n`;
-                        out += `        }\n`;
-                    }
-                }
-                else {
-                    if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
-                        out += `        //publish the ${dataset.varName} dataset as soon as there are changes\n`;
-                        out += `        if (inst->${dataset.structName} != data->${dataset.structName})\n`;
-                        out += `        {\n`;
-                        out += `            data->${dataset.structName} = inst->${dataset.structName};\n`;
-                        out += `            exos_dataset_publish(${dataset.varName});\n`;
-                        out += `        }\n`;
-                    } 
-                    else {
-                        out += `        //publish the ${dataset.varName} dataset as soon as there are changes\n`;
-                        out += `        if (0 != memcmp(&inst->${dataset.structName}, &data->${dataset.structName}, sizeof(data->${dataset.structName})))\n`;
-                        out += `        {\n`;
-                        out += `            memcpy(&data->${dataset.structName}, &inst->${dataset.structName}, sizeof(data->${dataset.structName}));\n`;
-                        out += `            exos_dataset_publish(${dataset.varName});\n`;
-                        out += `        }\n`;
-                    }
-                }
+        if (dataset.isPub) {        
+            if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
+                out += `        //publish the ${dataset.varName} dataset as soon as there are changes\n`;
+                out += `        if (inst->p${template.datamodel.structName}->${dataset.structName} != data->${dataset.structName})\n`;
+                out += `        {\n`;
+                out += `            data->${dataset.structName} = inst->p${template.datamodel.structName}->${dataset.structName};\n`;
+                out += `            exos_dataset_publish(${dataset.varName});\n`;
+                out += `        }\n`;
+            } 
+            else {
+                out += `        //publish the ${dataset.varName} dataset as soon as there are changes\n`;
+                out += `        if (0 != memcmp(&inst->p${template.datamodel.structName}->${dataset.structName}, &data->${dataset.structName}, sizeof(data->${dataset.structName})))\n`;
+                out += `        {\n`;
+                out += `            memcpy(&data->${dataset.structName}, &inst->p${template.datamodel.structName}->${dataset.structName}, sizeof(data->${dataset.structName}));\n`;
+                out += `            exos_dataset_publish(${dataset.varName});\n`;
+                out += `        }\n`;
             }
-        }
+        }   
     }
     out += `\n        break;\n\n`;
     out += `    case 255:\n`;
