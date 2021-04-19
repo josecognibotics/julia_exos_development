@@ -176,6 +176,17 @@ function activate(context) {
 	});
 	context.subscriptions.push(generateCppTemplate);
 
+	let updateCppTemplate = vscode.commands.registerCommand('exos-component-extension.updateCppTemplate', function (uri) {
+		try {
+			let selection = cpptemplate.updateTemplate(uri.fsPath);
+			vscode.window.showInformationMessage(`Updated C++ template for ${selection}`);
+
+		} catch (error) {
+			vscode.window.showErrorMessage(error);
+		}
+	});
+	context.subscriptions.push(updateCppTemplate);
+
 
 	if (isDebugMode()) 
 	{

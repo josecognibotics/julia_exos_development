@@ -7,6 +7,7 @@ const template_linux = require('./exos_template_linux');
 const template_ar = require('../c-template/exos_template_ar');
 const template_cpp = require('./exos_template_cpp.js');
 const path = require('path');
+var parse = require('../node_modules/xml-parser');
 
 function generateTemplate(fileName, structName, outPath) {
 
@@ -103,6 +104,88 @@ function generateTemplate(fileName, structName, outPath) {
     fs.writeFileSync(`${outPath}/${structName}/Linux/main.cpp`, out);
 }
 
+function updateTemplate(fileName) {
+
+    var xml = fs.readFileSync(fileName).toString();
+    
+    try {
+        var obj = parse(xml);
+    } catch {
+        throw('Error: could not parse .exospkg file');
+    }
+    
+    let typFile = "";
+    let structName = ""; 
+    let libName = "";
+    let outPath = "";
+
+    for(let child of obj.root.children) {
+        if(child.name == "Build") {
+            for(let build of child.children) {
+                if(build.name == "GenerateHeader") {
+                    if(build.attributes["FileName"]!= null && build.attributes["TypeName"]!=null) {
+                        typFile = path.join(path.dirname(fileName), build.attributes["FileName"].replace(/\\/g, '/'));
+                        structName = build.attributes["TypeName"];
+                        libName = structName.substring(0, 10);
+                        outPath = path.dirname(path.dirname(fileName));
+                        break;
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+    }
+
+    //check that we have all we need
+    if(libName == "") throw(`GenerateHeader section not found in .exospkg file!`);
+
+    if(!fs.existsSync(typFile)) throw(`Typ source file ${typFile} not found`);
+
+    if(!fs.existsSync(`${path.dirname(fileName)}/${libName}/ExosDataModel.cpp`)) throw(`${path.dirname(fileName)}/${libName}/ExosDataModel.cpp does not exist!`);
+    if(!fs.existsSync(`${path.dirname(fileName)}/${libName}/ExosDataModel.h`)) throw(`${path.dirname(fileName)}/${libName}/ExosDataModel.h does not exist!`);
+    if(!fs.existsSync(`${path.dirname(fileName)}/${libName}/ExosDataSet.h`)) throw(`${path.dirname(fileName)}/${libName}/ExosDataSet.h does not exist!`);
+    if(!fs.existsSync(`${path.dirname(fileName)}/Linux/ExosDataModel.cpp`)) throw(`${path.dirname(fileName)}/Linux/ExosDataModel.cpp does not exist!`);
+    if(!fs.existsSync(`${path.dirname(fileName)}/Linux/ExosDataModel.h`)) throw(`${path.dirname(fileName)}/Linux/ExosDataModel.h does not exist!`);
+    if(!fs.existsSync(`${path.dirname(fileName)}/Linux/ExosDataSet.h`)) throw(`${path.dirname(fileName)}/Linux/ExosDataSet.h does not exist!`);
+    if(!fs.existsSync(path.join(outPath, structName, libName, `exos_${structName.toLowerCase()}.h`))) throw(`${path.join(outPath, structName, libName, `exos_${structName.toLowerCase()}.h`)} does not exist!`);
+    if(!fs.existsSync(path.join(outPath, structName, 'Linux', `exos_${structName.toLowerCase()}.h`))) throw(`${path.join(outPath, structName, 'Linux', `exos_${structName.toLowerCase()}.h`)} does not exist!`);
+
+    //ok were good to go, regenerate
+    let out = "";
+
+    //headers
+    out = header.generateHeader(typFile, structName, [`${libName}.h`]);
+    //AS header
+    fs.writeFileSync(path.join(outPath, structName, libName, `exos_${structName.toLowerCase()}.h`), out);
+    //Linux header
+    fs.writeFileSync(path.join(outPath, structName, 'Linux', `exos_${structName.toLowerCase()}.h`), out);
+
+    out = template_cpp.generateFun(typFile, structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/${libName}.fun`, out);
+
+    out = template_cpp.generateExosDataModelCpp(typFile, structName, structName + "_AR", false);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/ExosDataModel.cpp`, out);
+
+    out = template_cpp.generateExosDataModelHeader(typFile, structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/ExosDataModel.h`, out);
+
+    out = template_cpp.generateExosDataSetHeader(structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/ExosDataSet.h`, out);
+
+    out = template_cpp.generateExosDataModelCpp(typFile, structName, structName + "_Linux", true);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/ExosDataModel.cpp`, out);
+
+    out = template_cpp.generateExosDataModelHeader(typFile, structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/ExosDataModel.h`, out);
+
+    out = template_cpp.generateExosDataSetHeader(structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/ExosDataSet.h`, out);
+
+    return structName;
+}
+
 module.exports = {
-    generateTemplate
+    generateTemplate,
+    updateTemplate
 }
