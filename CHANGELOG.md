@@ -1,6 +1,21 @@
 # Changelog
-## [Unreleased]
-Support for arrays in static C-lib including SWIG
+## [1.1.5] - 2021-04-16
+### Changed
+
+- Changed context menu commands to "Instantiatable" and "Singleton"
+
+- Streamlined the AR parts so that all Templates use a Dynamic library with the reference to an external variable of the interface-datatype. 
+
+- Singleton (previously static-c-lib) template log commands have been moved into a log structure rather than having them in the top structure as log_error log_warning and so on.
+### Added
+
+- Node.js N-API generator added. Uses the Node-API version 6. Some limitations are known and is mentioned in top of the created Linux/lib"structname".c file. Major things are that value ranges are not checked, multidimentional arrays are not supported and that error checking is not yet fully implemented in a nice way.
+Tested with Node.js version 10 (latest).  
+Needs node-gyp, python 3.x, npm to be installed in the build environment (WSL).
+
+- Updated SWIG NodeJS template to allow for node-modules like the Node-API version, as well as having CMake creating a debian package instead of loose files.
+
+- Added more description in the README
 ## [1.1.4] - 2021-03-04
 ### Added
 - This changelog (copied earlier entries from Readme/Details), lets try this: [Keep a Changelog](http://keepachangelog.com/)

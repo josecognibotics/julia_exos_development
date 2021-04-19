@@ -23,8 +23,7 @@ function generateLinuxPackage(typName) {
     return out;
 }
 
-function generateShBuild()
-{
+function generateShBuild() {
     let out = "";
 
     out += `#!/bin/sh\n\n`;
@@ -102,7 +101,7 @@ function generateWSLBuild(typName) {
     return out;
 }
 
-function generateExosPkg(typName,libName,fileName) {
+function generateExosPkg(typName, libName, fileName) {
     let out = "";
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
@@ -220,7 +219,7 @@ function generateCMakeLists(typName) {
 
     out += `set(CPACK_PACKAGE_FILE_NAME exos-comp-${typName.toLowerCase()}-`;
     out += '${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})\n';
-    
+
     out += `set(CPACK_DEBIAN_PACKAGE_MAINTAINER "your name")\n`;
     out += `\n`;
     out += `set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)\n`;
@@ -369,11 +368,11 @@ function generateExosInit(template) {
         }
     }
     out += `    \n`;
-    out += `    exos_log_init(&${template.logname}, "${template.datamodel.structName}_Linux");\n\n`;
+    out += `    exos_log_init(&${template.logname}, "${template.datamodel.structName}_0");\n\n`;
     out += `    SUCCESS("starting ${template.datamodel.structName} application..");\n\n`;
 
     //initialization
-    out += `    EXOS_ASSERT_OK(exos_datamodel_init(&${template.datamodel.varName}, "${template.datamodel.structName}", "${template.datamodel.structName}_Linux"));\n\n`;
+    out += `    EXOS_ASSERT_OK(exos_datamodel_init(&${template.datamodel.varName}, "${template.datamodel.structName}", "${template.datamodel.structName}_0"));\n\n`;
     out += `    //set the user_context to access custom data in the callbacks\n`;
     out += `    ${template.datamodel.varName}.user_context = NULL; //user defined\n`;
     out += `    ${template.datamodel.varName}.user_tag = 0; //user defined\n\n`;
@@ -501,33 +500,32 @@ function configTemplate(fileName, typName) {
             template.datamodel.varName = types.attributes.dataType.toLowerCase();
         }
 
-        //check if toLowerCase is same as struct name, then extend it with _dataset
         for (let child of types.children) {
             let object = {};
             object["structName"] = child.attributes.name;
             object["varName"] = child.attributes.name.toLowerCase() + (child.attributes.name == child.attributes.name.toLowerCase() ? "_dataset" : "");
             object["dataType"] = child.attributes.dataType;
-            object["arraySize"] = child.attributes.arraySize;
+            if (typeof child.attributes.arraySize === "number") {
+                object["arraySize"] = child.attributes.arraySize;
+            } else {
+                object["arraySize"] = 0;
+            }
             object["comment"] = child.attributes.comment;
-            object["isPub"] = child.attributes.comment.includes("PUB");
-            object["isSub"] = child.attributes.comment.includes("SUB");
-            object["isPrivate"] = child.attributes.comment.includes("private");
+            if (typeof child.attributes.comment === "string") {
+                object["isPub"] = child.attributes.comment.includes("PUB");
+                object["isSub"] = child.attributes.comment.includes("SUB");
+                object["isPrivate"] = child.attributes.comment.includes("private");
+            } else {
+                object["comment"] = "";
+                object["isPub"] = false;
+                object["isSub"] = false;
+                object["isPrivate"] = false;
+            }
             if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
             template.datasets.push(object);
         }
-
-        // initialize non-string comments to "" and missing arraysizes to 0
-        for (let dataset of template.datasets) {
-            if (typeof dataset.comment !== 'string') {
-                dataset.comment = "";
-            }
-            if (typeof dataset.arraySize !== 'number') {
-                dataset.arraySize = 0;
-            }
-        }
-
     } else {
-        throw(`file '${fileName}' not found.`);
+        throw (`file '${fileName}' not found.`);
     }
 
     return template;
@@ -545,7 +543,7 @@ if (require.main === module) {
         try {
             let out = generateTemplate(fileName, structName);
             fs.writeFileSync(`${outPath}/exos_template_${structName.toLowerCase()}_linux.c`, out);
-            process.stdout.write(`${outPath}/exos_template_${structName.toLowerCase()}_linux.c generated`);    
+            process.stdout.write(`${outPath}/exos_template_${structName.toLowerCase()}_linux.c generated`);
         } catch (error) {
             process.stderr.write(error);
         }

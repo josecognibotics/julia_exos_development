@@ -13,12 +13,15 @@
 
     PLCs WSTRING is not supported.
 
+    Enums defined in typ file will parse to DINT (uint32_t). Enums are not supported in JavaScript.
+
     Generally the generates code is not yet fully and understanably error handled. ex. if (napi_ok != .....
 
     The code generated is NOT yet fully formatted to ones normal liking. There are missing indentations.
 */
 
 const header = require('../exos_header');
+const path = require('path');
 const fs = require('fs');
 
 ///////////////
@@ -75,38 +78,40 @@ let objectIdx = new objectIndexer;
 
 function readType(fileName, typName) {
     var template = {
+        type: "",
         datasets: [],
     }
 
     if (fs.existsSync(fileName)) {
-
         var types = header.parseTypFile(fileName, typName);
 
-        //check if toLowerCase is same as struct name, then extend it with _dataset
+        if (types.name === "enum") template.type = "enum";
+        else if (types.name === "struct") template.type = "struct";
+
         for (let child of types.children) {
             let object = {};
             object["structName"] = child.attributes.name;
             object["varName"] = child.attributes.name.toLowerCase() + (child.attributes.name == child.attributes.name.toLowerCase() ? "_dataset" : "");
             object["dataType"] = child.attributes.dataType;
-            object["arraySize"] = child.attributes.arraySize;
+            if (typeof child.attributes.arraySize === "number") {
+                object["arraySize"] = child.attributes.arraySize;
+            } else {
+                object["arraySize"] = 0;
+            }
             object["comment"] = child.attributes.comment;
-            object["isPub"] = child.attributes.comment.includes("PUB");
-            object["isSub"] = child.attributes.comment.includes("SUB");
-            object["isPrivate"] = child.attributes.comment.includes("private");
+            if (typeof child.attributes.comment === "string") {
+                object["isPub"] = child.attributes.comment.includes("PUB");
+                object["isSub"] = child.attributes.comment.includes("SUB");
+                object["isPrivate"] = child.attributes.comment.includes("private");
+            } else {
+                object["comment"] = "";
+                object["isPub"] = false;
+                object["isSub"] = false;
+                object["isPrivate"] = false;
+            }
             if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
             template.datasets.push(object);
         }
-
-        // initialize non-string comments to "" and missing arraysizes to 0
-        for (let dataset of template.datasets) {
-            if (typeof dataset.comment !== 'string') {
-                dataset.comment = "";
-            }
-            if (typeof dataset.arraySize !== 'number') {
-                dataset.arraySize = 0;
-            }
-        }
-
     } else {
         throw (`file '${fileName}' not found.`);
     }
@@ -144,8 +149,11 @@ function generateLinuxPackage(typName) {
 function generateShBuild() {
     let out = "";
 
-
     out += `#!/bin/sh\n\n`;
+
+    out += `rm -f l_*.node\n`;
+    out += `rm -f *.deb\n\n`;
+
     out += `finalize() {\n`;
     out += `    rm -rf build/*\n`;
     out += `    rm -r build\n`;
@@ -155,31 +163,37 @@ function generateShBuild() {
     out += `    sync\n`;
     out += `    exit $1\n`;
     out += `}\n\n`;
-    out += `node-gyp rebuild\n`;
+
+    out += `npm install\n`;
     out += `if [ "$?" -ne 0 ] ; then\n`;
     out += `    finalize 1\n`;
     out += `fi\n\n`;
+
     out += `cp -f build/Release/l_*.node .\n\n`;
+
+    out += `mkdir node_modules #make sure the folder exists even if no submodules are needed\n\n`;
+
     out += `rm -rf build/*\n`;
-    out += `rm -r build\n\n`;
-    out += `npm install\n\n`;
-    out += `mkdir build\n`;
-    out += `mkdir node_modules\n\n`;
+
     out += `cd build\n\n`;
+
     out += `cmake -Wno-dev ..\n`;
     out += `if [ "$?" -ne 0 ] ; then\n`;
     out += `    cd ..\n`;
     out += `    finalize 2\n`;
     out += `fi\n\n`;
+
     out += `cpack\n`;
     out += `if [ "$?" -ne 0 ] ; then\n`;
     out += `    cd ..\n`;
-    out += `    finalize \n`; 3
+    out += `    finalize\n`;
     out += `fi\n\n`;
-    out += `cp -f exos-comp-*.deb ..\n\n`;
-    out += `cd ..\n\n`;
-    out += `finalize 0\n\n`;
 
+    out += `cp -f exos-comp-*.deb ..\n\n`;
+
+    out += `cd ..\n\n`;
+
+    out += `finalize 0\n\n`;
     return out;
 }
 
@@ -214,14 +228,11 @@ function generateExosPkg(typName, libName, fileName) {
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
     out += `<ComponentPackage Version="1.0.0" ErrorHandling="Ignore" StartupTimeout="0">\n`;
-    out += `    <File Name="exos-comp-${typName.toLowerCase()}" FileName="Linux\\exos-comp-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
     out += `    <Service Name="${typName} Runtime Service" Executable="/usr/bin/npm" Arguments="start --prefix /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <DataModelInstance Name="${typName}"/>\n`;
+    out += `    <File Name="exos-comp-${typName.toLowerCase()}" FileName="Linux\\exos-comp-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
     out += `    <File Name="main-script" FileName="Linux\\index.js" Type="Project"/>\n`;
-    out += `    <File Name="${typName.toLowerCase()}-installer" FileName="Linux\\exos-comp-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
-    out += `    <Installation Type="Preinst" Command="mkdir /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/index.js /home/user/${typName.toLowerCase()}/"/>\n`;
-    out += `    <Installation Type="Postrm" Command="rm -r /home/user/${typName.toLowerCase()}"/>\n`;
     out += `    <Build>\n`;
     out += `        <GenerateHeader FileName="${typName}\\${typName}.typ" TypeName="${typName}">\n`;
     out += `            <SG4 Include="${fileName.split(".")[0].toLowerCase()}.h"/>\n`;
@@ -246,7 +257,10 @@ function generateExosPkg(typName, libName, fileName) {
 function generateCMakeLists(typName) {
     let out = "";
     out += `\n`;
-    out += `SET(${typName.toUpperCase()}_MODULE_FILES\n`;
+    out += `project(${typName.toLowerCase()})\n`;
+    out += `cmake_minimum_required(VERSION 3.0)\n`;
+    out += `\n`;
+    out += `set(${typName.toUpperCase()}_MODULE_FILES\n`;
     out += `    l_${typName}.node\n`;
     out += `    ${typName.toLowerCase()}.js\n`;
     out += `    package.json\n`;
@@ -328,24 +342,26 @@ function generateExosCallbacks(template) {
     out += `        break;\n\n`;
 
     out += `    case EXOS_DATASET_EVENT_CONNECTION_CHANGED:\n`;
+    atleastone = false;
     for (let dataset of template.datasets) {
-        atleastone = false;
-        if (atleastone) {
-            out += `        else `;
+        if (dataset.isPub || dataset.isSub) {
+            if (atleastone) {
+                out += `        else `;
+            }
+            else {
+                out += `        `;
+                atleastone = true;
+            }
+            out += `if(0 == strcmp(dataset->name, "${dataset.structName}"))\n`;
+            out += `        {\n`;
+            out += `            if (${dataset.structName}.connectiononchange_cb != NULL)\n`;
+            out += `            {\n`;
+            out += `                napi_acquire_threadsafe_function(${dataset.structName}.connectiononchange_cb);\n`;
+            out += `                napi_call_threadsafe_function(${dataset.structName}.connectiononchange_cb, exos_get_state_string(dataset->connection_state), napi_tsfn_blocking);\n`;
+            out += `                napi_release_threadsafe_function(${dataset.structName}.connectiononchange_cb, napi_tsfn_release);\n`;
+            out += `            }\n`;
+            out += `        }\n`;
         }
-        else {
-            out += `        `;
-            atleastone = true;
-        }
-        out += `if(0 == strcmp(dataset->name, "${dataset.structName}"))\n`;
-        out += `        {\n`;
-        out += `            if (${dataset.structName}.connectiononchange_cb != NULL)\n`;
-        out += `            {\n`;
-        out += `                napi_acquire_threadsafe_function(${dataset.structName}.connectiononchange_cb);\n`;
-        out += `                napi_call_threadsafe_function(${dataset.structName}.connectiononchange_cb, exos_get_state_string(dataset->connection_state), napi_tsfn_blocking);\n`;
-        out += `                napi_release_threadsafe_function(${dataset.structName}.connectiononchange_cb, napi_tsfn_release);\n`;
-        out += `            }\n`;
-        out += `        }\n`;
     }
     out += `\n`;
     out += `        switch (dataset->connection_state)\n`;
@@ -376,7 +392,7 @@ function generateExosCallbacks(template) {
     out += `        case EXOS_STATE_CONNECTED:\n`;
     out += `        case EXOS_STATE_OPERATIONAL:\n`;
     out += `        case EXOS_STATE_ABORTED:\n`;
-    out += `            break;\n;`;
+    out += `            break;\n`;
     out += `        }\n`;
     out += `        break;\n`;
     out += `    }\n`;
@@ -472,27 +488,39 @@ function generateConnectionCallbacks(template) {
     out += `        napi_throw_error(env, "EINVAL", "Can't call connectionOnChange callback - ${template.datamodel.varName}");\n`;
     out += `}\n\n`;
 
+    out += `static void ${template.datamodel.varName}_onprocessed_js_cb(napi_env env, napi_value js_cb, void *context, void *data)\n`;
+    out += `{\n`;
+    out += `    napi_value undefined;\n\n`;
+
+    out += `    napi_get_undefined(env, &undefined);\n\n`;
+
+    out += `    if (napi_ok != napi_call_function(env, undefined, js_cb, 0, NULL, NULL))\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Can't call onProcessed - ${template.datamodel.varName}");\n`;
+    out += `}\n\n`;
+
     //datasets
     for (let dataset of template.datasets) {
-        out += `static void ${dataset.structName}_connonchange_js_cb(napi_env env, napi_value js_cb, void *context, void *data)\n`;
-        out += `{\n`;
-        out += `    const char *string = data;\n`;
-        out += `    napi_value undefined;\n\n`;
+        if (dataset.isSub || dataset.isPub) {
+            out += `static void ${dataset.structName}_connonchange_js_cb(napi_env env, napi_value js_cb, void *context, void *data)\n`;
+            out += `{\n`;
+            out += `    const char *string = data;\n`;
+            out += `    napi_value undefined;\n\n`;
 
-        out += `    napi_get_undefined(env, &undefined);\n\n`;
+            out += `    napi_get_undefined(env, &undefined);\n\n`;
 
-        out += `    if (napi_ok != napi_create_string_utf8(env, string, strlen(string), &${dataset.structName}.value))\n`;
-        out += `        napi_throw_error(env, "EINVAL", "Can't create utf8 string from char* - ${dataset.structName}.value");\n\n`;
+            out += `    if (napi_ok != napi_create_string_utf8(env, string, strlen(string), &${dataset.structName}.value))\n`;
+            out += `        napi_throw_error(env, "EINVAL", "Can't create utf8 string from char* - ${dataset.structName}.value");\n\n`;
 
-        out += `    if (napi_ok != napi_get_reference_value(env, ${dataset.structName}.ref, &${dataset.structName}.object_value))\n`;
-        out += `        napi_throw_error(env, "EINVAL", "Can't get reference - ${dataset.structName} ");\n\n`;
+            out += `    if (napi_ok != napi_get_reference_value(env, ${dataset.structName}.ref, &${dataset.structName}.object_value))\n`;
+            out += `        napi_throw_error(env, "EINVAL", "Can't get reference - ${dataset.structName} ");\n\n`;
 
-        out += `    if (napi_ok != napi_set_named_property(env, ${dataset.structName}.object_value, "connectionState", ${dataset.structName}.value))\n`;
-        out += `        napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${dataset.structName}");\n\n`;
+            out += `    if (napi_ok != napi_set_named_property(env, ${dataset.structName}.object_value, "connectionState", ${dataset.structName}.value))\n`;
+            out += `        napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${dataset.structName}");\n\n`;
 
-        out += `    if (napi_ok != napi_call_function(env, undefined, js_cb, 0, NULL, NULL))\n`;
-        out += `        napi_throw_error(env, "EINVAL", "Can't call connectionOnChange callback - ${dataset.structName}");\n`;
-        out += `}\n\n`;
+            out += `    if (napi_ok != napi_call_function(env, undefined, js_cb, 0, NULL, NULL))\n`;
+            out += `        napi_throw_error(env, "EINVAL", "Can't call connectionOnChange callback - ${dataset.structName}");\n`;
+            out += `}\n\n`;
+        }
     }
 
     return out;
@@ -545,6 +573,12 @@ function subSetLeafValue(type, srcVariable, destNapiVar) {
 
 function generateValuesSubscribeItem(fileName, srcVariable, destNapiVar, dataset) {
     let out = "";
+
+    //check if the type is an enum and change enums to DINT
+    if (!header.isScalarType(dataset.dataType, true)) {
+        let t = readType(fileName, dataset.dataType);
+        if (t.type === "enum") dataset.dataType = "DINT";
+    }
 
     if (header.isScalarType(dataset.dataType, true)) {
         if (dataset.arraySize > 0) {
@@ -668,7 +702,7 @@ function generateValueCallbacks(fileName, template) {
 
             out += out2;
 
-            out += `        int32_t _latency = exos_datamodel_get_nettime(&deepnest_datamodel, NULL) - *(int32_t *)netTime_exos;\n`;
+            out += `        int32_t _latency = exos_datamodel_get_nettime(&${template.datamodel.varName}_datamodel, NULL) - *(int32_t *)netTime_exos;\n`;
             out += `        napi_create_int32(env, *(int32_t *)netTime_exos, &netTime);\n`;
             out += `        napi_create_int32(env, _latency, &latency);\n`;
             out += `        napi_set_named_property(env, ${dataset.structName}.object_value, "netTime", netTime);\n`;
@@ -695,12 +729,18 @@ function generateCallbackInits(template) {
     out += `{\n`;
     out += `    return init_napi_onchange(env, info, "${template.datamodel.structName} connection change", ${template.datamodel.varName}_connonchange_js_cb, &${template.datamodel.varName}.connectiononchange_cb);\n`;
     out += `}\n\n`;
+    out += `napi_value ${template.datamodel.varName}_onprocessed_init(napi_env env, napi_callback_info info)\n`;
+    out += `{\n`;
+    out += `    return init_napi_onchange(env, info, "${template.datamodel.structName} onProcessed", ${template.datamodel.varName}_onprocessed_js_cb, &${template.datamodel.varName}.onprocessed_cb);\n`;
+    out += `}\n\n`;
 
     for (let dataset of template.datasets) {
-        out += `napi_value ${dataset.structName}_connonchange_init(napi_env env, napi_callback_info info)\n`;
-        out += `{\n`;
-        out += `    return init_napi_onchange(env, info, "${dataset.structName} connection change", ${dataset.structName}_connonchange_js_cb, &${dataset.structName}.connectiononchange_cb);\n`;
-        out += `}\n\n`;
+        if (dataset.isPub || dataset.isSub) {
+            out += `napi_value ${dataset.structName}_connonchange_init(napi_env env, napi_callback_info info)\n`;
+            out += `{\n`;
+            out += `    return init_napi_onchange(env, info, "${dataset.structName} connection change", ${dataset.structName}_connonchange_js_cb, &${dataset.structName}.connectiononchange_cb);\n`;
+            out += `}\n\n`;
+        }
     }
 
     for (let dataset of template.datasets) {
@@ -765,6 +805,12 @@ function pubFetchLeaf(type, srcValue, destVarName) {
 // recursive function that generates the actual copying of data from NodeJS to C struct
 function generateValuesPublishItem(rootCall, fileName, srcobj, destvar, dataset) {
     let out = "";
+
+    //check if the type is an enum and change enums to DINT
+    if (!header.isScalarType(dataset.dataType, true)) {
+        let t = readType(fileName, dataset.dataType);
+        if (t.type === "enum") dataset.dataType = "DINT";
+    }
 
     if (header.isScalarType(dataset.dataType, true)) {
         if (dataset.arraySize > 0) {
@@ -907,7 +953,11 @@ function generateCleanUpHookCyclic(template) {
 
     out += `void cyclic(uv_idle_t * handle) \n`;
     out += `{\n`;
-    out += `    exos_datamodel_process(&${template.datamodel.varName}_datamodel); \n`;
+    out += `    int dummy = 0;\n`;
+    out += `    exos_datamodel_process(&${template.datamodel.varName}_datamodel);\n`;
+    out += `    napi_acquire_threadsafe_function(${template.datamodel.varName}.onprocessed_cb);\n`;
+    out += `    napi_call_threadsafe_function(${template.datamodel.varName}.onprocessed_cb, &dummy, napi_tsfn_blocking);\n`;
+    out += `    napi_release_threadsafe_function(${template.datamodel.varName}.onprocessed_cb, napi_tsfn_release);\n`;
     out += `}\n\n`;
 
     out += `//read nettime for DataModel\n`;
@@ -939,6 +989,12 @@ function getDefaultValue(dataType) {
 
 function generateDataSetStructures(rootCall, fileName, srcVariable, destNapiVar, dataset) {
     let out = "";
+
+    //check if the type is an enum and change enums to DINT
+    if (!header.isScalarType(dataset.dataType, true)) {
+        let t = readType(fileName, dataset.dataType);
+        if (t.type === "enum") dataset.dataType = "DINT";
+    }
 
     if (header.isScalarType(dataset.dataType, true)) {
         if (dataset.arraySize > 0) {
@@ -1024,21 +1080,18 @@ function generateInitFunction(fileName, template) {
 
     //generate .value object structures
     for (let dataset of template.datasets) {
-        let pubsub = false
         out2 = out3 = "";
         if (dataset.isPub) {
             out2 += `    napi_create_function(env, NULL, 0, ${dataset.structName}_onchange_init, NULL, &${dataset.structName}_onchange);\n`;
             out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "onChange", ${dataset.structName}_onchange);\n`;
             out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "netTime", undefined);\n`;
             out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "latency", undefined);\n`;
-            pubsub = true;
         }
         if (dataset.isSub) {
             out3 += `    napi_create_function(env, NULL, 0, ${dataset.structName}_publish_method, NULL, &${dataset.structName}_publish);\n`;
             out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "publish", ${dataset.structName}_publish);\n`;
-            pubsub = true;
         }
-        if (pubsub) {
+        if (dataset.isPub || dataset.isSub) {
             iterator.reset();
             objectIdx.i = 0;
             out1 = generateDataSetStructures(true, fileName, `exos_data.${dataset.structName}`, `${dataset.structName}_value`, dataset);
@@ -1047,7 +1100,7 @@ function generateInitFunction(fileName, template) {
 
             out3 += `    napi_create_function(env, NULL, 0, ${dataset.structName}_connonchange_init, NULL, &${dataset.structName}_conn_change);\n`;
             out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "connectionOnChange", ${dataset.structName}_conn_change);\n`;
-            out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "connectionState", undefined);\n\n`;
+            out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "connectionState", def_string);\n\n`;
 
             out_structs += out1 + out2 + out3;
         }
@@ -1059,18 +1112,21 @@ function generateInitFunction(fileName, template) {
 
     // declarations
     out += `    napi_value `;
-    out += `${template.datamodel.varName}_conn_change,`;
+    out += `${template.datamodel.varName}_conn_change, ${template.datamodel.varName}_onprocessed,`;
     for (let i = 0; i < template.datasets.length; i++) {
-        out += ` ${template.datasets[i].structName}_conn_change`;
-        if ((i + 1) != template.datasets.length) {
-            out += `,`;
+        if (template.datasets[i].isPub || template.datasets[i].isSub) {
+            out += ` ${template.datasets[i].structName}_conn_change`;
+
+            if ((i + 1) != template.datasets.length) {
+                out += `,`;
+            }
         }
     }
     out += `;\n`;
 
     let atleastone = false;
     for (let i = 0; i < template.datasets.length; i++) {
-        if (template.datasets[i].comment.includes("PUB")) {
+        if (template.datasets[i].isPub) {
             if (atleastone == true) {
                 out += `,`;
             }
@@ -1087,7 +1143,7 @@ function generateInitFunction(fileName, template) {
     }
 
     for (let i = 0; i < template.datasets.length; i++) {
-        if (template.datasets[i].comment.includes("SUB")) {
+        if (template.datasets[i].isSub) {
             if (atleastone == true) {
                 out += `,`;
             }
@@ -1104,7 +1160,7 @@ function generateInitFunction(fileName, template) {
     }
 
     for (let i = 0; i < template.datasets.length; i++) {
-        if (template.datasets[i].comment.includes("SUB") || template.datasets[i].comment.includes("PUB")) {
+        if (template.datasets[i].isSub || template.datasets[i].isPub) {
             if (atleastone == true) {
                 out += `,`;
             }
@@ -1139,7 +1195,7 @@ function generateInitFunction(fileName, template) {
 
     out += `    napi_get_boolean(env, BUR_NAPI_DEFAULT_BOOL_INIT, &def_bool); \n`;
     out += `    napi_create_int32(env, BUR_NAPI_DEFAULT_NUM_INIT, &def_number); \n`;
-    out += `    napi_create_string_utf8(env, BUR_NAPI_DEFAULT_STRING_INIT, sizeof(BUR_NAPI_DEFAULT_STRING_INIT), &def_string); \n`;
+    out += `    napi_create_string_utf8(env, BUR_NAPI_DEFAULT_STRING_INIT, strlen(BUR_NAPI_DEFAULT_STRING_INIT), &def_string);\n`;
     out += `    napi_get_undefined(env, &undefined); \n\n`;
 
     //base objects
@@ -1147,7 +1203,7 @@ function generateInitFunction(fileName, template) {
     out += `    if (napi_ok != napi_create_object(env, &dataModel)) \n        return NULL; \n\n`;
     out += `    if (napi_ok != napi_create_object(env, &${template.datamodel.varName}.value)) \n        return NULL; \n\n`;
     for (let i = 0; i < template.datasets.length; i++) {
-        out += `    if (napi_ok != napi_create_object(env, &${template.datasets[i].structName}.value)) \n        return NULL; \n\n`;
+        if (template.datasets[i].isPub || template.datasets[i].isSub) { out += `    if (napi_ok != napi_create_object(env, &${template.datasets[i].structName}.value)) \n        return NULL; \n\n`; }
     }
 
     // insert build structures
@@ -1157,12 +1213,14 @@ function generateInitFunction(fileName, template) {
     //bind topics to datamodel
     out += `    // bind dataset objects to datamodel object\n`;
     for (let i = 0; i < template.datasets.length; i++) {
-        out += `    napi_set_named_property(env, dataModel, "${template.datasets[i].structName}", ${template.datasets[i].structName}.value); \n`;
+        if (template.datasets[i].isPub || template.datasets[i].isSub) { out += `    napi_set_named_property(env, dataModel, "${template.datasets[i].structName}", ${template.datasets[i].structName}.value); \n`; }
     }
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "dataModel", dataModel); \n`;
     out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_connonchange_init, NULL, &${template.datamodel.varName}_conn_change); \n`;
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionOnChange", ${template.datamodel.varName}_conn_change); \n`;
-    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionState", undefined);\n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionState", def_string);\n`;
+    out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_onprocessed_init, NULL, &${template.datamodel.varName}_onprocessed); \n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "onProcessed", ${template.datamodel.varName}_onprocessed); \n`;
     out += `    napi_create_function(env, NULL, 0, get_net_time, NULL, &getNetTime);\n`;
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "netTime", getNetTime);\n`;
 
@@ -1179,12 +1237,13 @@ function generateInitFunction(fileName, template) {
     out += `        return NULL; \n`;
     out += `    } \n`;
     for (let i = 0; i < template.datasets.length; i++) {
-        out += `    if (napi_ok != napi_create_reference(env, ${template.datasets[i].structName}.value, ${template.datasets[i].structName}.ref_count, &${template.datasets[i].structName}.ref)) \n`;
-        out += `    {
-        \n`;
-        out += `        napi_throw_error(env, "EINVAL", "Can't create ${template.datasets[i].structName} reference"); \n`;
-        out += `        return NULL; \n`;
-        out += `    } \n`;
+        if (template.datasets[i].isPub || template.datasets[i].isSub) {
+            out += `    if (napi_ok != napi_create_reference(env, ${template.datasets[i].structName}.value, ${template.datasets[i].structName}.ref_count, &${template.datasets[i].structName}.ref)) \n`;
+            out += `    {\n`;
+            out += `        napi_throw_error(env, "EINVAL", "Can't create ${template.datasets[i].structName} reference"); \n`;
+            out += `        return NULL; \n`;
+            out += `    } \n`;
+        }
     }
     out += `\n`;
 
@@ -1208,12 +1267,14 @@ function generateInitFunction(fileName, template) {
     out += `    ${template.datamodel.varName}_datamodel.user_tag = 0; \n\n`;
 
     for (let i = 0; i < template.datasets.length; i++) {
-        out += `    if (EXOS_ERROR_OK != exos_dataset_init(&${template.datasets[i].structName}_dataset, &${template.datamodel.varName}_datamodel, "${template.datasets[i].structName}", &exos_data.${template.datasets[i].structName}, sizeof(exos_data.${template.datasets[i].structName}))) \n`;
-        out += `    {\n`;
-        out += `        napi_throw_error(env, "EINVAL", "Can't initialize ${template.datasets[i].structName}"); \n`;
-        out += `    }\n`;
-        out += `    ${template.datasets[i].structName}_dataset.user_context = NULL; \n`;
-        out += `    ${template.datasets[i].structName}_dataset.user_tag = 0; \n\n`;
+        if (template.datasets[i].isPub || template.datasets[i].isSub) {
+            out += `    if (EXOS_ERROR_OK != exos_dataset_init(&${template.datasets[i].structName}_dataset, &${template.datamodel.varName}_datamodel, "${template.datasets[i].structName}", &exos_data.${template.datasets[i].structName}, sizeof(exos_data.${template.datasets[i].structName}))) \n`;
+            out += `    {\n`;
+            out += `        napi_throw_error(env, "EINVAL", "Can't initialize ${template.datasets[i].structName}"); \n`;
+            out += `    }\n`;
+            out += `    ${template.datasets[i].structName}_dataset.user_context = NULL; \n`;
+            out += `    ${template.datasets[i].structName}_dataset.user_tag = 0; \n\n`;
+        }
     }
 
     // register the datamodel
@@ -1226,19 +1287,21 @@ function generateInitFunction(fileName, template) {
     // register datasets
     out += `    // exOS register datasets\n`;
     for (let i = 0; i < template.datasets.length; i++) {
-        out += `    if (EXOS_ERROR_OK != exos_dataset_connect(&${template.datasets[i].structName}_dataset, `;
-        if (template.datasets[i].comment.includes("PUB")) {
-            out += `EXOS_DATASET_SUBSCRIBE`;
-            if (template.datasets[i].comment.includes("SUB")) {
-                out += ` + EXOS_DATASET_PUBLISH`;
+        if (template.datasets[i].isPub || template.datasets[i].isSub) {
+            out += `    if (EXOS_ERROR_OK != exos_dataset_connect(&${template.datasets[i].structName}_dataset, `;
+            if (template.datasets[i].isPub) {
+                out += `EXOS_DATASET_SUBSCRIBE`;
+                if (template.datasets[i].isSub) {
+                    out += ` + EXOS_DATASET_PUBLISH`;
+                }
+            } else {
+                out += `EXOS_DATASET_PUBLISH`;
             }
-        } else {
-            out += `EXOS_DATASET_PUBLISH`;
+            out += `, datasetEvent)) \n`;
+            out += `    {\n`;
+            out += `        napi_throw_error(env, "EINVAL", "Can't connect ${template.datasets[i].structName}"); \n`;
+            out += `    }\n\n`;
         }
-        out += `, datasetEvent)) \n`;
-        out += `    {\n`;
-        out += `        napi_throw_error(env, "EINVAL", "Can't connect ${template.datasets[i].structName}"); \n`;
-        out += `    }\n\n`;
     }
 
     out += `    // start up module\n`;
@@ -1271,6 +1334,8 @@ function generateLibTemplate(fileName, typName) {
 
     out += `PLCs WSTRING is not supported.\n\n`;
 
+    out += `Enums defined in typ file will parse to DINT (uint32_t). Enums are not supported in JavaScript.\n\n`;
+
     out += `Generally the generates code is not yet fully and understanably error handled. ex. if (napi_ok != .....\n\n`;
 
     out += `The code generated is NOT yet fully formatted to ones normal liking. There are missing indentations.\n`;
@@ -1292,17 +1357,18 @@ function generateLibTemplate(fileName, typName) {
     out += `\n`;
     out += `typedef struct\n`;
     out += `{\n`;
-    out += `    napi_ref ref; \n`;
-    out += `    uint32_t ref_count; \n`;
-    out += `    napi_threadsafe_function onchange_cb; \n`;
-    out += `    napi_threadsafe_function connectiononchange_cb; \n`;
+    out += `    napi_ref ref;\n`;
+    out += `    uint32_t ref_count;\n`;
+    out += `    napi_threadsafe_function onchange_cb;\n`;
+    out += `    napi_threadsafe_function connectiononchange_cb;\n`;
+    out += `    napi_threadsafe_function onprocessed_cb; //used only for datamodel\n`;
     out += `    napi_value object_value; //volatile placeholder.\n`;
     out += `    napi_value value;        //volatile placeholder.\n`;
     out += `} obj_handles;\n`;
     out += `\n`;
     out += `obj_handles ${template.datamodel.varName} = {};\n`;
     for (let dataset of template.datasets) {
-        out += `obj_handles ${dataset.structName} = {};\n`;
+        if (dataset.isPub || dataset.isSub) { out += `obj_handles ${dataset.structName} = {};\n`; }
     }
     out += `\n`;
     out += `napi_deferred deferred = NULL;\n`;
@@ -1311,7 +1377,7 @@ function generateLibTemplate(fileName, typName) {
     out += `${template.datamodel.dataType} exos_data = {};\n`;
     out += `exos_datamodel_handle_t ${template.datamodel.varName}_datamodel;\n`;
     for (let dataset of template.datasets) {
-        out += `exos_dataset_handle_t ${dataset.structName}_dataset;\n`;
+        if (dataset.isPub || dataset.isSub) { out += `exos_dataset_handle_t ${dataset.structName}_dataset;\n`; }
     }
     out += `\n`;
 
@@ -1364,16 +1430,18 @@ function generateIndexJS(fileName, typName) {
     out += `    //${template.datamodel.structName}.connectionState.....;\n`;
     out += `});\n`;
     for (let i = 0; i < template.datasets.length; i++) {
-        out += `${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.connectionOnChange(() => {\n`;
-        out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.connectionState ...\n`;
-        out += `});\n`;
+        if (template.datasets[i].isPub || template.datasets[i].isSub) {
+            out += `${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.connectionOnChange(() => {\n`;
+            out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.connectionState ...\n`;
+            out += `});\n`;
+        }
     }
 
     out += `\n`;
 
-    out += `//value callbacks\n`;
+    out += `//value callbacks from Automation Runtime\n`;
     for (let i = 0; i < template.datasets.length; i++) {
-        if (template.datasets[i].comment.includes("PUB")) {
+        if (template.datasets[i].isPub) {
             out += `${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.onChange(() => {\n`;
             out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.value..\n`;
             out += `});\n`;
@@ -1381,16 +1449,10 @@ function generateIndexJS(fileName, typName) {
     }
 
     out += `\n`;
-
-    out += `//publishing of values\n`;
-    out += `if (1 === 0) {\n`;
-    for (let i = 0; i < template.datasets.length; i++) {
-        if (template.datasets[i].comment.includes("SUB")) {
-            out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.value..\n`;
-            out += `    ${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.publish();\n`;
-        }
-    }
-    out += `}\n\n`;
+    out += `//read current nettime\n`;
+    out += `setInterval(() => {\n`;
+    out += `    //console.log("current netTime is: " + ${template.datamodel.structName}.netTime().toString());\n`;
+    out += `}, 2000);\n\n`;
 
     out += `/*
 All values in ${template.datamodel.structName}.dataModel that has a .onChange() callback will
@@ -1407,12 +1469,22 @@ returns current netTime.
 
 Note that ALL netTime and latency values are created from int32_t datatype and the wrapping of
 these values are not considered/handled in the imported module.
-*/\n`;
+*/\n\n`;
 
-    out += `setInterval(() => {\n`;
-    out += `    console.log("current netTime is: " + ${template.datamodel.structName}.netTime().toString());\n`;
-    out += `}, 2000);\n`;
+    out += `//Cyclic call from Automation Runtime\n`;
+    out += `${template.datamodel.structName}.onProcessed(() => {\n`;
+    out += `    //Code placed here will be called in sync with Automation Runtime.\n`;
+    out += `});\n\n`;
 
+    out += `//publishing of values to Automation Runtime\n`;
+    out += `if (1 === 0) {\n`;
+    for (let i = 0; i < template.datasets.length; i++) {
+        if (template.datasets[i].isSub) {
+            out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.value = ..\n`;
+            out += `    ${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.publish();\n`;
+        }
+    }
+    out += `}\n\n`;
 
     return out;
 }
@@ -1439,13 +1511,12 @@ function generatePackageJSON(fileName, typName) {
     out += `{\n`;
     out += `  "name": "${template.datamodel.varName}",\n`;
     out += `  "version": "1.0.0",\n`;
-    out += `  "description": "implementation of exOS data exchange deined by datatype ${template.datamodel.structName} from file ${fileName}",\n`;
+    out += `  "description": "implementation of exOS data exchange defined by datatype ${template.datamodel.structName} from file ${path.basename(fileName)}",\n`;
     out += `  "main": "index.js",\n`;
     out += `  "scripts": {\n`;
-    out += `    "start": "node index.js",\n`;
-    out += `    "install": "echo \\"No installation specified\\" && exit 0"\n`;
+    out += `    "start": "node index.js"\n`;
     out += `  },\n`;
-    out += `  "author": "NN",\n`;
+    out += `  "author": "your name",\n`;
     out += `  "license": "MIT"\n`;
     out += `}\n`;
 
@@ -1482,31 +1553,30 @@ function configTemplate(fileName, typName) {
             template.datamodel.varName = types.attributes.dataType.toLowerCase();
         }
 
-        //check if toLowerCase is same as struct name, then extend it with _dataset
         for (let child of types.children) {
             let object = {};
             object["structName"] = child.attributes.name;
             object["varName"] = child.attributes.name.toLowerCase() + (child.attributes.name == child.attributes.name.toLowerCase() ? "_dataset" : "");
             object["dataType"] = child.attributes.dataType;
-            object["arraySize"] = child.attributes.arraySize;
+            if (typeof child.attributes.arraySize === "number") {
+                object["arraySize"] = child.attributes.arraySize;
+            } else {
+                object["arraySize"] = 0;
+            }
             object["comment"] = child.attributes.comment;
-            object["isPub"] = child.attributes.comment.includes("PUB");
-            object["isSub"] = child.attributes.comment.includes("SUB");
-            object["isPrivate"] = child.attributes.comment.includes("private");
+            if (typeof child.attributes.comment === "string") {
+                object["isPub"] = child.attributes.comment.includes("PUB");
+                object["isSub"] = child.attributes.comment.includes("SUB");
+                object["isPrivate"] = child.attributes.comment.includes("private");
+            } else {
+                object["comment"] = "";
+                object["isPub"] = false;
+                object["isSub"] = false;
+                object["isPrivate"] = false;
+            }
             if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
             template.datasets.push(object);
         }
-
-        // initialize non-string comments to "" and missing arraysizes to 0
-        for (let dataset of template.datasets) {
-            if (typeof dataset.comment !== 'string') {
-                dataset.comment = "";
-            }
-            if (typeof dataset.arraySize !== 'number') {
-                dataset.arraySize = 0;
-            }
-        }
-
     } else {
         throw (`file '${fileName}' not found.`);
     }
