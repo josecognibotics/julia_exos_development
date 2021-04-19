@@ -298,6 +298,7 @@ function generateExosCallbacks(template) {
     out += `static void datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE event_type, void *info)\n{\n`;
     out += `    switch (event_type)\n    {\n`;
     out += `    case EXOS_DATASET_EVENT_UPDATED:\n`;
+    out += `        VERBOSE("dataset %s updated! latency (us):%i", dataset->name, (exos_datamodel_get_nettime(dataset->datamodel,NULL) - dataset->nettime));\n`;
     var atleastone = false;
     for (let dataset of template.datasets) {
         if (dataset.isPub) {
@@ -322,7 +323,9 @@ function generateExosCallbacks(template) {
     out += `        break;\n\n`;
 
     out += `    case EXOS_DATASET_EVENT_PUBLISHED:\n`;
+    out += `        VERBOSE("dataset %s published!", dataset->name);\n\n`;
     out += `    case EXOS_DATASET_EVENT_DELIVERED:\n`;
+    out += `        if (event_type == EXOS_DATASET_EVENT_DELIVERED) { VERBOSE("dataset %s delivered!", dataset->name); }\n\n`;
     atleastone = false;
     for (let dataset of template.datasets) {
         if (dataset.isSub) {
@@ -342,6 +345,7 @@ function generateExosCallbacks(template) {
     out += `        break;\n\n`;
 
     out += `    case EXOS_DATASET_EVENT_CONNECTION_CHANGED:\n`;
+    out += `        VERBOSE("dataset %s connecton changed to: %s", dataset->name, exos_get_state_string(dataset->connection_state));\n\n`;
     atleastone = false;
     for (let dataset of template.datasets) {
         if (dataset.isPub || dataset.isSub) {
@@ -379,7 +383,7 @@ function generateExosCallbacks(template) {
     out += `static void datamodelEvent(exos_datamodel_handle_t *datamodel, const EXOS_DATAMODEL_EVENT_TYPE event_type, void *info)\n{\n`;
     out += `    switch (event_type)\n    {\n`;
     out += `    case EXOS_DATAMODEL_EVENT_CONNECTION_CHANGED:\n`;
-
+    out += `        INFO("application ${template.datamodel.structName} changed state to %s", exos_get_state_string(datamodel->connection_state));\n\n`;
     out += `        if (${template.datamodel.varName}.connectiononchange_cb != NULL)\n`;
     out += `        {\n`;
     out += `            napi_acquire_threadsafe_function(${template.datamodel.varName}.connectiononchange_cb);\n`;
@@ -390,8 +394,12 @@ function generateExosCallbacks(template) {
     out += `        {\n`;
     out += `        case EXOS_STATE_DISCONNECTED:\n`;
     out += `        case EXOS_STATE_CONNECTED:\n`;
+    out += `            break;\n`;
     out += `        case EXOS_STATE_OPERATIONAL:\n`;
+    out += `            SUCCESS("${template.datamodel.structName} operational!");\n`;
+    out += `            break;\n`;
     out += `        case EXOS_STATE_ABORTED:\n`;
+    out += `            ERROR("${template.datamodel.structName} application error %d (%s) occured", datamodel->error, exos_get_error_string(datamodel->error));\n`;
     out += `            break;\n`;
     out += `        }\n`;
     out += `        break;\n`;
@@ -948,6 +956,10 @@ function generateCleanUpHookCyclic(template) {
     out += `    if (EXOS_ERROR_OK != exos_datamodel_delete(&${template.datamodel.varName}_datamodel))\n`;
     out += `    {\n`;
     out += `        napi_throw_error(env, "EINVAL", "Can't delete datamodel");\n`;
+    out += `    }\n\n`;
+    out += `    if (EXOS_ERROR_OK != exos_log_delete(&logger))\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Can't delete logger");\n`;
     out += `    }\n`;
     out += `}\n\n`;
 
@@ -958,6 +970,7 @@ function generateCleanUpHookCyclic(template) {
     out += `    napi_acquire_threadsafe_function(${template.datamodel.varName}.onprocessed_cb);\n`;
     out += `    napi_call_threadsafe_function(${template.datamodel.varName}.onprocessed_cb, &dummy, napi_tsfn_blocking);\n`;
     out += `    napi_release_threadsafe_function(${template.datamodel.varName}.onprocessed_cb, napi_tsfn_release);\n`;
+    out += `    exos_log_process(&logger);\n`;
     out += `}\n\n`;
 
     out += `//read nettime for DataModel\n`;
@@ -1277,7 +1290,12 @@ function generateInitFunction(fileName, template) {
         }
     }
 
-    // register the datamodel
+    // register the datamodel & logger
+    out += `    if (EXOS_ERROR_OK != exos_log_init(&logger, "${template.datamodel.structName}_Linux"))\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Can't register logger for ${template.datamodel.structName}"); \n`;
+    out += `    } \n\n`;
+    out += `    INFO("${template.datamodel.structName} starting!")\n`;
     out += `    // exOS register datamodel\n`;
     out += `    if (EXOS_ERROR_OK != exos_datamodel_connect_${template.datamodel.varName}(&${template.datamodel.varName}_datamodel, datamodelEvent)) \n`;
     out += `    {\n`;
@@ -1304,9 +1322,10 @@ function generateInitFunction(fileName, template) {
         }
     }
 
-    out += `    // start up module\n`;
-    out += `\n    uv_idle_init(uv_default_loop(), &cyclic_h); \n`;
+    out += `    // start up module\n\n`;
+    out += `    uv_idle_init(uv_default_loop(), &cyclic_h); \n`;
     out += `    uv_idle_start(&cyclic_h, cyclic); \n\n`;
+    out += `    SUCCESS("${template.datamodel.structName} started!")\n`;
 
     out += `    return exports; \n`;
 
@@ -1346,14 +1365,21 @@ function generateLibTemplate(fileName, typName) {
     out += `#include <node_api.h>\n`;
     out += `#include <stdint.h>\n`;
     out += `#include <exos_api.h>\n`;
+    out += `#include <exos_log.h>\n`;
     out += `#include "exos_${template.datamodel.varName}.h"\n`;
     out += `#include <uv.h>\n`;
     out += `#include <unistd.h>\n`;
-    out += `#include <string.h>\n`;
+    out += `#include <string.h>\n\n`;
+    out += `#define SUCCESS(_format_, ...) exos_log_success(&logger, EXOS_LOG_TYPE_USER, _format_, ##__VA_ARGS__);\n`;
+    out += `#define INFO(_format_, ...) exos_log_info(&logger, EXOS_LOG_TYPE_USER, _format_, ##__VA_ARGS__);\n`;
+    out += `#define VERBOSE(_format_, ...) exos_log_debug(&logger, EXOS_LOG_TYPE_USER + EXOS_LOG_TYPE_VERBOSE, _format_, ##__VA_ARGS__);\n`;
+    out += `#define ERROR(_format_, ...) exos_log_error(&logger, _format_, ##__VA_ARGS__);\n`;
     out += `\n`;
     out += `#define BUR_NAPI_DEFAULT_BOOL_INIT false\n`;
     out += `#define BUR_NAPI_DEFAULT_NUM_INIT 0\n`;
     out += `#define BUR_NAPI_DEFAULT_STRING_INIT ""\n`;
+    out += `\n`;
+    out += `static exos_log_handle_t logger;\n`;
     out += `\n`;
     out += `typedef struct\n`;
     out += `{\n`;
