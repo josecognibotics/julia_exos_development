@@ -1,4 +1,11 @@
 # Changelog
+
+## [1.1.6] - 2021-04-20
+
+### Fixed
+
+Singleton templates did not create publishers for the Linux side, which meant datasets could be subscribed to in AR but were never sent from Linux.
+
 ## [1.1.5] - 2021-04-16
 ### Changed
 
