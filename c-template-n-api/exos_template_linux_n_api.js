@@ -298,6 +298,7 @@ function generateExosCallbacks(template) {
     out += `static void datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE event_type, void *info)\n{\n`;
     out += `    switch (event_type)\n    {\n`;
     out += `    case EXOS_DATASET_EVENT_UPDATED:\n`;
+    out += `        VERBOSE("dataset %s updated! latency (us):%i", dataset->name, (exos_datamodel_get_nettime(dataset->datamodel,NULL) - dataset->nettime));\n`;
     var atleastone = false;
     for (let dataset of template.datasets) {
         if (dataset.isPub) {
@@ -322,7 +323,9 @@ function generateExosCallbacks(template) {
     out += `        break;\n\n`;
 
     out += `    case EXOS_DATASET_EVENT_PUBLISHED:\n`;
+    out += `        VERBOSE("dataset %s published!", dataset->name);\n\n`;
     out += `    case EXOS_DATASET_EVENT_DELIVERED:\n`;
+    out += `        if (event_type == EXOS_DATASET_EVENT_DELIVERED) { VERBOSE("dataset %s delivered!", dataset->name); }\n\n`;
     atleastone = false;
     for (let dataset of template.datasets) {
         if (dataset.isSub) {
@@ -342,6 +345,7 @@ function generateExosCallbacks(template) {
     out += `        break;\n\n`;
 
     out += `    case EXOS_DATASET_EVENT_CONNECTION_CHANGED:\n`;
+    out += `        VERBOSE("dataset %s connecton changed to: %s", dataset->name, exos_get_state_string(dataset->connection_state));\n\n`;
     atleastone = false;
     for (let dataset of template.datasets) {
         if (dataset.isPub || dataset.isSub) {
@@ -379,7 +383,7 @@ function generateExosCallbacks(template) {
     out += `static void datamodelEvent(exos_datamodel_handle_t *datamodel, const EXOS_DATAMODEL_EVENT_TYPE event_type, void *info)\n{\n`;
     out += `    switch (event_type)\n    {\n`;
     out += `    case EXOS_DATAMODEL_EVENT_CONNECTION_CHANGED:\n`;
-
+    out += `        INFO("application ${template.datamodel.structName} changed state to %s", exos_get_state_string(datamodel->connection_state));\n\n`;
     out += `        if (${template.datamodel.varName}.connectiononchange_cb != NULL)\n`;
     out += `        {\n`;
     out += `            napi_acquire_threadsafe_function(${template.datamodel.varName}.connectiononchange_cb);\n`;
@@ -390,8 +394,12 @@ function generateExosCallbacks(template) {
     out += `        {\n`;
     out += `        case EXOS_STATE_DISCONNECTED:\n`;
     out += `        case EXOS_STATE_CONNECTED:\n`;
+    out += `            break;\n`;
     out += `        case EXOS_STATE_OPERATIONAL:\n`;
+    out += `            SUCCESS("${template.datamodel.structName} operational!");\n`;
+    out += `            break;\n`;
     out += `        case EXOS_STATE_ABORTED:\n`;
+    out += `            ERROR("${template.datamodel.structName} application error %d (%s) occured", datamodel->error, exos_get_error_string(datamodel->error));\n`;
     out += `            break;\n`;
     out += `        }\n`;
     out += `        break;\n`;
@@ -486,6 +494,16 @@ function generateConnectionCallbacks(template) {
 
     out += `    if (napi_ok != napi_call_function(env, undefined, js_cb, 0, NULL, NULL))\n`;
     out += `        napi_throw_error(env, "EINVAL", "Can't call connectionOnChange callback - ${template.datamodel.varName}");\n`;
+    out += `}\n\n`;
+
+    out += `static void ${template.datamodel.varName}_onprocessed_js_cb(napi_env env, napi_value js_cb, void *context, void *data)\n`;
+    out += `{\n`;
+    out += `    napi_value undefined;\n\n`;
+
+    out += `    napi_get_undefined(env, &undefined);\n\n`;
+
+    out += `    if (napi_ok != napi_call_function(env, undefined, js_cb, 0, NULL, NULL))\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Can't call onProcessed - ${template.datamodel.varName}");\n`;
     out += `}\n\n`;
 
     //datasets
@@ -719,6 +737,10 @@ function generateCallbackInits(template) {
     out += `{\n`;
     out += `    return init_napi_onchange(env, info, "${template.datamodel.structName} connection change", ${template.datamodel.varName}_connonchange_js_cb, &${template.datamodel.varName}.connectiononchange_cb);\n`;
     out += `}\n\n`;
+    out += `napi_value ${template.datamodel.varName}_onprocessed_init(napi_env env, napi_callback_info info)\n`;
+    out += `{\n`;
+    out += `    return init_napi_onchange(env, info, "${template.datamodel.structName} onProcessed", ${template.datamodel.varName}_onprocessed_js_cb, &${template.datamodel.varName}.onprocessed_cb);\n`;
+    out += `}\n\n`;
 
     for (let dataset of template.datasets) {
         if (dataset.isPub || dataset.isSub) {
@@ -934,12 +956,21 @@ function generateCleanUpHookCyclic(template) {
     out += `    if (EXOS_ERROR_OK != exos_datamodel_delete(&${template.datamodel.varName}_datamodel))\n`;
     out += `    {\n`;
     out += `        napi_throw_error(env, "EINVAL", "Can't delete datamodel");\n`;
+    out += `    }\n\n`;
+    out += `    if (EXOS_ERROR_OK != exos_log_delete(&logger))\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Can't delete logger");\n`;
     out += `    }\n`;
     out += `}\n\n`;
 
     out += `void cyclic(uv_idle_t * handle) \n`;
     out += `{\n`;
-    out += `    exos_datamodel_process(&${template.datamodel.varName}_datamodel); \n`;
+    out += `    int dummy = 0;\n`;
+    out += `    exos_datamodel_process(&${template.datamodel.varName}_datamodel);\n`;
+    out += `    napi_acquire_threadsafe_function(${template.datamodel.varName}.onprocessed_cb);\n`;
+    out += `    napi_call_threadsafe_function(${template.datamodel.varName}.onprocessed_cb, &dummy, napi_tsfn_blocking);\n`;
+    out += `    napi_release_threadsafe_function(${template.datamodel.varName}.onprocessed_cb, napi_tsfn_release);\n`;
+    out += `    exos_log_process(&logger);\n`;
     out += `}\n\n`;
 
     out += `//read nettime for DataModel\n`;
@@ -1082,7 +1113,7 @@ function generateInitFunction(fileName, template) {
 
             out3 += `    napi_create_function(env, NULL, 0, ${dataset.structName}_connonchange_init, NULL, &${dataset.structName}_conn_change);\n`;
             out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "connectionOnChange", ${dataset.structName}_conn_change);\n`;
-            out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "connectionState", undefined);\n\n`;
+            out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "connectionState", def_string);\n\n`;
 
             out_structs += out1 + out2 + out3;
         }
@@ -1094,7 +1125,7 @@ function generateInitFunction(fileName, template) {
 
     // declarations
     out += `    napi_value `;
-    out += `${template.datamodel.varName}_conn_change,`;
+    out += `${template.datamodel.varName}_conn_change, ${template.datamodel.varName}_onprocessed,`;
     for (let i = 0; i < template.datasets.length; i++) {
         if (template.datasets[i].isPub || template.datasets[i].isSub) {
             out += ` ${template.datasets[i].structName}_conn_change`;
@@ -1177,7 +1208,7 @@ function generateInitFunction(fileName, template) {
 
     out += `    napi_get_boolean(env, BUR_NAPI_DEFAULT_BOOL_INIT, &def_bool); \n`;
     out += `    napi_create_int32(env, BUR_NAPI_DEFAULT_NUM_INIT, &def_number); \n`;
-    out += `    napi_create_string_utf8(env, BUR_NAPI_DEFAULT_STRING_INIT, sizeof(BUR_NAPI_DEFAULT_STRING_INIT), &def_string); \n`;
+    out += `    napi_create_string_utf8(env, BUR_NAPI_DEFAULT_STRING_INIT, strlen(BUR_NAPI_DEFAULT_STRING_INIT), &def_string);\n`;
     out += `    napi_get_undefined(env, &undefined); \n\n`;
 
     //base objects
@@ -1200,7 +1231,9 @@ function generateInitFunction(fileName, template) {
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "dataModel", dataModel); \n`;
     out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_connonchange_init, NULL, &${template.datamodel.varName}_conn_change); \n`;
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionOnChange", ${template.datamodel.varName}_conn_change); \n`;
-    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionState", undefined);\n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionState", def_string);\n`;
+    out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_onprocessed_init, NULL, &${template.datamodel.varName}_onprocessed); \n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "onProcessed", ${template.datamodel.varName}_onprocessed); \n`;
     out += `    napi_create_function(env, NULL, 0, get_net_time, NULL, &getNetTime);\n`;
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "netTime", getNetTime);\n`;
 
@@ -1257,7 +1290,12 @@ function generateInitFunction(fileName, template) {
         }
     }
 
-    // register the datamodel
+    // register the datamodel & logger
+    out += `    if (EXOS_ERROR_OK != exos_log_init(&logger, "${template.datamodel.structName}_Linux"))\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Can't register logger for ${template.datamodel.structName}"); \n`;
+    out += `    } \n\n`;
+    out += `    INFO("${template.datamodel.structName} starting!")\n`;
     out += `    // exOS register datamodel\n`;
     out += `    if (EXOS_ERROR_OK != exos_datamodel_connect_${template.datamodel.varName}(&${template.datamodel.varName}_datamodel, datamodelEvent)) \n`;
     out += `    {\n`;
@@ -1284,9 +1322,10 @@ function generateInitFunction(fileName, template) {
         }
     }
 
-    out += `    // start up module\n`;
-    out += `\n    uv_idle_init(uv_default_loop(), &cyclic_h); \n`;
+    out += `    // start up module\n\n`;
+    out += `    uv_idle_init(uv_default_loop(), &cyclic_h); \n`;
     out += `    uv_idle_start(&cyclic_h, cyclic); \n\n`;
+    out += `    SUCCESS("${template.datamodel.structName} started!")\n`;
 
     out += `    return exports; \n`;
 
@@ -1326,21 +1365,29 @@ function generateLibTemplate(fileName, typName) {
     out += `#include <node_api.h>\n`;
     out += `#include <stdint.h>\n`;
     out += `#include <exos_api.h>\n`;
+    out += `#include <exos_log.h>\n`;
     out += `#include "exos_${template.datamodel.varName}.h"\n`;
     out += `#include <uv.h>\n`;
     out += `#include <unistd.h>\n`;
-    out += `#include <string.h>\n`;
+    out += `#include <string.h>\n\n`;
+    out += `#define SUCCESS(_format_, ...) exos_log_success(&logger, EXOS_LOG_TYPE_USER, _format_, ##__VA_ARGS__);\n`;
+    out += `#define INFO(_format_, ...) exos_log_info(&logger, EXOS_LOG_TYPE_USER, _format_, ##__VA_ARGS__);\n`;
+    out += `#define VERBOSE(_format_, ...) exos_log_debug(&logger, EXOS_LOG_TYPE_USER + EXOS_LOG_TYPE_VERBOSE, _format_, ##__VA_ARGS__);\n`;
+    out += `#define ERROR(_format_, ...) exos_log_error(&logger, _format_, ##__VA_ARGS__);\n`;
     out += `\n`;
     out += `#define BUR_NAPI_DEFAULT_BOOL_INIT false\n`;
     out += `#define BUR_NAPI_DEFAULT_NUM_INIT 0\n`;
     out += `#define BUR_NAPI_DEFAULT_STRING_INIT ""\n`;
     out += `\n`;
+    out += `static exos_log_handle_t logger;\n`;
+    out += `\n`;
     out += `typedef struct\n`;
     out += `{\n`;
-    out += `    napi_ref ref; \n`;
-    out += `    uint32_t ref_count; \n`;
-    out += `    napi_threadsafe_function onchange_cb; \n`;
-    out += `    napi_threadsafe_function connectiononchange_cb; \n`;
+    out += `    napi_ref ref;\n`;
+    out += `    uint32_t ref_count;\n`;
+    out += `    napi_threadsafe_function onchange_cb;\n`;
+    out += `    napi_threadsafe_function connectiononchange_cb;\n`;
+    out += `    napi_threadsafe_function onprocessed_cb; //used only for datamodel\n`;
     out += `    napi_value object_value; //volatile placeholder.\n`;
     out += `    napi_value value;        //volatile placeholder.\n`;
     out += `} obj_handles;\n`;
@@ -1392,7 +1439,6 @@ function generateJSmodule(fileName, typName) {
     let template = configTemplate(fileName, typName);
 
     out += `var binding = require("./l_${template.datamodel.structName}.node");\n\n`;
-
     out += `module.exports = binding.${template.datamodel.structName};\n`;
 
     return out;
@@ -1419,7 +1465,7 @@ function generateIndexJS(fileName, typName) {
 
     out += `\n`;
 
-    out += `//value callbacks\n`;
+    out += `//value callbacks from Automation Runtime\n`;
     for (let i = 0; i < template.datasets.length; i++) {
         if (template.datasets[i].isPub) {
             out += `${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.onChange(() => {\n`;
@@ -1429,16 +1475,10 @@ function generateIndexJS(fileName, typName) {
     }
 
     out += `\n`;
-
-    out += `//publishing of values\n`;
-    out += `if (1 === 0) {\n`;
-    for (let i = 0; i < template.datasets.length; i++) {
-        if (template.datasets[i].isSub) {
-            out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.value..\n`;
-            out += `    ${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.publish();\n`;
-        }
-    }
-    out += `}\n\n`;
+    out += `//read current nettime\n`;
+    out += `setInterval(() => {\n`;
+    out += `    //console.log("current netTime is: " + ${template.datamodel.structName}.netTime().toString());\n`;
+    out += `}, 2000);\n\n`;
 
     out += `/*
 All values in ${template.datamodel.structName}.dataModel that has a .onChange() callback will
@@ -1455,12 +1495,22 @@ returns current netTime.
 
 Note that ALL netTime and latency values are created from int32_t datatype and the wrapping of
 these values are not considered/handled in the imported module.
-*/\n`;
+*/\n\n`;
 
-    out += `setInterval(() => {\n`;
-    out += `    //console.log("current netTime is: " + ${template.datamodel.structName}.netTime().toString());\n`;
-    out += `}, 2000);\n`;
+    out += `//Cyclic call from Automation Runtime\n`;
+    out += `${template.datamodel.structName}.onProcessed(() => {\n`;
+    out += `    //Code placed here will be called in sync with Automation Runtime.\n`;
+    out += `});\n\n`;
 
+    out += `//publishing of values to Automation Runtime\n`;
+    out += `if (1 === 0) {\n`;
+    for (let i = 0; i < template.datasets.length; i++) {
+        if (template.datasets[i].isSub) {
+            out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.value = ..\n`;
+            out += `    ${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.publish();\n`;
+        }
+    }
+    out += `}\n\n`;
 
     return out;
 }
