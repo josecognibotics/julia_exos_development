@@ -186,7 +186,7 @@ function generateShBuild() {
     out += `cpack\n`;
     out += `if [ "$?" -ne 0 ] ; then\n`;
     out += `    cd ..\n`;
-    out += `    finalize\n`;
+    out += `    finalize 3\n`;
     out += `fi\n\n`;
 
     out += `cp -f exos-comp-*.deb ..\n\n`;

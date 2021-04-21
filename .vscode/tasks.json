@@ -4,9 +4,9 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Remove DeepNest",
+            "label": "Remove exox package",
             "type": "shell",
-            "command": "Remove-Item -Recurse -Force ${workspaceFolder}\\c-template-n-api\\DeepNest",
+            "command": "Remove-Item -Recurse -Force ${workspaceFolder}\\c-template-n-api\\WaterTank",
         }
     ]
 }
