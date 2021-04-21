@@ -139,7 +139,7 @@ function generateTemplate(fileName, typName, PubSubSwap, userAlias, dynamic) {
             }
         }
         else {
-            if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isPub)) {
+            if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
                 out += `    EXOS_ASSERT_OK(exos_dataset_connect(&(${template.datamodel.handleName}.${dataset.varName}), EXOS_DATASET_PUBLISH, ${template.datamodel.libStructName}_datasetEvent));\n`;
             }
         }
