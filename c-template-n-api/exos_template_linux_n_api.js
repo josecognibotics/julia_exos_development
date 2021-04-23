@@ -323,7 +323,8 @@ function generateExosCallbacks(template) {
     out += `        break;\n\n`;
 
     out += `    case EXOS_DATASET_EVENT_PUBLISHED:\n`;
-    out += `        VERBOSE("dataset %s published!", dataset->name);\n\n`;
+    out += `        VERBOSE("dataset %s published!", dataset->name);\n`;
+    out += `        // fall through\n\n`;
     out += `    case EXOS_DATASET_EVENT_DELIVERED:\n`;
     out += `        if (event_type == EXOS_DATASET_EVENT_DELIVERED) { VERBOSE("dataset %s delivered!", dataset->name); }\n\n`;
     atleastone = false;
