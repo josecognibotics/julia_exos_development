@@ -69,13 +69,13 @@ function generateTemplate(fileName, structName, outPath) {
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${libName}.fun`, out);
 
     out = template_cpp.generateExosDataModelCpp(fileName, structName, structName + "_AR", false);
-    fs.writeFileSync(`${outPath}/${structName}/${libName}/ExosDataModel.cpp`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}DataModel.cpp`, out);
 
     out = template_cpp.generateExosDataModelHeader(fileName, structName);
-    fs.writeFileSync(`${outPath}/${structName}/${libName}/ExosDataModel.h`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}DataModel.h`, out);
 
     out = template_cpp.generateExosDataSetHeader(structName);
-    fs.writeFileSync(`${outPath}/${structName}/${libName}/ExosDataSet.h`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}DataSet.h`, out);
 
     out = template_cpp.generateMainAR(fileName, structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/main.cpp`, out);
@@ -92,13 +92,13 @@ function generateTemplate(fileName, structName, outPath) {
     fs.writeFileSync(`${outPath}/${structName}/Linux/CMakeLists.txt`, out);
 
     out = template_cpp.generateExosDataModelCpp(fileName, structName, structName + "_Linux", true);
-    fs.writeFileSync(`${outPath}/${structName}/Linux/ExosDataModel.cpp`, out);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/${structName}DataModel.cpp`, out);
 
     out = template_cpp.generateExosDataModelHeader(fileName, structName);
-    fs.writeFileSync(`${outPath}/${structName}/Linux/ExosDataModel.h`, out);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/${structName}DataModel.h`, out);
 
     out = template_cpp.generateExosDataSetHeader(structName);
-    fs.writeFileSync(`${outPath}/${structName}/Linux/ExosDataSet.h`, out);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/${structName}DataSet.h`, out);
 
     out = template_cpp.generateMainLinux(fileName, structName);
     fs.writeFileSync(`${outPath}/${structName}/Linux/main.cpp`, out);
@@ -142,12 +142,12 @@ function updateTemplate(fileName) {
 
     if(!fs.existsSync(typFile)) throw(`Typ source file ${typFile} not found`);
 
-    if(!fs.existsSync(`${path.dirname(fileName)}/${libName}/ExosDataModel.cpp`)) throw(`${path.dirname(fileName)}/${libName}/ExosDataModel.cpp does not exist!`);
-    if(!fs.existsSync(`${path.dirname(fileName)}/${libName}/ExosDataModel.h`)) throw(`${path.dirname(fileName)}/${libName}/ExosDataModel.h does not exist!`);
-    if(!fs.existsSync(`${path.dirname(fileName)}/${libName}/ExosDataSet.h`)) throw(`${path.dirname(fileName)}/${libName}/ExosDataSet.h does not exist!`);
-    if(!fs.existsSync(`${path.dirname(fileName)}/Linux/ExosDataModel.cpp`)) throw(`${path.dirname(fileName)}/Linux/ExosDataModel.cpp does not exist!`);
-    if(!fs.existsSync(`${path.dirname(fileName)}/Linux/ExosDataModel.h`)) throw(`${path.dirname(fileName)}/Linux/ExosDataModel.h does not exist!`);
-    if(!fs.existsSync(`${path.dirname(fileName)}/Linux/ExosDataSet.h`)) throw(`${path.dirname(fileName)}/Linux/ExosDataSet.h does not exist!`);
+    if(!fs.existsSync(`${path.dirname(fileName)}/${libName}/${structName}DataModel.cpp`)) throw(`${path.dirname(fileName)}/${libName}/${structName}DataModel.cpp does not exist!`);
+    if(!fs.existsSync(`${path.dirname(fileName)}/${libName}/${structName}DataModel.h`)) throw(`${path.dirname(fileName)}/${libName}/${structName}DataModel.h does not exist!`);
+    if(!fs.existsSync(`${path.dirname(fileName)}/${libName}/${structName}DataSet.h`)) throw(`${path.dirname(fileName)}/${libName}/${structName}DataSet.h does not exist!`);
+    if(!fs.existsSync(`${path.dirname(fileName)}/Linux/${structName}DataModel.cpp`)) throw(`${path.dirname(fileName)}/Linux/${structName}DataModel.cpp does not exist!`);
+    if(!fs.existsSync(`${path.dirname(fileName)}/Linux/${structName}DataModel.h`)) throw(`${path.dirname(fileName)}/Linux/${structName}DataModel.h does not exist!`);
+    if(!fs.existsSync(`${path.dirname(fileName)}/Linux/${structName}DataSet.h`)) throw(`${path.dirname(fileName)}/Linux/${structName}DataSet.h does not exist!`);
     if(!fs.existsSync(path.join(outPath, structName, libName, `exos_${structName.toLowerCase()}.h`))) throw(`${path.join(outPath, structName, libName, `exos_${structName.toLowerCase()}.h`)} does not exist!`);
     if(!fs.existsSync(path.join(outPath, structName, 'Linux', `exos_${structName.toLowerCase()}.h`))) throw(`${path.join(outPath, structName, 'Linux', `exos_${structName.toLowerCase()}.h`)} does not exist!`);
 
@@ -165,22 +165,22 @@ function updateTemplate(fileName) {
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${libName}.fun`, out);
 
     out = template_cpp.generateExosDataModelCpp(typFile, structName, structName + "_AR", false);
-    fs.writeFileSync(`${outPath}/${structName}/${libName}/ExosDataModel.cpp`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}DataModel.cpp`, out);
 
     out = template_cpp.generateExosDataModelHeader(typFile, structName);
-    fs.writeFileSync(`${outPath}/${structName}/${libName}/ExosDataModel.h`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}DataModel.h`, out);
 
     out = template_cpp.generateExosDataSetHeader(structName);
-    fs.writeFileSync(`${outPath}/${structName}/${libName}/ExosDataSet.h`, out);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}DataSet.h`, out);
 
     out = template_cpp.generateExosDataModelCpp(typFile, structName, structName + "_Linux", true);
-    fs.writeFileSync(`${outPath}/${structName}/Linux/ExosDataModel.cpp`, out);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/${structName}DataModel.cpp`, out);
 
     out = template_cpp.generateExosDataModelHeader(typFile, structName);
-    fs.writeFileSync(`${outPath}/${structName}/Linux/ExosDataModel.h`, out);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/${structName}DataModel.h`, out);
 
     out = template_cpp.generateExosDataSetHeader(structName);
-    fs.writeFileSync(`${outPath}/${structName}/Linux/ExosDataSet.h`, out);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/${structName}DataSet.h`, out);
 
     return structName;
 }

@@ -16,9 +16,9 @@ function generateExosPkg(typName, libName, fileName) {
     out += `            <Dependency FileName="Linux\\CMakeLists.txt"/>\n`;
     out += `            <Dependency FileName="Linux\\exos_${typName.toLowerCase()}.h"/>\n`;
     out += `            <Dependency FileName="Linux\\main.cpp"/>\n`;
-    out += `            <Dependency FileName="Linux\\ExosDataModel.h"/>\n`;
-    out += `            <Dependency FileName="Linux\\ExosDataModel.cpp"/>\n`;
-    out += `            <Dependency FileName="Linux\\ExosDataSet.h"/>\n`;
+    out += `            <Dependency FileName="Linux\\${typName}DataModel.h"/>\n`;
+    out += `            <Dependency FileName="Linux\\${typName}DataModel.cpp"/>\n`;
+    out += `            <Dependency FileName="Linux\\${typName}DataSet.h"/>\n`;
     out += `        </BuildCommand>\n`;
     out += `    </Build>\n`;
     out += `</ComponentPackage>\n`;
@@ -37,9 +37,9 @@ function generateLinuxPackage(typName) {
     out += `    <Object Type="File">CMakeLists.txt</Object>\n`;
     out += `    <Object Type="File">main.cpp</Object>\n`;
     out += `    <Object Type="File">exos_${typName.toLowerCase()}.h</Object>\n`;
-    out += `    <Object Type="File">ExosDataModel.cpp</Object>\n`;
-    out += `    <Object Type="File">ExosDataModel.h</Object>\n`;
-    out += `    <Object Type="File">ExosDataSet.h</Object>\n`;
+    out += `    <Object Type="File">${typName}DataModel.cpp</Object>\n`;
+    out += `    <Object Type="File">${typName}DataModel.h</Object>\n`;
+    out += `    <Object Type="File">${typName}DataSet.h</Object>\n`;
     out += `    <Object Type="File">exos-comp-${typName.toLowerCase()}-1.0.0.deb</Object>\n`;
     out += `  </Objects>\n`;
     out += `</Package>\n`;
@@ -87,7 +87,7 @@ function generateCMakeLists(typName) {
     out += `\n`;
     out += `project(${typName.toLowerCase()})\n`;
     out += `\n`;
-    out += `add_library(libExosCpp STATIC ExosDataModel.h ExosDataModel.cpp ExosDataSet.h)\n`;
+    out += `add_library(libExosCpp STATIC ${typName}DataModel.h ${typName}DataModel.cpp ${typName}DataSet.h)\n`;
     out += `target_include_directories(libExosCpp PUBLIC ..)\n`;
     out += `add_executable(${typName.toLowerCase()} main.cpp)\n`;
     out += `target_include_directories(${typName.toLowerCase()} PUBLIC ..)\n`;

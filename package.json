@@ -5,7 +5,7 @@
 	"displayName": "exOS Component Generator",
 	"description": "Code Generator for exOS Hybrid Components",
 	"icon": "exOS.png",
-	"version": "1.1.6",
+	"version": "1.1.7",
 	"engines": {
 		"vscode": "^1.50.0"
 	},
@@ -40,11 +40,11 @@
 			},
 			{
 				"command": "exos-component-extension.generateCppTemplate",
-				"title": "exOS: Generate C++ Template"
+				"title": "exOS: Generate Instantiatable C++ Template"
 			},
 			{
 				"command": "exos-component-extension.updateCppTemplate",
-				"title": "exOS: Update C++ Template"
+				"title": "exOS: Update Instantiatable C++ Template"
 			},
 			{
 				"command": "exos-component-extension.generateSwigPythonTemplate",
