@@ -39,6 +39,14 @@
 				"title": "exOS: Update Singleton SWIG Python Template"
 			},
 			{
+				"command": "exos-component-extension.generateCppTemplate",
+				"title": "exOS: Generate C++ Template"
+			},
+			{
+				"command": "exos-component-extension.updateCppTemplate",
+				"title": "exOS: Update C++ Template"
+			},
+			{
 				"command": "exos-component-extension.generateSwigPythonTemplate",
 				"title": "exOS: Generate Singleton SWIG Python Template"
 			},
@@ -79,6 +87,11 @@
 					"group": "2_workspace"
 				},
 				{
+					"when": "filesExplorerFocus && resourceExtname == .typ",
+					"command": "exos-component-extension.generateCppTemplate",
+					"group": "2_workspace"
+				},
+				{
 					"when": "filesExplorerFocus && resourceExtname == .typ && exos-component-extension.isDebugMode",
 					"command": "exos-component-extension.generateEverythingDebug",
 					"group": "2_workspace"
@@ -91,6 +104,11 @@
 				{
 					"when": "filesExplorerFocus && resourceExtname == .exospkg",
 					"command": "exos-component-extension.updateCLib_py",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .exospkg",
+					"command": "exos-component-extension.updateCppTemplate",
 					"group": "2_workspace"
 				}
 			]
