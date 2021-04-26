@@ -1292,7 +1292,7 @@ function generateInitFunction(fileName, template) {
     }
 
     // register the datamodel & logger
-    out += `    if (EXOS_ERROR_OK != exos_log_init(&logger, "${template.datamodel.structName}_Linux"))\n`;
+    out += `    if (EXOS_ERROR_OK != exos_log_init(&logger, "${template.datamodel.structName}_0"))\n`;
     out += `    {\n`;
     out += `        napi_throw_error(env, "EINVAL", "Can't register logger for ${template.datamodel.structName}"); \n`;
     out += `    } \n\n`;

@@ -68,7 +68,7 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_cpp.generateFun(fileName, structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${libName}.fun`, out);
 
-    out = template_cpp.generateExosDataModelCpp(fileName, structName, structName + "_AR", false);
+    out = template_cpp.generateExosDataModelCpp(fileName, structName, structName + "_0", false);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}DataModel.cpp`, out);
 
     out = template_cpp.generateExosDataModelHeader(fileName, structName);
@@ -91,7 +91,7 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_linux.generateCMakeLists(structName);
     fs.writeFileSync(`${outPath}/${structName}/Linux/CMakeLists.txt`, out);
 
-    out = template_cpp.generateExosDataModelCpp(fileName, structName, structName + "_Linux", true);
+    out = template_cpp.generateExosDataModelCpp(fileName, structName, structName + "_0", true);
     fs.writeFileSync(`${outPath}/${structName}/Linux/${structName}DataModel.cpp`, out);
 
     out = template_cpp.generateExosDataModelHeader(fileName, structName);
@@ -164,7 +164,7 @@ function updateTemplate(fileName) {
     out = template_cpp.generateFun(typFile, structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${libName}.fun`, out);
 
-    out = template_cpp.generateExosDataModelCpp(typFile, structName, structName + "_AR", false);
+    out = template_cpp.generateExosDataModelCpp(typFile, structName, structName + "_0", false);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}DataModel.cpp`, out);
 
     out = template_cpp.generateExosDataModelHeader(typFile, structName);
@@ -173,7 +173,7 @@ function updateTemplate(fileName) {
     out = template_cpp.generateExosDataSetHeader(structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}DataSet.h`, out);
 
-    out = template_cpp.generateExosDataModelCpp(typFile, structName, structName + "_Linux", true);
+    out = template_cpp.generateExosDataModelCpp(typFile, structName, structName + "_0", true);
     fs.writeFileSync(`${outPath}/${structName}/Linux/${structName}DataModel.cpp`, out);
 
     out = template_cpp.generateExosDataModelHeader(typFile, structName);
