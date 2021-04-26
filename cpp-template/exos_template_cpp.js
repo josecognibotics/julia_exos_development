@@ -40,50 +40,12 @@ function generateFun(fileName, typName) {
     out += `	VAR_INPUT\n`;
     out += `		Enable : BOOL;\n`;
     out += `		Start : BOOL;\n`;
-    for (let dataset of template.datasets) {
-        if (!dataset.isPrivate) {
-            let dataType = dataset.dataType;
-
-            if (dataType === "STRING" && (dataset.hasOwnProperty("stringLength"))) {
-                dataType = dataType + `[${dataset.stringLength - 1}]`;
-            }
-
-            if (dataset.arraySize > 0) {
-                dataType = `ARRAY[0..${dataset.arraySize - 1}] OF ${dataType}`
-            }
-
-            if (dataset.isPub) {
-                if (dataset.isSub) {
-                    out += `		${dataset.structName} : REFERENCE TO ${dataType};\n`;
-                }
-                else {
-                    out += `		${dataset.structName} : ${dataType};\n`;
-                }
-            }
-        }
-    }
     out += `		Handle : UDINT;\n`;
+    out += `		p${template.datamodel.structName} : REFERENCE TO ${template.datamodel.structName};\n`;
     out += `	END_VAR\n`;
     out += `	VAR_OUTPUT\n`;
     out += `		Connected : BOOL;\n`;
     out += `		Operational : BOOL;\n`;
-    for (let dataset of template.datasets) {
-        if (!dataset.isPrivate) {
-            let dataType = dataset.dataType;
-
-            if (dataType === "STRING" && (dataset.hasOwnProperty("stringLength"))) {
-                dataType = dataType + `[${dataset.stringLength - 1}]`;
-            }
-
-            if (dataset.arraySize > 0) {
-                dataType = `ARRAY[0..${dataset.arraySize - 1}] OF ${dataType}`
-            }
-
-            if (dataset.isSub && !dataset.isPub) {
-                out += `		${dataset.structName} : ${dataType};\n`;
-            }
-        }
-    }
     out += `		Error : BOOL;\n`;
     out += `	END_VAR\n`;
     out += `	VAR\n`;
@@ -120,10 +82,10 @@ function generateExosDataSetHeader(typName) {
     out += `    #include "exos_${typName.toLowerCase()}.h"\n`;
     out += `}\n`;
     out += `\n`;
-    out += `#define SUCCESS(_format_, ...) {char tmp[] = _format_; exos_log_success(logger, EXOS_LOG_TYPE_USER, tmp, ##__VA_ARGS__);}\n`;
-    out += `#define INFO(_format_, ...) {char tmp[] = _format_; exos_log_info(logger, EXOS_LOG_TYPE_USER, tmp, ##__VA_ARGS__);}\n`;
-    out += `#define VERBOSE(_format_, ...) {char tmp[] = _format_; exos_log_debug(logger, (EXOS_LOG_TYPE)(EXOS_LOG_TYPE_USER + EXOS_LOG_TYPE_VERBOSE), tmp, ##__VA_ARGS__);}\n`;
-    out += `#define ERROR(_format_, ...) {char tmp[] = _format_; exos_log_error(logger, tmp, ##__VA_ARGS__);}\n`;
+    out += `#define SUCCESS(_format_, ...) exos_log_success(logger, EXOS_LOG_TYPE_USER, _format_, ##__VA_ARGS__);\n`;
+    out += `#define INFO(_format_, ...) exos_log_info(logger, EXOS_LOG_TYPE_USER, _format_, ##__VA_ARGS__);\n`;
+    out += `#define VERBOSE(_format_, ...) exos_log_debug(logger, (EXOS_LOG_TYPE)(EXOS_LOG_TYPE_USER + EXOS_LOG_TYPE_VERBOSE), _format_, ##__VA_ARGS__);\n`;
+    out += `#define ERROR(_format_, ...) exos_log_error(logger, _format_, ##__VA_ARGS__);\n`;
     out += `\n`;
     out += `template <typename T>\n`;
     out += `class ${typName}DataSet\n`;
@@ -265,6 +227,7 @@ function generateExosDataModelCpp(fileName, typName, moduleName, PubSubSwap) {
 
     let out = "";
 
+    out += `#define EXOS_STATIC_INCLUDE\n`;
     out += `#include "${typName}DataModel.h"\n`;
     out += `\n`;
     out += `${typName}DataModel::${typName}DataModel() {\n`;
@@ -373,7 +336,7 @@ function generateMainAR(fileName, typName) {
     out += `_BUR_PUBLIC void ${template.datamodel.structName}Cyclic(struct ${template.datamodel.structName}Cyclic *inst)\n`;
     out += `{\n`;
     out += `	// return error if reference to structure is not set on function block\n`;
-    out += `	if(inst->Handle == NULL)\n`;
+    out += `	if(NULL == (void*)inst->Handle || NULL == inst->p${template.datamodel.structName})\n`;
     out += `	{\n`;
     out += `		inst->Operational = false;\n`;
     out += `		inst->Connected = false;\n`;
@@ -386,31 +349,14 @@ function generateMainAR(fileName, typName) {
     for (let dataset of template.datasets) {
         if (dataset.isSub) {
             out += `		dataModel->${dataset.structName}.onChange([&] () {\n`;
-            if(!dataset.isPrivate) {
-                if(dataset.isPub) {
-                    out += `            if(NULL != inst->${dataset.structName})\n`;
-                    out += `            {\n`;
-                    if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
-                        out += `                *inst->${dataset.structName} = dataModel->${dataset.structName}.value;\n`;
-                    }
-                    else {
-                        out += `                memcpy(inst->${dataset.structName}, dataModel->${dataset.structName}.value, sizeof(inst->${dataset.structName}));\n`;
-                    }
-                    out += `            }\n`;
-                }
-                else {
-                    if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
-                        out += `            inst->${dataset.structName} = dataModel->${dataset.structName}.value;\n`;
-                    }
-                    else {
-                        out += `            memcpy(&inst->${dataset.structName}, dataModel->${dataset.structName}.value, sizeof(inst->${dataset.structName}));\n`;
-                    }
-                }
-
+            
+            if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
+                out += `            inst->p${template.datamodel.structName}->${dataset.structName} = dataModel->${dataset.structName}.value;\n`;
             }
             else {
-                out += `            // ${dataset.dataType} data = dataModel->${dataset.structName}.value;\n`;
+                out += `            memcpy(&inst->p${template.datamodel.structName}->${dataset.structName}, &dataModel->${dataset.structName}.value, sizeof(inst->p${template.datamodel.structName}->${dataset.structName}));\n`;
             }
+    
             out += `        });\n`;
         }
     }
@@ -440,44 +386,21 @@ function generateMainAR(fileName, typName) {
     for (let dataset of template.datasets) {
         if (!dataset.isPrivate) {
             if (dataset.isPub) {
-                if (dataset.isSub) {
-                    out += `        if (NULL != inst->${dataset.structName})\n`;
+                if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
+                    out += `        //publish the ${dataset.structName} dataset as soon as there are changes\n`;
+                    out += `        if (inst->p${template.datamodel.structName}->${dataset.structName} != dataModel->${dataset.structName}.value)\n`;
                     out += `        {\n`;
-                    out += `            //publish the ${dataset.structName} dataset as soon as there are changes\n`;
-                    if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
-                        out += `            if (*inst->${dataset.structName} != dataModel->${dataset.structName}.value)\n`;
-                        out += `            {\n`;
-                        out += `                dataModel->${dataset.structName}.value = *inst->${dataset.structName};\n`;
-                        out += `                dataModel->${dataset.structName}.publish();\n`;
-                        out += `            }\n`;
-                        out += `        }\n`;
-                    }
-                    else {
-                        out += `            if (0 != memcmp(inst->${dataset.structName}, &dataModel->${dataset.structName}.value, sizeof(dataModel->${dataset.structName}.value)))\n`;
-                        out += `            {\n`;
-                        out += `                memcpy(&dataModel->${dataset.structName}.value, inst->${dataset.structName}, sizeof(dataModel->${dataset.structName}.value));\n`;
-                        out += `                dataModel->${dataset.structName}.publish();\n`;
-                        out += `            }\n`;
-                        out += `        }\n`;
-                    }
-                }
+                    out += `            dataModel->${dataset.structName}.value = inst->p${template.datamodel.structName}->${dataset.structName};\n`;
+                    out += `            dataModel->${dataset.structName}.publish();\n`;
+                    out += `        }\n`;
+                } 
                 else {
-                    if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
-                        out += `        //publish the ${dataset.structName} dataset as soon as there are changes\n`;
-                        out += `        if (inst->${dataset.structName} != dataModel->${dataset.structName}.value)\n`;
-                        out += `        {\n`;
-                        out += `            dataModel->${dataset.structName}.value = inst->${dataset.structName};\n`;
-                        out += `            dataModel->${dataset.structName}.publish();\n`;
-                        out += `        }\n`;
-                    } 
-                    else {
-                        out += `        //publish the ${dataset.structName} dataset as soon as there are changes\n`;
-                        out += `        if (0 != memcmp(&inst->${dataset.structName}, &dataModel->${dataset.structName}.value, sizeof(dataModel->${dataset.structName}.value)))\n`;
-                        out += `        {\n`;
-                        out += `            memcpy(&dataModel->${dataset.structName}.value, &inst->${dataset.structName}, sizeof(dataModel->${dataset.structName}.value));\n`;
-                        out += `            dataModel->${dataset.structName}.publish();\n`;
-                        out += `        }\n`;
-                    }
+                    out += `        //publish the ${dataset.structName} dataset as soon as there are changes\n`;
+                    out += `        if (0 != memcmp(&inst->p${template.datamodel.structName}->${dataset.structName}, &dataModel->${dataset.structName}.value, sizeof(dataModel->${dataset.structName}.value)))\n`;
+                    out += `        {\n`;
+                    out += `            memcpy(&dataModel->${dataset.structName}.value, &inst->p${template.datamodel.structName}->${dataset.structName}, sizeof(dataModel->${dataset.structName}.value));\n`;
+                    out += `            dataModel->${dataset.structName}.publish();\n`;
+                    out += `        }\n`;
                 }
             }
         }
@@ -521,6 +444,7 @@ function generateIECProgramVar(typName) {
     out += `    ${typName}Init_0 : ${typName}Init;\n`;
     out += `    ${typName}Cyclic_0 : ${typName}Cyclic;\n`;
     out += `    ${typName}Exit_0 : ${typName}Exit;\n`;
+    out += `    ${typName}_0 : ${typName};\n`;
     out += `END_VAR\n`;
 
     return out;
@@ -533,20 +457,18 @@ function generateIECProgramST(typName) {
     out += `PROGRAM _INIT\n`;
     out += `\n`;
     out += `    ${typName}Init_0();\n`;
-    out += `    ${typName}Cyclic_0.Handle := ${typName}Init_0.Handle;\n`;
     out += `\n`;
     out += `END_PROGRAM\n`;
     out += `\n`;
     out += `PROGRAM _CYCLIC\n`;
     out += `\n`;
-    out += `    ${typName}Cyclic_0();\n`;
+    out += `    ${typName}Cyclic_0(Handle := ${typName}Init_0.Handle, p${typName} := ADR(${typName}_0));\n`;
     out += `\n`;
     out += `END_PROGRAM\n`;
     out += `\n`;
     out += `PROGRAM _EXIT\n`;
     out += `\n`;
-    out += `    ${typName}Exit_0.Handle := ${typName}Init_0.Handle;\n`;
-    out += `    ${typName}Exit_0();\n`;
+    out += `    ${typName}Exit_0(Handle := ${typName}Init_0.Handle);\n`;
     out += `\n`;
     out += `END_PROGRAM\n`;
 
