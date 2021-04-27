@@ -1,6 +1,0 @@
-VAR
-    WaterTankInit_0 : WaterTankInit;
-    WaterTankCyclic_0 : WaterTankCyclic;
-    WaterTankExit_0 : WaterTankExit;
-    WaterTank_0 : WaterTank;
-END_VAR
