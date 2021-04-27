@@ -415,7 +415,7 @@ function generateNApiCBinitMMain() {
     let out = "";
 
     out += `// napi callback setup main function\n`;
-    out += `napi_value init_napi_onchange(napi_env env, napi_callback_info info, const char *identifier, napi_threadsafe_function_call_js call_js_cb, napi_threadsafe_function *result)\n`;
+    out += `static napi_value init_napi_onchange(napi_env env, napi_callback_info info, const char *identifier, napi_threadsafe_function_call_js call_js_cb, napi_threadsafe_function *result)\n`;
     out += `{\n`;
     out += `    size_t argc = 1;\n`;
     out += `    napi_value argv[1];\n\n`;
@@ -480,15 +480,44 @@ function generateConnectionCallbacks(template) {
     out += `static void ${template.datamodel.varName}_connonchange_js_cb(napi_env env, napi_value js_cb, void *context, void *data)\n`;
     out += `{\n`;
     out += `    const char *string = data;\n`;
-    out += `    napi_value undefined;\n\n`;
+    out += `    napi_value napi_true, napi_false, undefined;\n\n`;
 
     out += `    napi_get_undefined(env, &undefined);\n\n`;
+    out += `    napi_get_boolean(env, true, &napi_true);\n`;
+    out += `    napi_get_boolean(env, false, &napi_false);\n\n`;
 
     out += `    if (napi_ok != napi_create_string_utf8(env, string, strlen(string), &${template.datamodel.varName}.value))\n`;
     out += `        napi_throw_error(env, "EINVAL", "Can't create utf8 string from char* - ${template.datamodel.varName}.value");\n\n`;
 
     out += `    if (napi_ok != napi_get_reference_value(env, ${template.datamodel.varName}.ref, &${template.datamodel.varName}.object_value))\n`;
     out += `        napi_throw_error(env, "EINVAL", "Can't get reference - ${template.datamodel.varName} ");\n\n`;
+    out += `    switch (${template.datamodel.varName}_datamodel.connection_state)\n`;
+    out += `    {\n`;
+    out += `    case EXOS_STATE_DISCONNECTED:\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_connected", napi_false))\n`;
+    out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_operational", napi_false))\n`;
+    out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
+    out += `        break;\n`;
+    out += `    case EXOS_STATE_CONNECTED:\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_connected", napi_true))\n`;
+    out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_operational", napi_false))\n`;
+    out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
+    out += `        break;\n`;
+    out += `    case EXOS_STATE_OPERATIONAL:\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_connected", napi_true))\n`;
+    out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_operational", napi_true))\n`;
+    out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
+    out += `        break;\n`;
+    out += `    case EXOS_STATE_ABORTED:\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_connected", napi_false))\n`;
+    out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_operational", napi_false))\n`;
+    out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
+    out += `        break;\n`;
+    out += `    }\n\n`;
 
     out += `    if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "connectionState", ${template.datamodel.varName}.value))\n`;
     out += `        napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
@@ -734,18 +763,18 @@ function generateCallbackInits(template) {
     let out = "";
 
     out += `// js callback inits\n`;
-    out += `napi_value ${template.datamodel.varName}_connonchange_init(napi_env env, napi_callback_info info)\n`;
+    out += `static napi_value ${template.datamodel.varName}_connonchange_init(napi_env env, napi_callback_info info)\n`;
     out += `{\n`;
     out += `    return init_napi_onchange(env, info, "${template.datamodel.structName} connection change", ${template.datamodel.varName}_connonchange_js_cb, &${template.datamodel.varName}.connectiononchange_cb);\n`;
     out += `}\n\n`;
-    out += `napi_value ${template.datamodel.varName}_onprocessed_init(napi_env env, napi_callback_info info)\n`;
+    out += `static napi_value ${template.datamodel.varName}_onprocessed_init(napi_env env, napi_callback_info info)\n`;
     out += `{\n`;
     out += `    return init_napi_onchange(env, info, "${template.datamodel.structName} onProcessed", ${template.datamodel.varName}_onprocessed_js_cb, &${template.datamodel.varName}.onprocessed_cb);\n`;
     out += `}\n\n`;
 
     for (let dataset of template.datasets) {
         if (dataset.isPub || dataset.isSub) {
-            out += `napi_value ${dataset.structName}_connonchange_init(napi_env env, napi_callback_info info)\n`;
+            out += `static napi_value ${dataset.structName}_connonchange_init(napi_env env, napi_callback_info info)\n`;
             out += `{\n`;
             out += `    return init_napi_onchange(env, info, "${dataset.structName} connection change", ${dataset.structName}_connonchange_js_cb, &${dataset.structName}.connectiononchange_cb);\n`;
             out += `}\n\n`;
@@ -754,7 +783,7 @@ function generateCallbackInits(template) {
 
     for (let dataset of template.datasets) {
         if (dataset.isPub) {
-            out += `napi_value ${dataset.structName}_onchange_init(napi_env env, napi_callback_info info)\n`;
+            out += `static napi_value ${dataset.structName}_onchange_init(napi_env env, napi_callback_info info)\n`;
             out += `{\n`;
             out += `    return init_napi_onchange(env, info, "${dataset.structName} dataset change", ${dataset.structName}_onchange_js_cb, &${dataset.structName}.onchange_cb);\n`;
             out += `}\n\n`;
@@ -904,7 +933,7 @@ function generateValuesPublishMethods(fileName, template) {
             objectIdx.reset();
             out2 = generateValuesPublishItem(true, fileName, `${dataset.structName}.value`, `exos_data.${dataset.structName}`, dataset);
 
-            out += `napi_value ${dataset.structName}_publish_method(napi_env env, napi_callback_info info)\n`;
+            out += `static napi_value ${dataset.structName}_publish_method(napi_env env, napi_callback_info info)\n`;
             out += `{\n`;
             // check what variables to declare for the publish process in "out2" variable.
             if (out2.includes("&object")) {
@@ -947,8 +976,130 @@ function generateValuesPublishMethods(fileName, template) {
     return out;
 }
 
-function generateCleanUpHookCyclic(template) {
+function generateLogCleanUpHookCyclic(template) {
     let out = "";
+
+    out += `//logging functions\n`;
+    out += `static napi_value log_error(napi_env env, napi_callback_info info)\n`;
+    out += `{\n`;
+    out += `    napi_value argv[1];\n`;
+    out += `    size_t argc = 0;\n`;
+    out += `    char log_entry[81] = {};\n`;
+    out += `    size_t res;\n\n`;
+    out += `    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);\n\n`;
+    out += `    if (argc < 1)\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Too few arguments for ${template.datamodel.varName}.log.error()");\n`;
+    out += `        return NULL;\n`;
+    out += `    }\n\n`;
+    out += `    if (napi_ok != napi_get_value_string_utf8(env, argv[0], log_entry, sizeof(log_entry), &res))\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Expected string as argument for ${template.datamodel.varName}.log.error()");\n`;
+    out += `        return NULL;\n`;
+    out += `    }\n\n`;
+    out += `    exos_log_error(&logger, log_entry);\n`;
+    out += `    return NULL;\n`;
+    out += `}\n\n`;
+    out += `static napi_value log_warning(napi_env env, napi_callback_info info)\n`;
+    out += `{\n`;
+    out += `    napi_value argv[1];\n`;
+    out += `    size_t argc = 0;\n`;
+    out += `    char log_entry[81] = {};\n`;
+    out += `    size_t res;\n\n`;
+    out += `    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);\n\n`;
+    out += `    if (argc < 1)\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Too few arguments for ${template.datamodel.varName}.log.warning()");\n`;
+    out += `        return  NULL;\n`;
+    out += `    }\n\n`;
+    out += `    if (napi_ok != napi_get_value_string_utf8(env, argv[0], log_entry, sizeof(log_entry), &res))\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Expected string as argument for ${template.datamodel.varName}.log.warning()");\n`;
+    out += `        return NULL;\n`;
+    out += `    }\n\n`;
+    out += `    exos_log_warning(&logger, EXOS_LOG_TYPE_USER, log_entry);\n`;
+    out += `    return NULL;\n`;
+    out += `}\n\n`;
+    out += `static napi_value log_success(napi_env env, napi_callback_info info)\n`;
+    out += `{\n`;
+    out += `    napi_value argv[1];\n`;
+    out += `    size_t argc = 0;\n`;
+    out += `    char log_entry[81] = {};\n`;
+    out += `    size_t res;\n\n`;
+    out += `    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);\n\n`;
+    out += `    if (argc < 1)\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Too few arguments for ${template.datamodel.varName}.log.success()");\n`;
+    out += `        return NULL;\n`;
+    out += `    }\n\n`;
+    out += `    if (napi_ok != napi_get_value_string_utf8(env, argv[0], log_entry, sizeof(log_entry), &res))\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Expected string as argument for ${template.datamodel.varName}.log.success()");\n`;
+    out += `        return NULL;\n`;
+    out += `    }\n\n`;
+    out += `    exos_log_success(&logger, EXOS_LOG_TYPE_USER, log_entry);\n`;
+    out += `    return NULL;\n`;
+    out += `}\n\n`;
+    out += `static napi_value log_info(napi_env env, napi_callback_info info)\n`;
+    out += `{\n`;
+    out += `    napi_value argv[1];\n`;
+    out += `    size_t argc = 0;\n`;
+    out += `    char log_entry[81] = {};\n`;
+    out += `    size_t res;\n\n`;
+    out += `    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);\n\n`;
+    out += `    if (argc < 1)\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Too few arguments for ${template.datamodel.varName}.log.info()");\n`;
+    out += `        return NULL;\n`;
+    out += `    }\n\n`;
+    out += `    if (napi_ok != napi_get_value_string_utf8(env, argv[0], log_entry, sizeof(log_entry), &res))\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Expected string as argument for ${template.datamodel.varName}.log.info()");\n`;
+    out += `        return NULL;\n`;
+    out += `    }\n\n`;
+    out += `    exos_log_info(&logger, EXOS_LOG_TYPE_USER, log_entry);\n`;
+    out += `    return NULL;\n`;
+    out += `}\n\n`;
+    out += `static napi_value log_debug(napi_env env, napi_callback_info info)\n`;
+    out += `{\n`;
+    out += `    napi_value argv[1];\n`;
+    out += `    size_t argc = 0;\n`;
+    out += `    char log_entry[81] = {};\n`;
+    out += `    size_t res;\n\n`;
+    out += `    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);\n\n`;
+    out += `    if (argc < 1)\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Too few arguments for ${template.datamodel.varName}.log.debug()");\n`;
+    out += `        return NULL;\n`;
+    out += `    }\n\n`;
+    out += `    if (napi_ok != napi_get_value_string_utf8(env, argv[0], log_entry, sizeof(log_entry), &res))\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Expected string as argument for ${template.datamodel.varName}.log.debug()");\n`;
+    out += `        return NULL;\n`;
+    out += `    }\n\n`;
+    out += `    exos_log_debug(&logger, EXOS_LOG_TYPE_USER, log_entry);\n`;
+    out += `    return NULL;\n`;
+    out += `}\n\n`;
+    out += `static napi_value log_verbose(napi_env env, napi_callback_info info)\n`;
+    out += `{\n`;
+    out += `    napi_value argv[1];\n`;
+    out += `    size_t argc = 0;\n`;
+    out += `    char log_entry[81] = {};\n`;
+    out += `    size_t res;\n\n`;
+    out += `    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);\n\n`;
+    out += `    if (argc < 1)\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Too few arguments for ${template.datamodel.varName}.log.verbose()");\n`;
+    out += `        return NULL;\n`;
+    out += `    }\n\n`;
+    out += `    if (napi_ok != napi_get_value_string_utf8(env, argv[0], log_entry, sizeof(log_entry), &res))\n`;
+    out += `    {\n`;
+    out += `        napi_throw_error(env, "EINVAL", "Expected string as argument for ${template.datamodel.varName}.log.verbose()");\n`;
+    out += `        return NULL;\n`;
+    out += `    }\n\n`;
+    out += `    exos_log_warning(&logger, EXOS_LOG_TYPE_USER + EXOS_LOG_TYPE_VERBOSE, log_entry);\n`;
+    out += `    return NULL;\n`;
+    out += `}\n\n`;
 
     out += `// cleanup/cyclic\n`;
     out += `static void cleanup_${template.datamodel.varName}(void *env)\n`;
@@ -964,7 +1115,7 @@ function generateCleanUpHookCyclic(template) {
     out += `    }\n`;
     out += `}\n\n`;
 
-    out += `void cyclic(uv_idle_t * handle) \n`;
+    out += `static void cyclic(uv_idle_t * handle) \n`;
     out += `{\n`;
     out += `    int dummy = 0;\n`;
     out += `    exos_datamodel_process(&${template.datamodel.varName}_datamodel);\n`;
@@ -975,7 +1126,7 @@ function generateCleanUpHookCyclic(template) {
     out += `}\n\n`;
 
     out += `//read nettime for DataModel\n`;
-    out += `napi_value get_net_time(napi_env env, napi_callback_info info)\n`;
+    out += `static napi_value get_net_time(napi_env env, napi_callback_info info)\n`;
     out += `{\n`;
     out += `    napi_value netTime;\n\n`;
     out += `    if (napi_ok == napi_create_int32(env, exos_datamodel_get_nettime(&${template.datamodel.varName}_datamodel, NULL), &netTime))\n`;
@@ -1122,7 +1273,7 @@ function generateInitFunction(fileName, template) {
 
     //prototype    
     out += `// init of module, called at "require"\n`;
-    out += `napi_value init_${template.datamodel.varName}(napi_env env, napi_value exports)\n{\n`;
+    out += `static napi_value init_${template.datamodel.varName}(napi_env env, napi_value exports)\n{\n`;
 
     // declarations
     out += `    napi_value `;
@@ -1192,6 +1343,8 @@ function generateInitFunction(fileName, template) {
 
     // base variables needed
     out += `\n    napi_value dataModel, getNetTime, undefined, def_bool, def_number, def_string;\n`;
+    out += `    napi_value log, logError, logWarning, logSuccess, logInfo, logDebug, logVerbose;\n`;
+
     if (out_structs.includes("&object")) {
         out += `    napi_value `;
         for (let i = 0; i <= objectIdx.max; i++) {
@@ -1215,17 +1368,34 @@ function generateInitFunction(fileName, template) {
     //base objects
     out += `    // create base objects\n`;
     out += `    if (napi_ok != napi_create_object(env, &dataModel)) \n        return NULL; \n\n`;
+    out += `    if (napi_ok != napi_create_object(env, &log)) \n        return NULL; \n\n`;
     out += `    if (napi_ok != napi_create_object(env, &${template.datamodel.varName}.value)) \n        return NULL; \n\n`;
+
     for (let i = 0; i < template.datasets.length; i++) {
         if (template.datasets[i].isPub || template.datasets[i].isSub) { out += `    if (napi_ok != napi_create_object(env, &${template.datasets[i].structName}.value)) \n        return NULL; \n\n`; }
     }
 
-    // insert build structures
+    //insert build structures
     out += `    // build object structures\n`;
     out += out_structs;
 
+    //logging functions
+    out += `    //connect logging functions\n`;
+    out += `    napi_create_function(env, NULL, 0, log_error, NULL, &logError);\n`;
+    out += `    napi_set_named_property(env, log, "error", logError);\n`;
+    out += `    napi_create_function(env, NULL, 0, log_warning, NULL, &logWarning);\n`;
+    out += `    napi_set_named_property(env, log, "warning", logWarning);\n`;
+    out += `    napi_create_function(env, NULL, 0, log_success, NULL, &logSuccess);\n`;
+    out += `    napi_set_named_property(env, log, "success", logSuccess);\n`;
+    out += `    napi_create_function(env, NULL, 0, log_info, NULL, &logInfo);\n`;
+    out += `    napi_set_named_property(env, log, "info", logInfo);\n`;
+    out += `    napi_create_function(env, NULL, 0, log_debug, NULL, &logDebug);\n`;
+    out += `    napi_set_named_property(env, log, "debug", logDebug);\n`;
+    out += `    napi_create_function(env, NULL, 0, log_verbose, NULL, &logVerbose);\n`;
+    out += `    napi_set_named_property(env, log, "verbose", logVerbose);\n`;
+
     //bind topics to datamodel
-    out += `    // bind dataset objects to datamodel object\n`;
+    out += `\n    // bind dataset objects to datamodel object\n`;
     for (let i = 0; i < template.datasets.length; i++) {
         if (template.datasets[i].isPub || template.datasets[i].isSub) { out += `    napi_set_named_property(env, dataModel, "${template.datasets[i].structName}", ${template.datasets[i].structName}.value); \n`; }
     }
@@ -1233,10 +1403,13 @@ function generateInitFunction(fileName, template) {
     out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_connonchange_init, NULL, &${template.datamodel.varName}_conn_change); \n`;
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionOnChange", ${template.datamodel.varName}_conn_change); \n`;
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionState", def_string);\n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "is_connected", def_bool);\n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "is_operational", def_bool);\n`;
     out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_onprocessed_init, NULL, &${template.datamodel.varName}_onprocessed); \n`;
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "onProcessed", ${template.datamodel.varName}_onprocessed); \n`;
     out += `    napi_create_function(env, NULL, 0, get_net_time, NULL, &getNetTime);\n`;
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "netTime", getNetTime);\n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "log", log);\n`;
 
     //export the application
     out += `    // export application object\n`;
@@ -1420,7 +1593,7 @@ function generateLibTemplate(fileName, typName) {
 
     out += generateValuesPublishMethods(fileName, template);
 
-    out += generateCleanUpHookCyclic(template);
+    out += generateLogCleanUpHookCyclic(template);
 
     out += generateInitFunction(fileName, template);
 
