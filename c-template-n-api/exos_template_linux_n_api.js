@@ -983,7 +983,7 @@ function generateLogCleanUpHookCyclic(template) {
     out += `static napi_value log_error(napi_env env, napi_callback_info info)\n`;
     out += `{\n`;
     out += `    napi_value argv[1];\n`;
-    out += `    size_t argc = 0;\n`;
+    out += `    size_t argc = 1;\n`;
     out += `    char log_entry[81] = {};\n`;
     out += `    size_t res;\n\n`;
     out += `    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);\n\n`;
@@ -1003,7 +1003,7 @@ function generateLogCleanUpHookCyclic(template) {
     out += `static napi_value log_warning(napi_env env, napi_callback_info info)\n`;
     out += `{\n`;
     out += `    napi_value argv[1];\n`;
-    out += `    size_t argc = 0;\n`;
+    out += `    size_t argc = 1;\n`;
     out += `    char log_entry[81] = {};\n`;
     out += `    size_t res;\n\n`;
     out += `    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);\n\n`;
@@ -1023,7 +1023,7 @@ function generateLogCleanUpHookCyclic(template) {
     out += `static napi_value log_success(napi_env env, napi_callback_info info)\n`;
     out += `{\n`;
     out += `    napi_value argv[1];\n`;
-    out += `    size_t argc = 0;\n`;
+    out += `    size_t argc = 1;\n`;
     out += `    char log_entry[81] = {};\n`;
     out += `    size_t res;\n\n`;
     out += `    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);\n\n`;
@@ -1043,7 +1043,7 @@ function generateLogCleanUpHookCyclic(template) {
     out += `static napi_value log_info(napi_env env, napi_callback_info info)\n`;
     out += `{\n`;
     out += `    napi_value argv[1];\n`;
-    out += `    size_t argc = 0;\n`;
+    out += `    size_t argc = 1;\n`;
     out += `    char log_entry[81] = {};\n`;
     out += `    size_t res;\n\n`;
     out += `    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);\n\n`;
@@ -1063,7 +1063,7 @@ function generateLogCleanUpHookCyclic(template) {
     out += `static napi_value log_debug(napi_env env, napi_callback_info info)\n`;
     out += `{\n`;
     out += `    napi_value argv[1];\n`;
-    out += `    size_t argc = 0;\n`;
+    out += `    size_t argc = 1;\n`;
     out += `    char log_entry[81] = {};\n`;
     out += `    size_t res;\n\n`;
     out += `    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);\n\n`;
@@ -1083,7 +1083,7 @@ function generateLogCleanUpHookCyclic(template) {
     out += `static napi_value log_verbose(napi_env env, napi_callback_info info)\n`;
     out += `{\n`;
     out += `    napi_value argv[1];\n`;
-    out += `    size_t argc = 0;\n`;
+    out += `    size_t argc = 1;\n`;
     out += `    char log_entry[81] = {};\n`;
     out += `    size_t res;\n\n`;
     out += `    napi_get_cb_info(env, info, &argc, argv, NULL, NULL);\n\n`;
