@@ -523,7 +523,7 @@ function generateConnectionCallbacks(template) {
     out += `        napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
 
     out += `    if (napi_ok != napi_call_function(env, undefined, js_cb, 0, NULL, NULL))\n`;
-    out += `        napi_throw_error(env, "EINVAL", "Can't call connectionOnChange callback - ${template.datamodel.varName}");\n`;
+    out += `        throw_fatal_exception_callbacks(env, "EINVAL", "Can't call connectionOnChange callback - ${template.datamodel.varName}");\n`;
     out += `}\n\n`;
 
     out += `static void ${template.datamodel.varName}_onprocessed_js_cb(napi_env env, napi_value js_cb, void *context, void *data)\n`;
@@ -533,7 +533,7 @@ function generateConnectionCallbacks(template) {
     out += `    napi_get_undefined(env, &undefined);\n\n`;
 
     out += `    if (napi_ok != napi_call_function(env, undefined, js_cb, 0, NULL, NULL))\n`;
-    out += `        napi_throw_error(env, "EINVAL", "Can't call onProcessed - ${template.datamodel.varName}");\n`;
+    out += `        throw_fatal_exception_callbacks(env, "EINVAL", "Error calling onProcessed - ${template.datamodel.structName}");\n`;
     out += `}\n\n`;
 
     //datasets
@@ -556,7 +556,7 @@ function generateConnectionCallbacks(template) {
             out += `        napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${dataset.structName}");\n\n`;
 
             out += `    if (napi_ok != napi_call_function(env, undefined, js_cb, 0, NULL, NULL))\n`;
-            out += `        napi_throw_error(env, "EINVAL", "Can't call connectionOnChange callback - ${dataset.structName}");\n`;
+            out += `        throw_fatal_exception_callbacks(env, "EINVAL", "Can't call connectionOnChange callback - ${dataset.structName}");\n`;
             out += `}\n\n`;
         }
     }
@@ -750,7 +750,7 @@ function generateValueCallbacks(fileName, template) {
             out += `        napi_throw_error(env, "EINVAL", "Can't get property");\n`;
             out += `    }\n\n`;
             out += `    if (napi_ok != napi_call_function(env, undefined, js_cb, 0, NULL, NULL))\n`;
-            out += `        napi_throw_error(env, "EINVAL", "Can't call onChange callback");\n\n`;
+            out += `        throw_fatal_exception_callbacks(env, "EINVAL", "Can't call onChange callback");\n\n`;
             out += `    exos_dataset_publish(&${dataset.structName}_dataset);\n`;
             out += `}\n\n`;
         }
@@ -1580,6 +1580,26 @@ function generateLibTemplate(fileName, typName) {
         if (dataset.isPub || dataset.isSub) { out += `exos_dataset_handle_t ${dataset.structName}_dataset;\n`; }
     }
     out += `\n`;
+    out += `// error handling (Node.js)\n`;
+    out += `static void throw_fatal_exception_callbacks(napi_env env, const char *defaultCode, const char *defaultMessage)\n`;
+    out += `{\n`;
+    out += `    napi_value err;\n`;
+    out += `    bool is_exception = false;\n\n`;
+    out += `    napi_is_exception_pending(env, &is_exception);\n\n`;
+    out += `    if (is_exception)\n`;
+    out += `    {\n`;
+    out += `        napi_get_and_clear_last_exception(env, &err);\n`;
+    out += `        napi_fatal_exception(env, err);\n`;
+    out += `    }\n`;
+    out += `    else\n`;
+    out += `    {\n`;
+    out += `        napi_value code, msg;\n`;
+    out += `        napi_create_string_utf8(env, defaultCode, NAPI_AUTO_LENGTH, &code);\n`;
+    out += `        napi_create_string_utf8(env, defaultMessage, NAPI_AUTO_LENGTH, &msg);\n`;
+    out += `        napi_create_error(env, code, msg, &err);\n`;
+    out += `        napi_fatal_exception(env, err);\n`;
+    out += `    }\n`;
+    out += `}\n\n`;
 
     out += generateExosCallbacks(template);
 
