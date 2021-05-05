@@ -479,6 +479,10 @@ function generateMainAR(fileName, typName, libName, PubSubSwap) {
 
 function generateMain(fileName, typName, PubSubSwap) {
     let out = "";
+    let prepend = "// ";
+    if(process.env.VSCODE_DEBUG_MODE) {
+        prepend = "";
+    }
 
     let template = configTemplate(fileName, typName);
 
@@ -501,18 +505,15 @@ function generateMain(fileName, typName, PubSubSwap) {
             out += `static void on_change_${dataset.varName}(void)\n`;
             out += `{\n`;
             out += `   ${template.datamodel.varName}->log.verbose("${template.datamodel.varName}->${dataset.structName} changed!");\n`;
-            if(process.env.VSCODE_DEBUG_MODE) {    
-                if (dataset.arraySize == 0) {
-                    out += `   printf("on_change: ${template.datamodel.varName}->${dataset.structName}: ${header.convertPlcTypePrintf(dataset.dataType)}\\n", ${template.datamodel.varName}->${dataset.structName}.value);\n`;
-                } else {
-                    out += `   uint32_t i;\n`;
-                    out += `   printf("on_change: ${template.datamodel.varName}->${dataset.structName}: Array of ${header.convertPlcType(dataset.dataType)}${dataset.dataType.includes("STRING") ? "[]" : ""}:\\n");\n`;
-                    out += `   for(i = 0; i < sizeof(${template.datamodel.varName}->${dataset.structName}.value) / sizeof(${template.datamodel.varName}->${dataset.structName}.value[0]); i++ )\n`;
-                    out += `   {\n`;
-                    out += `       printf("  Index %i: ${header.convertPlcTypePrintf(dataset.dataType)}\\n", i, ${template.datamodel.varName}->${dataset.structName}.value[i]);\n`;
-                    out += `   }\n`;
-                }
-                out += `   \n`;
+            if (dataset.arraySize == 0) {
+                out += `   ${prepend}printf("on_change: ${template.datamodel.varName}->${dataset.structName}: ${header.convertPlcTypePrintf(dataset.dataType)}\\n", ${template.datamodel.varName}->${dataset.structName}.value);\n\n`;
+            } else {
+                out += `   ${prepend}uint32_t i;\n`;
+                out += `   ${prepend}printf("on_change: ${template.datamodel.varName}->${dataset.structName}: Array of ${header.convertPlcType(dataset.dataType)}${dataset.dataType.includes("STRING") ? "[]" : ""}:\\n");\n`;
+                out += `   ${prepend}for(i = 0; i < sizeof(${template.datamodel.varName}->${dataset.structName}.value) / sizeof(${template.datamodel.varName}->${dataset.structName}.value[0]); i++ )\n`;
+                out += `   ${prepend}{\n`;
+                out += `   ${prepend}    printf("  Index %i: ${header.convertPlcTypePrintf(dataset.dataType)}\\n", i, ${header.isScalarType(dataset.dataType,true)?"":"&"}${template.datamodel.varName}->${dataset.structName}.value[i]);\n`; 
+                out += `   ${prepend}}\n\n`;
             }
             out += `   // Your code here...\n`;
             out += `}\n`;
@@ -602,7 +603,7 @@ function configTemplate(fileName, typName) {
             object["structName"] = child.attributes.name;
             object["varName"] = child.attributes.name.toLowerCase() + (child.attributes.name == child.attributes.name.toLowerCase() ? "_dataset" : "");
             object["dataType"] = child.attributes.dataType;
-            object["libDataType"] = "lib" + child.attributes.name;
+            object["libDataType"] = template.datamodel.libStructName + child.attributes.name;
             if (typeof child.attributes.arraySize === "number") {
                 object["arraySize"] = child.attributes.arraySize;
             } else {

@@ -21,6 +21,36 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
     out += `#include "${template.libHeaderName}"\n`;
     out += `%}\n`;
     out += `\n`;
+
+    out += `%include "typemaps.i"\n`;
+    out += `%include "std_except.i"\n\n`;
+
+    out += `%immutable;\n`;
+    out += `%inline %{\n`;
+    out += `template <typename Type, size_t N>\n`;
+    out += `struct wrapped_array {\n`;
+    out += `    Type (&data)[N];\n`;
+    out += `    wrapped_array(Type (&data)[N]) : data(data) { }\n`;
+    out += `};\n`;
+    out += `%}\n`;
+    out += `%mutable;\n\n`;
+
+    out += `%extend wrapped_array {\n`;
+    out += `    inline size_t __len__() const { return N; }\n\n`;
+
+    out += `    inline const Type& __getitem__(size_t i) const throw(std::out_of_range) {\n`;
+    out += `        if (i >= N || i < 0)\n`;
+    out += `            throw std::out_of_range("out of bounds");\n`;
+    out += `        return $self->data[i];\n`;
+    out += `    }\n\n`;
+
+    out += `    inline void __setitem__(size_t i, const Type& v) throw(std::out_of_range) {\n`;
+    out += `        if (i >= N || i < 0)\n`;
+    out += `            throw std::out_of_range("out of bounds");\n`;
+    out += `        $self->data[i] = v;\n`;
+    out += `   }\n`;
+    out += `}\n\n`;
+
     out += `%feature("director") ${template.datamodel.dataType}EventHandler;\n`;
     out += `%inline %{\n`;
     out += `struct ${template.datamodel.dataType}EventHandler\n`;
@@ -93,25 +123,51 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
 
     for (let dataset of template.datasets) {
         if (dataset.isSub || dataset.isPub ) {
+            let valueDatatype = header.convertPlcType(dataset.dataType);
+            let valueArraysizeStr = parseInt(dataset.arraySize);
+
             out += `typedef struct ${dataset.libDataType}\n`;
             out += `{\n`;
             if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
                 out += `    void publish(void);\n`;
             }
             if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
-            out += `    void on_change(void);\n`;
-            out += `    int32_t nettime;\n`;
-        }
-            out += `    ${header.convertPlcType(dataset.dataType)} value`;
+                out += `    void on_change(void);\n`;
+                out += `    int32_t nettime;\n`;
+            }
+            if (dataset.arraySize > 0) {
+                out += `    // array not exposed directly:`;
+            }
+            out += `    ${valueDatatype} value`;
             if (dataset.arraySize > 0) { // array comes before string length in c (unlike AS typ editor where it would be: STRING[80][0..1])
-                out += `[${parseInt(dataset.arraySize)}]`;
-    }
+                out += `[${valueArraysizeStr}]`;
+            }
             if (dataset.dataType.includes("STRING")) {
                 out += `[${parseInt(dataset.stringLength)}];\n`;
             } else {
                 out += `;\n`;
             }
             out += `} ${dataset.libDataType}_t;\n\n`;
+
+            if (dataset.arraySize > 0) {
+                // array helpers:
+                out += `%template (${dataset.libDataType}_valuearray) wrapped_array<${valueDatatype}, ${valueArraysizeStr}>;\n\n`;
+
+                out += `%extend ${dataset.libDataType} {\n`;
+                out += `    wrapped_array<${valueDatatype}, ${valueArraysizeStr}> getValue(){\n`;
+                out += `        return wrapped_array<${valueDatatype}, ${valueArraysizeStr}>($self->value);\n`;
+                out += `    }\n`;
+                out += `    void setValue(wrapped_array<${valueDatatype}, ${valueArraysizeStr}> val) throw (std::invalid_argument) {\n`;
+                out += `        throw std::invalid_argument("cant set array, use [] instead");\n`;
+                out += `    }\n\n`;
+
+                out += `    %pythoncode %{\n`;
+                out += `        __swig_getmethods__["value"] = getValue\n`;
+                out += `        __swig_setmethods__["value"] = setValue\n`;
+                out += `        if _newclass: value = property(getValue, setValue)\n`;
+                out += `    %}\n`;
+                out += `}\n\n`;
+            }
         }
     }
 
@@ -153,9 +209,17 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
 
 function generatePythonMain(fileName, typName, PubSubSwap) {
     let out = "";
+    let prepend = "# ";
+    if(process.env.VSCODE_DEBUG_MODE) {
+        prepend = "";
+    }
 
     let template = c_static_lib_template.configTemplate(fileName, typName);
 
+    out += `# Use import and sys.path.insert if this py file is moved.\n`;
+    out += `# The path should point to the directory containing _lib${typName}.so\n`;
+    out += `${prepend}import sys\n`;
+    out += `${prepend}sys.path.insert(1, '${template.datamodel.dataType}_py/Linux')\n`;
     out += `import ${template.datamodel.libStructName}\n`;
     out += `\n`;
     out += `class ${template.datamodel.dataType}EventHandler(${template.datamodel.libStructName}.${template.datamodel.dataType}EventHandler):\n`;
@@ -176,7 +240,23 @@ function generatePythonMain(fileName, typName, PubSubSwap) {
         if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
             out += `    def on_change_${dataset.structName}(self):\n`;
             out += `        self.${template.datamodel.varName}.log.verbose("python dataset ${dataset.structName} changed!")\n`;
-            out += `    #     .. = self.${template.datamodel.varName}.${dataset.structName}.value\n`;
+
+            if(dataset.arraySize == 0) {
+                if(header.isScalarType(dataset.dataType, false)) {
+                    out += `        ${prepend}print("on_change: ${template.datamodel.varName}.${dataset.structName}: " + str(self.${template.datamodel.varName}.${dataset.structName}.value))\n`;
+                } else {
+                    out += `        ${prepend}print("on_change: ${template.datamodel.varName}.${dataset.structName}: " + self.${template.datamodel.varName}.${dataset.structName}.value)\n`;
+                }
+            } else {
+                out += `        ${prepend}print("on_change: ${template.datamodel.varName}.${dataset.structName}: Array of ${header.convertPlcType(dataset.dataType)}${dataset.dataType.includes("STRING")?"[]":""}")\n`;
+                out += `        ${prepend}for index in range(len(self.${template.datamodel.varName}.${dataset.structName}.value)):\n`;
+                out += `        ${prepend}    print(str(index) + ": " + str(self.${template.datamodel.varName}.${dataset.structName}.value[index]))\n`;
+                out += `        ## alternatively:\n`;
+                out += `        ## for item in self.${template.datamodel.varName}.${dataset.structName}.value:\n`;
+                out += `        ##    print("  " + str(item))\n`;
+            }
+            out += `        \n`;
+            out += `        # Your code here...\n`;
             out += "    \n";
         }
     }
@@ -194,7 +274,7 @@ function generatePythonMain(fileName, typName, PubSubSwap) {
 
     for (let dataset of template.datasets) {
         if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
-            out += `            # ${template.datamodel.varName}.${dataset.structName}.value = .. \n`;
+            out += `            # ${template.datamodel.varName}->${dataset.structName}.value${dataset.arraySize > 0 ? "[..]" : ""}${header.isScalarType(dataset.dataType) ? "" : ". .."} = .. \n`;
             out += `            # ${template.datamodel.varName}.${dataset.structName}.publish()\n`;
             out += "            \n";
         }
