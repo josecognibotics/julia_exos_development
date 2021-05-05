@@ -342,6 +342,71 @@ function genenerateLibHeader(fileName, typName, PubSubSwap) {
     return out;
 }
 
+
+function genenerateLegend(fileName, typName, PubSubSwap) {
+    let out = "";
+
+    let template = configTemplate(fileName, typName);
+    out += `/* ${template.datamodel.libStructName}_t datamodel features:\n`;
+
+    out += `\nmain methods:\n`
+    out += `    ${template.datamodel.varName}->connect()\n`;
+    out += `    ${template.datamodel.varName}->disconnect()\n`;
+    out += `    ${template.datamodel.varName}->process()\n`;
+    out += `    ${template.datamodel.varName}->set_operational()\n`;
+    out += `    ${template.datamodel.varName}->dispose()\n`;
+    out += `    ${template.datamodel.varName}->get_nettime() : (int32_t) get current nettime\n`;
+    out += `\nvoid(void) user callbacks:\n`
+    out += `    ${template.datamodel.varName}->on_connected\n`;
+    out += `    ${template.datamodel.varName}->on_disconnected\n`;
+    out += `    ${template.datamodel.varName}->on_operational\n`;
+    out += `\nboolean values:\n`
+    out += `    ${template.datamodel.varName}->is_connected\n`;
+    out += `    ${template.datamodel.varName}->is_operational\n`;
+    out += `\nlogging methods:\n`
+    out += `    ${template.datamodel.varName}->log.error(char *)\n`;
+    out += `    ${template.datamodel.varName}->log.warning(char *)\n`;
+    out += `    ${template.datamodel.varName}->log.success(char *)\n`;
+    out += `    ${template.datamodel.varName}->log.info(char *)\n`;
+    out += `    ${template.datamodel.varName}->log.debug(char *)\n`;
+    out += `    ${template.datamodel.varName}->log.verbose(char *)\n`;  
+    for (let dataset of template.datasets) {
+        if (dataset.isSub || dataset.isPub) {
+            out += `\ndataset ${dataset.structName}:\n`;
+            
+            if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                out += `    ${template.datamodel.varName}->${dataset.structName}.publish()\n`;
+            }
+            if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                out += `    ${template.datamodel.varName}->${dataset.structName}.on_change : void(void) user callback function\n`;
+                out += `    ${template.datamodel.varName}->${dataset.structName}.nettime : (int32_t) nettime @ time of publish\n`;
+            }
+            out += `    ${template.datamodel.varName}->${dataset.structName}.value : (${header.convertPlcType(dataset.dataType)}`;
+            if (dataset.arraySize > 0) { // array comes before string length in c (unlike AS typ editor where it would be: STRING[80][0..1])
+                out += `[${parseInt(dataset.arraySize)}]`;
+            }
+            if (dataset.dataType.includes("STRING")) {
+                out += `[${parseInt(dataset.stringLength)}) `;
+            } else {
+                out += `) `;
+            }
+            out += ` actual dataset value`;
+            if(header.isScalarType(dataset.dataType, true)) {
+                out += `\n`;
+            }
+            else {
+                out += `s\n`;
+            }
+        }
+    }
+    out += `*/\n\n`;
+
+    return out;
+}
+
+
+
+
 function generateMainAR(fileName, typName, libName, PubSubSwap) {
     let out = "";
     let template = configTemplate(fileName, typName);
@@ -349,6 +414,8 @@ function generateMainAR(fileName, typName, libName, PubSubSwap) {
     out += `#include <string.h>\n`;
     out += `#include <stdbool.h>\n`;
     out += `#include "${template.libHeaderName}"\n\n`;
+
+    out += genenerateLegend(fileName, typName, PubSubSwap);
 
     out += `static ${template.datamodel.libStructName}_t *${template.datamodel.varName};\n`;
     out += `static struct ${template.datamodel.structName}Cyclic *cyclic_inst;\n\n`;
@@ -487,7 +554,10 @@ function generateMain(fileName, typName, PubSubSwap) {
     out += `#include "termination.h"\n`;
     out += `#include <stdio.h>\n\n`;
 
+    out += genenerateLegend(fileName, typName, PubSubSwap);
+
     out += `static ${template.datamodel.libStructName}_t *${template.datamodel.varName};\n\n`
+
 
     out += `static void on_connected_${template.datamodel.varName}(void)\n{\n`;
     out += `   ${template.datamodel.varName}->log.success("${template.datamodel.varName} connected!");\n`;
