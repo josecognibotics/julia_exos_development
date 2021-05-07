@@ -5,6 +5,32 @@
 const c_static_lib_template = require('../c-static-lib-template/c_static_lib_template')
 const header = require('../exos_header');
 
+function generateSwigArrayinfo(json) {
+    let out = ``;
+    for(let info of json.swiginfo) {
+        if(info.membername != "value")
+            out += `%template (${info.structname}_${info.membername}_valuearray) wrapped_array<${info.datatype}, ${info.arraysize}>;\n\n`;
+        else
+            out += `%template (${info.structname}_valuearray) wrapped_array<${info.datatype}, ${info.arraysize}>;\n\n`;
+
+        out += `%extend ${info.structname} {\n`;
+        out += `    wrapped_array<${info.datatype}, ${info.arraysize}> getValue(){\n`;
+        out += `        return wrapped_array<${info.datatype}, ${info.arraysize}>($self->${info.membername});\n`;
+        out += `    }\n`;
+        out += `    void setValue(wrapped_array<${info.datatype}, ${info.arraysize}> val) throw (std::invalid_argument) {\n`;
+        out += `        throw std::invalid_argument("cant set array, use [] instead");\n`;
+        out += `    }\n\n`;
+
+        out += `    %pythoncode %{\n`;
+        out += `        __swig_getmethods__["${info.membername}"] = getValue\n`;
+        out += `        __swig_setmethods__["${info.membername}"] = setValue\n`;
+        out += `        if _newclass: ${info.membername} = property(getValue, setValue)\n`;
+        out += `    %}\n`;
+        out += `}\n\n`;
+    }
+    return out;
+}
+
 function generateSwigInclude(fileName, typName, PubSubSwap) {
     let out = "";
 
@@ -114,12 +140,36 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
     out += `    p${template.datamodel.dataType}EventHandler->${template.datamodel.varName} = ${template.datamodel.varName};\n`;
     out += `    handler = NULL;\n`;
     out += `}\n`;
-    out += `%}\n`;
-    out += `\n`;
-    out += `#define EXOS_INCLUDE_ONLY_DATATYPE\n`;
-    out += `%include "stdint.i"\n`;
-    out += `%include "${template.headerName}"\n`;
-    out += `\n`;
+    out += `%}\n\n`;
+
+    out += `%include "stdint.i"\n\n`;
+
+
+    out += `/* Handle arrays in substructures, structs could be exposed using these two lines:\n`;
+    out += `     #define EXOS_INCLUDE_ONLY_DATATYPE\n`;
+    out += `     %include "${template.headerName}"\n`;
+    out += `   But we need to disable the array members and add them again with the wrapped_array\n`;
+    out += `*/\n`;
+
+    let headerStructs = header.convertTyp2Struct(fileName, swig=true)
+    let idx = headerStructs.indexOf("<sai>")
+    if (idx > 0) {
+        do {
+            out += headerStructs.substring(0, idx);
+            headerStructs = headerStructs.substring(idx + 5); // skip <sai>
+            let endIdx = headerStructs.indexOf("</sai>");
+            arrayInfo = headerStructs.substring(0, endIdx);
+
+            out += generateSwigArrayinfo(JSON.parse(arrayInfo))
+
+            headerStructs = headerStructs.substring(endIdx + 6) // skip </sai>
+
+        } while ((idx=headerStructs.indexOf("<sai>")) > 0)
+    }
+    else {
+        out += headerStructs;
+    }
+    
 
     for (let dataset of template.datasets) {
         if (dataset.isSub || dataset.isPub ) {
@@ -151,22 +201,7 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
 
             if (dataset.arraySize > 0) {
                 // array helpers:
-                out += `%template (${dataset.libDataType}_valuearray) wrapped_array<${valueDatatype}, ${valueArraysizeStr}>;\n\n`;
-
-                out += `%extend ${dataset.libDataType} {\n`;
-                out += `    wrapped_array<${valueDatatype}, ${valueArraysizeStr}> getValue(){\n`;
-                out += `        return wrapped_array<${valueDatatype}, ${valueArraysizeStr}>($self->value);\n`;
-                out += `    }\n`;
-                out += `    void setValue(wrapped_array<${valueDatatype}, ${valueArraysizeStr}> val) throw (std::invalid_argument) {\n`;
-                out += `        throw std::invalid_argument("cant set array, use [] instead");\n`;
-                out += `    }\n\n`;
-
-                out += `    %pythoncode %{\n`;
-                out += `        __swig_getmethods__["value"] = getValue\n`;
-                out += `        __swig_setmethods__["value"] = setValue\n`;
-                out += `        if _newclass: value = property(getValue, setValue)\n`;
-                out += `    %}\n`;
-                out += `}\n\n`;
+                out += generateSwigArrayinfo({"swiginfo": [{"structname": `${dataset.libDataType}`, "membername": "value", "datatype": `${valueDatatype}`, "arraysize": `${valueArraysizeStr}`}]});
             }
         }
     }

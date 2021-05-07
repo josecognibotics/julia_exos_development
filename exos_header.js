@@ -365,7 +365,7 @@ function prepLines(lines) {
     return lines;
 }
 
-function convertTyp2Struct(fileName) {
+function convertTyp2Struct(fileName, swig) {
 
     let fileLines = "";
 
@@ -469,22 +469,36 @@ function convertTyp2Struct(fileName) {
                             type = type.split("(*")[0].trim();
                         }
 
+                        if (arraySize > 0 && swig !== undefined && swig) {
+                            out += `    // array not exposed directly:`
+                        }
+
+                        let typeForSwig = "";
                         if (type.includes("STRING")) {
                             let length = takeout(type, "[", "]");
                             if (length != null) {
+                                typeForSwig = "char";
                                 out += outputMember("char", name, [arraySize, parseInt(length) + 1], comment);
                             }
                         }
                         else if (isScalarType(type)) {
                             stdtype = convertPlcType(type);
+                            typeForSwig = stdtype;
                             out += outputMember(stdtype, name, [arraySize], comment);
                         }
                         else {
                             structs[structs.length - 1].depends.push(type); // push before adding "struct "
+                            typeForSwig = type;
                             if (isStructType(type, fileLines)) {
+                                typeForSwig = type;
                                 type = "struct " + type;
                             }
                             out += outputMember(type, name, [arraySize], comment);
+                        }
+
+                        if (arraySize > 0 && swig !== undefined && swig) {
+                            // add sai=swig array info
+                            out += `<sai>{"structname": "${structname}", "membername": "${name}", "datatype": "${typeForSwig}", "arraysize": "${arraySize}"}</sai>`
                         }
                     }
                 }
@@ -512,8 +526,21 @@ function convertTyp2Struct(fileName) {
 
     //output the sorted structures
     out = "";
-    for (let struct of structs) {
-        out += struct.out;
+    if (swig !== undefined && swig) {
+        for (let struct of structs.slice(0, -1)) { // do not include the last one (top-level struct) as it already exists as struct lib<typname>
+            // find and extract all swig array info stuff and add them last to be able to replace it correctly in swig template generator
+            swigInfo = ""
+            matches = struct.out.matchAll(/<sai>(.*)<\/sai>/g);
+            swigInfoResult = Array.from(matches, x => x[1]);
+            if (swigInfoResult.length > 0)
+                swigInfo = `<sai>{"swiginfo": [` + swigInfoResult.join(",") + `]}</sai>`;
+            out += struct.out.replace(/<sai>.*<\/sai>/g, "") + swigInfo;
+        }
+    } 
+    else {
+        for (let struct of structs) {
+            out += struct.out;
+        }
     }
     return out;
 }
@@ -761,5 +788,6 @@ module.exports = {
     generateHeader,
     convertPlcType,
     convertPlcTypePrintf,
-    isScalarType
+    isScalarType,
+    convertTyp2Struct
 }
