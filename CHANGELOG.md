@@ -3,10 +3,7 @@
 ## [Unreleased] - YYYY-MM-DD
 
 ### Added
-- Support for arrays in SWIG python. 
-  Known issues:
-    - There can only be one array in all of the structures with a specific size and datatype (e.g. only ONE uint8_t [0..2]). Again name clashing
-    - not tested on array of string
+- Support for arrays in SWIG python.
 - Example code in on_changed in python and singleton
 
 ### Fixed

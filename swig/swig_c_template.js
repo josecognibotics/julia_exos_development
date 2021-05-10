@@ -5,15 +5,45 @@
 const c_static_lib_template = require('../c-static-lib-template/c_static_lib_template')
 const header = require('../exos_header');
 
+function generateSwigArrayinfoPre(json) {
+    let out = ``;
+    for(let info of json.swiginfo) {
+        out += `%immutable;\n`;
+        out += `%inline %{\n`;
+        out += `struct ${info.structname}_${info.membername}_wrapped_array {\n`;
+        out += `    ${info.datatype} (&data)[${info.arraysize}];\n`;
+        out += `    ${info.structname}_${info.membername}_wrapped_array(${info.datatype} (&data)[${info.arraysize}]) : data(data) { }\n`;
+        out += `};\n`;
+        out += `%}\n`;
+        out += `%mutable;\n\n`;
+
+        out += `%extend ${info.structname}_${info.membername}_wrapped_array {\n`;
+        out += `    inline size_t __len__() const { return ${info.arraysize}; }\n\n`;
+
+        out += `    inline const ${info.datatype}& __getitem__(size_t i) const throw(std::out_of_range) {\n`;
+        out += `        if (i >= ${info.arraysize} || i < 0)\n`;
+        out += `            throw std::out_of_range("out of bounds");\n`;
+        out += `        return $self->data[i];\n`;
+        out += `    }\n\n`;
+
+        out += `    inline void __setitem__(size_t i, const ${info.datatype}& v) throw(std::out_of_range) {\n`;
+        out += `        if (i >= ${info.arraysize} || i < 0)\n`;
+        out += `            throw std::out_of_range("out of bounds");\n`;
+        out += `        $self->data[i] = v; \n`;
+        out += `    }\n`;
+        out += `}\n\n`;
+    }
+    return out;
+}
+
 function generateSwigArrayinfo(json) {
     let out = ``;
     for(let info of json.swiginfo) {
-        out += `%template (${info.structname}_${info.membername}_array) wrapped_array<${info.datatype}, ${info.arraysize}>;\n\n`;
         out += `%extend ${info.structname} {\n`;
-        out += `    wrapped_array<${info.datatype}, ${info.arraysize}> get_${info.structname}_${info.membername}(){\n`;
-        out += `        return wrapped_array<${info.datatype}, ${info.arraysize}>($self->${info.membername});\n`;
+        out += `    ${info.structname}_${info.membername}_wrapped_array get_${info.structname}_${info.membername}(){\n`;
+        out += `        return ${info.structname}_${info.membername}_wrapped_array($self->${info.membername});\n`;
         out += `    }\n`;
-        out += `    void set_${info.structname}_${info.membername}(wrapped_array<${info.datatype}, ${info.arraysize}> val) throw (std::invalid_argument) {\n`;
+        out += `    void set_${info.structname}_${info.membername}(${info.structname}_${info.membername}_wrapped_array val) throw (std::invalid_argument) {\n`;
         out += `        throw std::invalid_argument("cant set array, use [] instead");\n`;
         out += `    }\n\n`;
 
@@ -46,32 +76,6 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
 
     out += `%include "typemaps.i"\n`;
     out += `%include "std_except.i"\n\n`;
-
-    out += `%immutable;\n`;
-    out += `%inline %{\n`;
-    out += `template <typename Type, size_t N>\n`;
-    out += `struct wrapped_array {\n`;
-    out += `    Type (&data)[N];\n`;
-    out += `    wrapped_array(Type (&data)[N]) : data(data) { }\n`;
-    out += `};\n`;
-    out += `%}\n`;
-    out += `%mutable;\n\n`;
-
-    out += `%extend wrapped_array {\n`;
-    out += `    inline size_t __len__() const { return N; }\n\n`;
-
-    out += `    inline const Type& __getitem__(size_t i) const throw(std::out_of_range) {\n`;
-    out += `        if (i >= N || i < 0)\n`;
-    out += `            throw std::out_of_range("out of bounds");\n`;
-    out += `        return $self->data[i];\n`;
-    out += `    }\n\n`;
-
-    out += `    inline void __setitem__(size_t i, const Type& v) throw(std::out_of_range) {\n`;
-    out += `        if (i >= N || i < 0)\n`;
-    out += `            throw std::out_of_range("out of bounds");\n`;
-    out += `        $self->data[i] = v;\n`;
-    out += `   }\n`;
-    out += `}\n\n`;
 
     out += `%feature("director") ${template.datamodel.dataType}EventHandler;\n`;
     out += `%inline %{\n`;
@@ -151,14 +155,17 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
     let idx = headerStructs.indexOf("<sai>")
     if (idx > 0) {
         do {
-            out += headerStructs.substring(0, idx);
+            tmpOut = headerStructs.substring(0, idx); // TODO: not really important, but more struct could be in this substring and SwigArrayInfoPre could thereby be further away from its true struct than necessary
             headerStructs = headerStructs.substring(idx + 5); // skip <sai>
             let endIdx = headerStructs.indexOf("</sai>");
-            arrayInfo = headerStructs.substring(0, endIdx);
+            let arrayInfoStr = headerStructs.substring(0, endIdx);
+            let arrayInfo = JSON.parse(arrayInfoStr)
 
-            out += generateSwigArrayinfo(JSON.parse(arrayInfo))
+            out += generateSwigArrayinfoPre(arrayInfo)
+            out += tmpOut;
+            out += generateSwigArrayinfo(arrayInfo);
 
-            headerStructs = headerStructs.substring(endIdx + 6) // skip </sai>
+            headerStructs = headerStructs.substring(endIdx + 6); // skip </sai>
 
         } while ((idx=headerStructs.indexOf("<sai>")) > 0)
     }
@@ -171,6 +178,12 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
         if (dataset.isSub || dataset.isPub ) {
             let valueDatatype = header.convertPlcType(dataset.dataType);
             let valueArraysizeStr = parseInt(dataset.arraySize);
+            let arrayInfo = {"swiginfo": [{"structname": `${dataset.libDataType}`, "membername": "value", "datatype": `${valueDatatype}`, "arraysize": `${valueArraysizeStr}`}]};
+
+            if (dataset.arraySize > 0) {
+                // array helpers:
+                out += generateSwigArrayinfoPre(arrayInfo);
+            }
 
             out += `typedef struct ${dataset.libDataType}\n`;
             out += `{\n`;
@@ -197,7 +210,7 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
 
             if (dataset.arraySize > 0) {
                 // array helpers:
-                out += generateSwigArrayinfo({"swiginfo": [{"structname": `${dataset.libDataType}`, "membername": "value", "datatype": `${valueDatatype}`, "arraysize": `${valueArraysizeStr}`}]});
+                out += generateSwigArrayinfo(arrayInfo);
             }
         }
     }
