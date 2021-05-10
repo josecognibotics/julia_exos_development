@@ -8,23 +8,19 @@ const header = require('../exos_header');
 function generateSwigArrayinfo(json) {
     let out = ``;
     for(let info of json.swiginfo) {
-        if(info.membername != "value")
-            out += `%template (${info.structname}_${info.membername}_valuearray) wrapped_array<${info.datatype}, ${info.arraysize}>;\n\n`;
-        else
-            out += `%template (${info.structname}_valuearray) wrapped_array<${info.datatype}, ${info.arraysize}>;\n\n`;
-
+        out += `%template (${info.structname}_${info.membername}_array) wrapped_array<${info.datatype}, ${info.arraysize}>;\n\n`;
         out += `%extend ${info.structname} {\n`;
-        out += `    wrapped_array<${info.datatype}, ${info.arraysize}> getValue(){\n`;
+        out += `    wrapped_array<${info.datatype}, ${info.arraysize}> get_${info.structname}_${info.membername}(){\n`;
         out += `        return wrapped_array<${info.datatype}, ${info.arraysize}>($self->${info.membername});\n`;
         out += `    }\n`;
-        out += `    void setValue(wrapped_array<${info.datatype}, ${info.arraysize}> val) throw (std::invalid_argument) {\n`;
+        out += `    void set_${info.structname}_${info.membername}(wrapped_array<${info.datatype}, ${info.arraysize}> val) throw (std::invalid_argument) {\n`;
         out += `        throw std::invalid_argument("cant set array, use [] instead");\n`;
         out += `    }\n\n`;
 
         out += `    %pythoncode %{\n`;
-        out += `        __swig_getmethods__["${info.membername}"] = getValue\n`;
-        out += `        __swig_setmethods__["${info.membername}"] = setValue\n`;
-        out += `        if _newclass: ${info.membername} = property(getValue, setValue)\n`;
+        out += `        __swig_getmethods__["${info.membername}"] = get_${info.structname}_${info.membername}\n`;
+        out += `        __swig_setmethods__["${info.membername}"] = set_${info.structname}_${info.membername}\n`;
+        out += `        if _newclass: ${info.membername} = property(get_${info.structname}_${info.membername}, set_${info.structname}_${info.membername})\n`;
         out += `    %}\n`;
         out += `}\n\n`;
     }

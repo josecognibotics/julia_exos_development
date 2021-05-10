@@ -5,7 +5,6 @@
 ### Added
 - Support for arrays in SWIG python. 
   Known issues:
-    - There can only be one array in each sub structure (some name clashing needs to be resolved)
     - There can only be one array in all of the structures with a specific size and datatype (e.g. only ONE uint8_t [0..2]). Again name clashing
     - not tested on array of string
 - Example code in on_changed in python and singleton
