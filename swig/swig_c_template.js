@@ -333,51 +333,7 @@ function generatePythonMain(fileName, typName, PubSubSwap) {
     return out;
 }
 
-function generateNodeJSMain(fileName, typName, PubSubSwap) {
-    let out = "";
-    let template = c_static_lib_template.configTemplate(fileName, typName);
-
-    out += `const process = require("process");\n`;
-    out += `const lib${typName} = require("./l_${typName.toLowerCase()}");\n`;
-    out += `\n`;
-    out += `let ${typName.toLowerCase()} = lib${typName}.lib${typName}_init();\n`;
-    out += `\n`;
-    out += `try {\n`;
-    out += `    ${typName.toLowerCase()}.connect();\n`;
-    out += `} catch (e) {\n`;
-    out += `    console.error(e);\n`;
-    out += `    process.exit(1);\n`;
-    out += `}\n`;
-    out += `\n`;
-    out += `setInterval(() => {\n`;
-    out += `    try {\n`;
-    out += `        ${typName.toLowerCase()}.process()\n`;
-    out += `\n`;
-    out += `        if (${typName.toLowerCase()}.is_connected) { // && ${typName.toLowerCase()}.is_operational) {\n`;
-    for (let dataset of template.datasets) {
-        if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
-            out += `            //${template.datamodel.varName}.${dataset.structName}.value = .. \n`;
-            out += `            //${template.datamodel.varName}.${dataset.structName}.publish();\n`;
-        }
-    }
-    out += `        }\n`;
-    out += `    } catch (e) {\n`;
-    out += `        console.error(e);\n`;
-    out += `        process.exit(2);\n`;
-    out += `    }\n`;
-    out += `}, 0);\n`;
-    out += `\n`;
-    out += `process.on('exit', (code) => {\n`;
-    out += `    ${typName.toLowerCase()}.disconnect()\n`;
-    out += `    ${typName.toLowerCase()}.dispose()\n`;
-    out += `    console.log("Exiting with code: " + code);\n`;
-    out += `});\n`;
-
-    return out;
-}
-
 module.exports = {
     generateSwigInclude,
-    generatePythonMain,
-    generateNodeJSMain
+    generatePythonMain
 }

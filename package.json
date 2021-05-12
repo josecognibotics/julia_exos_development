@@ -51,10 +51,6 @@
 				"title": "exOS: Generate Singleton SWIG Python Template"
 			},
 			{
-				"command": "exos-component-extension.generateSwigNodeJSTemplate",
-				"title": "exOS: Generate Singleton SWIG NodeJS Template"
-			},
-			{
 				"command": "exos-component-extension.generateEverythingDebug",
 				"title": "exOS: >DEBUG> Generate everything <DEBUG<"
 			}
@@ -74,11 +70,6 @@
 				{
 					"when": "filesExplorerFocus && resourceExtname == .typ",
 					"command": "exos-component-extension.generateSwigPythonTemplate",
-					"group": "2_workspace"
-				},
-				{
-					"when": "filesExplorerFocus && resourceExtname == .typ",
-					"command": "exos-component-extension.generateSwigNodeJSTemplate",
 					"group": "2_workspace"
 				},
 				{

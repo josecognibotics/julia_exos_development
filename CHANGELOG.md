@@ -9,6 +9,9 @@
 ### Fixed
 - Naming of structs in singleton and swig had the library name removed (only in version 1.1.5 and 1.1.6)
 
+### Removed
+- SWIG NodeJS as it has been replaced by the more feature rich N-API NodeJS
+
 ## [1.1.6] - 2021-04-20
 
 ### Fixed

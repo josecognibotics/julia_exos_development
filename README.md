@@ -103,29 +103,6 @@ For both variants, the Datatype which is used to generate the template with is a
 
     In order to compile this template, Python and SWIG need to be installed.
 
-## Singleton SWIG NodeJS Template
-
-- Automation Runtime 
-
-    In Automation Runtime, the template is equivalent to the **Singleton C Template**
-
-- Linux
-
-    In Linux, the SWIG library takes static singleton library to create a nodejs module representing the datamodel. The Linux application consists of a `.deb` file providing the compiled nodejs module, and a `.js` user application. When exporting this template to binary format, the NodeJS user application can be changed without a build environment.
-
-- Limitations
-
-    - Currently, SWIG modules do not support arrays.
-
-    - SWIG does not support callbacks to the NodeJS environment
-
-    - SWIG only supports NodeJS versions <= 10
-
-- Requirements
-
-    In order to compile this template, NodeJS and SWIG need to be installed.
-
-
 # Installation
 
 ## Python
@@ -244,7 +221,7 @@ https://packages.debian.org/nodejs
 
 - experimental: 14.16.0~dfsg-1
 
-One important topic when creating NodeJS-based exOS packages is to compile the package with the same Python
+One important topic when creating NodeJS-based exOS packages is to compile the package with the same NodeJS
 version that is installed on the target.
 
 As long as the same distribution is used for the build environment as the target, apt can be used to easily install nodejs.
