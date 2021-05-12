@@ -95,10 +95,6 @@ For both variants, the Datatype which is used to generate the template with is a
 
     In Linux, the SWIG library takes static singleton library to create a python module representing the datamodel. Along with the python module, a "main" python script is generated that automatically connects the datamodel to AR. The Linux application consists of a `.deb` file providing the compiled python module, and a `.py` user application. When exporting this template to binary format, the Python user application can be changed without a build environment.
 
-- Limitations
-
-    - Currently, SWIG modules do not support arrays.
-
 - Requirements
 
     In order to compile this template, Python and SWIG need to be installed.

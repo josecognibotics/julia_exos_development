@@ -287,17 +287,17 @@ function generatePythonMain(fileName, typName, PubSubSwap) {
 
             if(dataset.arraySize == 0) {
                 if(header.isScalarType(dataset.dataType, false)) {
-                    out += `        ${prepend}print("on_change: ${template.datamodel.varName}.${dataset.structName}: " + str(self.${template.datamodel.varName}.${dataset.structName}.value))\n`;
+                    out += `        ${prepend}self.${template.datamodel.varName}.log.debug("on_change: ${template.datamodel.varName}.${dataset.structName}: " + str(self.${template.datamodel.varName}.${dataset.structName}.value))\n`;
                 } else {
-                    out += `        ${prepend}print("on_change: ${template.datamodel.varName}.${dataset.structName}: " + self.${template.datamodel.varName}.${dataset.structName}.value)\n`;
+                    out += `        ${prepend}self.${template.datamodel.varName}.log.debug("on_change: ${template.datamodel.varName}.${dataset.structName}: " + self.${template.datamodel.varName}.${dataset.structName}.value)\n`;
                 }
             } else {
-                out += `        ${prepend}print("on_change: ${template.datamodel.varName}.${dataset.structName}: Array of ${header.convertPlcType(dataset.dataType)}${dataset.dataType.includes("STRING")?"[]":""}")\n`;
+                out += `        ${prepend}self.${template.datamodel.varName}.log.debug("on_change: ${template.datamodel.varName}.${dataset.structName}: Array of ${header.convertPlcType(dataset.dataType)}${dataset.dataType.includes("STRING")?"[]":""}")\n`;
                 out += `        ${prepend}for index in range(len(self.${template.datamodel.varName}.${dataset.structName}.value)):\n`;
-                out += `        ${prepend}    print(str(index) + ": " + str(self.${template.datamodel.varName}.${dataset.structName}.value[index]))\n`;
+                out += `        ${prepend}    self.${template.datamodel.varName}.log.debug(str(index) + ": " + str(self.${template.datamodel.varName}.${dataset.structName}.value[index]))\n`;
                 out += `        ## alternatively:\n`;
                 out += `        ## for item in self.${template.datamodel.varName}.${dataset.structName}.value:\n`;
-                out += `        ##    print("  " + str(item))\n`;
+                out += `        ##    self.${template.datamodel.varName}.log.debugself.${template.datamodel.varName}.log.debug("  " + str(item))\n`;
             }
             out += `        \n`;
             out += `        # Your code here...\n`;
@@ -324,7 +324,7 @@ function generatePythonMain(fileName, typName, PubSubSwap) {
         }
     }
     out += `except(KeyboardInterrupt, SystemExit):\n`;
-    out += `    print('Application terminated, shutting down')\n`;
+    out += `    ${template.datamodel.varName}.log.success("Application terminated, shutting down")\n`;
     out += `\n`;
     out += `${template.datamodel.varName}.disconnect()\n`;
     out += `${template.datamodel.varName}.dispose()\n`;
