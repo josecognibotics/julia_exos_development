@@ -446,6 +446,7 @@ function convertTyp2Struct(fileName, swig) {
                 }
                 else {
                     let arraySize = 0;
+                    let stringSize = 0;
                     if (line.includes("ARRAY")) {
                         let range = takeout(line, "[", "]")
                         if (range != null) {
@@ -478,7 +479,8 @@ function convertTyp2Struct(fileName, swig) {
                             let length = takeout(type, "[", "]");
                             if (length != null) {
                                 typeForSwig = "char";
-                                out += outputMember("char", name, [arraySize, parseInt(length) + 1], comment);
+                                stringSize = parseInt(length) + 1;
+                                out += outputMember("char", name, [arraySize, stringSize], comment);
                             }
                         }
                         else if (isScalarType(type)) {
@@ -498,7 +500,7 @@ function convertTyp2Struct(fileName, swig) {
 
                         if (arraySize > 0 && swig !== undefined && swig) {
                             // add sai=swig array info
-                            out += `<sai>{"structname": "${structname}", "membername": "${name}", "datatype": "${typeForSwig}", "arraysize": "${arraySize}"}</sai>`
+                            out += `<sai>{"structname": "${structname}", "membername": "${name}", "datatype": "${typeForSwig}", "arraysize": "${arraySize}", "stringsize": "${stringSize}"}</sai>`
                         }
                     }
                 }

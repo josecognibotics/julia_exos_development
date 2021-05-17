@@ -8,28 +8,51 @@ const header = require('../exos_header');
 function generateSwigArrayinfoPre(json) {
     let out = ``;
     for(let info of json.swiginfo) {
+        // Create a proxy with a reference to the real value 
+        // and extend that proxy structure with __getitem__ and __setitem__ which overloads [] in the target language
+
+        // A small test showed that all seems good in regard to memory. The address of $self->data[i] in __setitem__ is the same
+        // as the address of the value used for exos_dataset_init in ${template.datamodel.libStructName}.${template.datamodel.libStructName}_init()
+
         out += `%immutable;\n`;
         out += `%inline %{\n`;
         out += `struct ${info.structname}_${info.membername}_wrapped_array {\n`;
-        out += `    ${info.datatype} (&data)[${info.arraysize}];\n`;
-        out += `    ${info.structname}_${info.membername}_wrapped_array(${info.datatype} (&data)[${info.arraysize}]) : data(data) { }\n`;
+        if(info.stringsize === undefined || info.stringsize == 0) {
+            out += `    ${info.datatype} (&data)[${info.arraysize}];\n`;
+            out += `    ${info.structname}_${info.membername}_wrapped_array(${info.datatype} (&data)[${info.arraysize}]) : data(data) { }\n`;
+        } else {
+            out += `    ${info.datatype} (&data)[${info.arraysize}][${info.stringsize}];\n`;
+            out += `    ${info.structname}_${info.membername}_wrapped_array(${info.datatype} (&data)[${info.arraysize}][${info.stringsize}]) : data(data) { }\n`;
+        }
+        
         out += `};\n`;
         out += `%}\n`;
         out += `%mutable;\n\n`;
 
         out += `%extend ${info.structname}_${info.membername}_wrapped_array {\n`;
         out += `    inline size_t __len__() const { return ${info.arraysize}; }\n\n`;
+        let datatype = info.datatype;
+        if(info.stringsize !== undefined && info.stringsize != 0)
+            datatype += "*";
+        else
+            datatype += "&";
 
-        out += `    inline const ${info.datatype}& __getitem__(size_t i) const throw(std::out_of_range) {\n`;
+        out += `    inline const ${datatype} __getitem__(size_t i) const throw(std::out_of_range) {\n`;
         out += `        if (i >= ${info.arraysize} || i < 0)\n`;
         out += `            throw std::out_of_range("out of bounds");\n`;
-        out += `        return $self->data[i];\n`;
+        if(info.stringsize === undefined || info.stringsize == 0)
+            out += `        return $self->data[i];\n`;
+        else
+            out += `        return &($self->data[i][0]);\n`;
         out += `    }\n\n`;
 
-        out += `    inline void __setitem__(size_t i, const ${info.datatype}& v) throw(std::out_of_range) {\n`;
+        out += `    inline void __setitem__(size_t i, const ${datatype} v) throw(std::out_of_range) {\n`;
         out += `        if (i >= ${info.arraysize} || i < 0)\n`;
         out += `            throw std::out_of_range("out of bounds");\n`;
-        out += `        $self->data[i] = v; \n`;
+        if(info.stringsize === undefined || info.stringsize == 0)
+            out += `        $self->data[i] = v; \n`;
+        else
+            out += `        memcpy($self->data[i], v, ${info.stringsize-1}); \n`;
         out += `    }\n`;
         out += `}\n\n`;
     }
@@ -39,6 +62,8 @@ function generateSwigArrayinfoPre(json) {
 function generateSwigArrayinfo(json) {
     let out = ``;
     for(let info of json.swiginfo) {
+        // the real value array in the real struct is outcommented to be able to add it with the extend below
+        // python code is added to re-enable the value, but calling a function getting the proxy struct from above
         out += `%extend ${info.structname} {\n`;
         out += `    ${info.structname}_${info.membername}_wrapped_array get_${info.structname}_${info.membername}(){\n`;
         out += `        return ${info.structname}_${info.membername}_wrapped_array($self->${info.membername});\n`;
@@ -178,7 +203,10 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
         if (dataset.isSub || dataset.isPub ) {
             let valueDatatype = header.convertPlcType(dataset.dataType);
             let valueArraysizeStr = parseInt(dataset.arraySize);
-            let arrayInfo = {"swiginfo": [{"structname": `${dataset.libDataType}`, "membername": "value", "datatype": `${valueDatatype}`, "arraysize": `${valueArraysizeStr}`}]};
+            let valueStringsizeStr = "0"
+            if (dataset.stringLength !== undefined)
+                valueStringsizeStr = parseInt(dataset.stringLength);
+            let arrayInfo = {"swiginfo": [{"structname": `${dataset.libDataType}`, "membername": "value", "datatype": `${valueDatatype}`, "arraysize": `${valueArraysizeStr}`, "stringsize": `${valueStringsizeStr}`}]};
 
             if (dataset.arraySize > 0) {
                 // array helpers:
