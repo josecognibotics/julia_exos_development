@@ -346,7 +346,7 @@ function generatePythonMain(fileName, typName, PubSubSwap) {
 
     for (let dataset of template.datasets) {
         if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
-            out += `            # ${template.datamodel.varName}->${dataset.structName}.value${dataset.arraySize > 0 ? "[..]" : ""}${header.isScalarType(dataset.dataType) ? "" : ". .."} = .. \n`;
+            out += `            # ${template.datamodel.varName}.${dataset.structName}.value${dataset.arraySize > 0 ? "[..]" : ""}${header.isScalarType(dataset.dataType) ? "" : ". .."} = .. \n`;
             out += `            # ${template.datamodel.varName}.${dataset.structName}.publish()\n`;
             out += "            \n";
         }

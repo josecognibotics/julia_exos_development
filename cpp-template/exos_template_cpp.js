@@ -328,40 +328,40 @@ function genenerateLegend(fileName, typName, PubSubSwap) {
     out += `/* datamodel features:\n`;
 
     out += `\nmain methods:\n`
-    out += `    datamodel${dmDelim}connect()\n`;
-    out += `    datamodel${dmDelim}disconnect()\n`;
-    out += `    datamodel${dmDelim}process()\n`;
-    out += `    datamodel${dmDelim}setOperational()\n`;
-    out += `    datamodel${dmDelim}dispose()\n`;
-    out += `    datamodel${dmDelim}getNettime() : (int32_t) get current nettime\n`;
+    out += `    ${template.datamodel.varName}${dmDelim}connect()\n`;
+    out += `    ${template.datamodel.varName}${dmDelim}disconnect()\n`;
+    out += `    ${template.datamodel.varName}${dmDelim}process()\n`;
+    out += `    ${template.datamodel.varName}${dmDelim}setOperational()\n`;
+    out += `    ${template.datamodel.varName}${dmDelim}dispose()\n`;
+    out += `    ${template.datamodel.varName}${dmDelim}getNettime() : (int32_t) get current nettime\n`;
     out += `\nvoid(void) user lambda callback:\n`
-    out += `    datamodel${dmDelim}onConnectionChange([&] () {\n`;
-    out += `        // dataModel.connectionState ...\n`;
+    out += `    ${template.datamodel.varName}${dmDelim}onConnectionChange([&] () {\n`;
+    out += `        // ${template.datamodel.varName}${dmDelim}connectionState ...\n`;
     out += `    })\n`;
     out += `\nboolean values:\n`
-    out += `    datamodel${dmDelim}isConnected\n`;
-    out += `    datamodel${dmDelim}isOperational\n`;
+    out += `    ${template.datamodel.varName}${dmDelim}isConnected\n`;
+    out += `    ${template.datamodel.varName}${dmDelim}isOperational\n`;
 //    out += `\nlogging methods:\n`
-//    out += `    datamodel${dmDelim}log.error(char *)\n`;
-//    out += `    datamodel${dmDelim}log.warning(char *)\n`;
-//    out += `    datamodel${dmDelim}log.success(char *)\n`;
-//    out += `    datamodel${dmDelim}log.info(char *)\n`;
-//    out += `    datamodel${dmDelim}log.debug(char *)\n`;
-//    out += `    datamodel${dmDelim}log.verbose(char *)\n`;  
+//    out += `    ${template.datamodel.varName}${dmDelim}log.error(char *)\n`;
+//    out += `    ${template.datamodel.varName}${dmDelim}log.warning(char *)\n`;
+//    out += `    ${template.datamodel.varName}${dmDelim}log.success(char *)\n`;
+//    out += `    ${template.datamodel.varName}${dmDelim}log.info(char *)\n`;
+//    out += `    ${template.datamodel.varName}${dmDelim}log.debug(char *)\n`;
+//    out += `    ${template.datamodel.varName}${dmDelim}log.verbose(char *)\n`;  
     for (let dataset of template.datasets) {
         if (dataset.isSub || dataset.isPub) {
             out += `\ndataset ${dataset.structName}:\n`;
             
             if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
-                out += `    datamodel${dmDelim}${dataset.structName}.publish()\n`;
+                out += `    ${template.datamodel.varName}${dmDelim}${dataset.structName}.publish()\n`;
             }
             if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
-                out += `    datamodel${dmDelim}${dataset.structName}.onChange([&] () {\n`;
-                out += `        datamodel${dmDelim}${dataset.structName}.value ...\n`;
+                out += `    ${template.datamodel.varName}${dmDelim}${dataset.structName}.onChange([&] () {\n`;
+                out += `        ${template.datamodel.varName}${dmDelim}${dataset.structName}.value ...\n`;
                 out += `    })\n`;
-                out += `    datamodel${dmDelim}${dataset.structName}.nettime : (int32_t) nettime @ time of publish\n`;
+                out += `    ${template.datamodel.varName}${dmDelim}${dataset.structName}.nettime : (int32_t) nettime @ time of publish\n`;
             }
-            out += `    datamodel${dmDelim}${dataset.structName}.value : (${header.convertPlcType(dataset.dataType)}`;
+            out += `    ${template.datamodel.varName}${dmDelim}${dataset.structName}.value : (${header.convertPlcType(dataset.dataType)}`;
             if (dataset.arraySize > 0) { // array comes before string length in c (unlike AS typ editor where it would be: STRING[80][0..1])
                 out += `[${parseInt(dataset.arraySize)}]`;
             }
@@ -397,13 +397,13 @@ function generateMainAR(fileName, typName) {
     out += `\n`;
     out += `_BUR_PUBLIC void ${template.datamodel.structName}Init(struct ${template.datamodel.structName}Init *inst)\n`;
     out += `{\n`;
-    out += `	${typName}DataModel* handle = new ${typName}DataModel();\n`;
-    out += `	if (NULL == handle)\n`;
+    out += `	${typName}DataModel* ${template.datamodel.varName} = new ${typName}DataModel();\n`;
+    out += `	if (NULL == ${template.datamodel.varName})\n`;
     out += `	{\n`;
     out += `		inst->Handle = 0;\n`;
     out += `		return;\n`;
     out += `	}\n`;
-    out += `	inst->Handle = (UDINT)handle;\n`;
+    out += `	inst->Handle = (UDINT)${template.datamodel.varName};\n`;
     out += `}\n`;
     out += `\n`;
     out += `_BUR_PUBLIC void ${template.datamodel.structName}Cyclic(struct ${template.datamodel.structName}Cyclic *inst)\n`;
@@ -416,34 +416,34 @@ function generateMainAR(fileName, typName) {
     out += `		inst->Error = true;\n`;
     out += `		return;\n`;
     out += `	}\n`;
-    out += `	${typName}DataModel* dataModel = static_cast<${typName}DataModel*>((void*)inst->Handle);\n`;
+    out += `	${typName}DataModel* ${template.datamodel.varName} = static_cast<${typName}DataModel*>((void*)inst->Handle);\n`;
     out += `	if (inst->Enable && !inst->_Enable)\n`;
     out += `	{\n`;
     for (let dataset of template.datasets) {
         if (dataset.isSub) {
-            out += `		dataModel->${dataset.structName}.onChange([&] () {\n`;
+            out += `		${template.datamodel.varName}->${dataset.structName}.onChange([&] () {\n`;
             
             if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
-                out += `            inst->p${template.datamodel.structName}->${dataset.structName} = dataModel->${dataset.structName}.value;\n`;
+                out += `            inst->p${template.datamodel.structName}->${dataset.structName} = ${template.datamodel.varName}->${dataset.structName}.value;\n`;
             }
             else {
-                out += `            memcpy(&inst->p${template.datamodel.structName}->${dataset.structName}, &dataModel->${dataset.structName}.value, sizeof(inst->p${template.datamodel.structName}->${dataset.structName}));\n`;
+                out += `            memcpy(&inst->p${template.datamodel.structName}->${dataset.structName}, &${template.datamodel.varName}->${dataset.structName}.value, sizeof(inst->p${template.datamodel.structName}->${dataset.structName}));\n`;
             }
     
             out += `        });\n`;
         }
     }
-    out += `		dataModel->connect();\n`;
+    out += `		${template.datamodel.varName}->connect();\n`;
     out += `	}\n`;
     out += `	if (!inst->Enable && inst->_Enable)\n`;
     out += `	{\n`;
-    out += `		dataModel->disconnect();\n`;
+    out += `		${template.datamodel.varName}->disconnect();\n`;
     out += `	}\n`;
     out += `	inst->_Enable = inst->Enable;\n`;
     out += `\n`;
-    out += `	if(inst->Start && !inst->_Start && dataModel->isConnected)\n`;
+    out += `	if(inst->Start && !inst->_Start && ${template.datamodel.varName}->isConnected)\n`;
     out += `	{\n`;
-    out += `		dataModel->setOperational();\n`;
+    out += `		${template.datamodel.varName}->setOperational();\n`;
     out += `		inst->_Start = inst->Start;\n`;
     out += `	}\n`;
     out += `	if(!inst->Start)\n`;
@@ -452,27 +452,27 @@ function generateMainAR(fileName, typName) {
     out += `	}\n`;
     out += `\n`;
     out += `	//trigger callbacks\n`;
-    out += `	dataModel->process();\n`;
+    out += `	${template.datamodel.varName}->process();\n`;
     out += `\n`;
-    out += `	if (dataModel->isConnected)\n`;
+    out += `	if (${template.datamodel.varName}->isConnected)\n`;
     out += `	{\n`;
     for (let dataset of template.datasets) {
         if (!dataset.isPrivate) {
             if (dataset.isPub) {
                 if(header.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
                     out += `        //publish the ${dataset.structName} dataset as soon as there are changes\n`;
-                    out += `        if (inst->p${template.datamodel.structName}->${dataset.structName} != dataModel->${dataset.structName}.value)\n`;
+                    out += `        if (inst->p${template.datamodel.structName}->${dataset.structName} != ${template.datamodel.varName}->${dataset.structName}.value)\n`;
                     out += `        {\n`;
-                    out += `            dataModel->${dataset.structName}.value = inst->p${template.datamodel.structName}->${dataset.structName};\n`;
-                    out += `            dataModel->${dataset.structName}.publish();\n`;
+                    out += `            ${template.datamodel.varName}->${dataset.structName}.value = inst->p${template.datamodel.structName}->${dataset.structName};\n`;
+                    out += `            ${template.datamodel.varName}->${dataset.structName}.publish();\n`;
                     out += `        }\n`;
                 } 
                 else {
                     out += `        //publish the ${dataset.structName} dataset as soon as there are changes\n`;
-                    out += `        if (0 != memcmp(&inst->p${template.datamodel.structName}->${dataset.structName}, &dataModel->${dataset.structName}.value, sizeof(dataModel->${dataset.structName}.value)))\n`;
+                    out += `        if (0 != memcmp(&inst->p${template.datamodel.structName}->${dataset.structName}, &${template.datamodel.varName}->${dataset.structName}.value, sizeof(${template.datamodel.varName}->${dataset.structName}.value)))\n`;
                     out += `        {\n`;
-                    out += `            memcpy(&dataModel->${dataset.structName}.value, &inst->p${template.datamodel.structName}->${dataset.structName}, sizeof(dataModel->${dataset.structName}.value));\n`;
-                    out += `            dataModel->${dataset.structName}.publish();\n`;
+                    out += `            memcpy(&${template.datamodel.varName}->${dataset.structName}.value, &inst->p${template.datamodel.structName}->${dataset.structName}, sizeof(${template.datamodel.varName}->${dataset.structName}.value));\n`;
+                    out += `            ${template.datamodel.varName}->${dataset.structName}.publish();\n`;
                     out += `        }\n`;
                 }
             }
@@ -481,14 +481,14 @@ function generateMainAR(fileName, typName) {
     out += `		// Your code here...\n`;
     out += `	}\n`;
     out += `\n`;
-    out += `	inst->Connected = dataModel->isConnected;\n`;
-    out += `	inst->Operational = dataModel->isOperational;\n`;
+    out += `	inst->Connected = ${template.datamodel.varName}->isConnected;\n`;
+    out += `	inst->Operational = ${template.datamodel.varName}->isOperational;\n`;
     out += `}\n`;
     out += `\n`;
     out += `_BUR_PUBLIC void ${template.datamodel.structName}Exit(struct ${template.datamodel.structName}Exit *inst)\n`;
     out += `{\n`;
-    out += `	${typName}DataModel* dataModel = static_cast<${typName}DataModel*>((void*)inst->Handle);\n`;
-    out += `	delete dataModel;\n`;
+    out += `	${typName}DataModel* ${template.datamodel.varName} = static_cast<${typName}DataModel*>((void*)inst->Handle);\n`;
+    out += `	delete ${template.datamodel.varName};\n`;
     out += `}\n`;
     out += `\n`;
     
@@ -567,22 +567,22 @@ function generateMainLinux(fileName, typName) {
     out += `{\n`;
     out += `	signal(SIGINT, catchTermination);\n`;
     out += `\n`;
-    out += `	${typName}DataModel dataModel;\n`;
-    out += `	dataModel.connect();\n`;
+    out += `	${typName}DataModel ${template.datamodel.varName};\n`;
+    out += `	${template.datamodel.varName}.connect();\n`;
     out += `\n`;
-    out += `	dataModel.onConnectionChange([&] () {\n`;
-    out += `		if(dataModel.connectionState == EXOS_STATE_CONNECTED) {\n`;
+    out += `	${template.datamodel.varName}.onConnectionChange([&] () {\n`;
+    out += `		if(${template.datamodel.varName}.connectionState == EXOS_STATE_CONNECTED) {\n`;
     out += `			// Datamodel connected\n`;
     out += `		}\n`;
-    out += `		else if(dataModel.connectionState == EXOS_STATE_DISCONNECTED) {	\n`;
+    out += `		else if(${template.datamodel.varName}.connectionState == EXOS_STATE_DISCONNECTED) {	\n`;
     out += `			// Datamodel disconnected\n`;
     out += `		}\n`;
     out += `	});\n`;
     out += `\n`;
     for (let dataset of template.datasets) {
         if (dataset.isPub) {
-            out += `	dataModel.${dataset.structName}.onChange([&] () {\n`;
-            out += `        // dataModel.${dataset.structName}.value ...\n`;
+            out += `	${template.datamodel.varName}.${dataset.structName}.onChange([&] () {\n`;
+            out += `        // ${template.datamodel.varName}.${dataset.structName}.value ...\n`;
             out += `    });\n`;
             out += `\n`;
         }
@@ -591,14 +591,14 @@ function generateMainLinux(fileName, typName) {
     out += `\n`;
     for (let dataset of template.datasets) {
         if (dataset.isSub) {
-            out += `	// dataModel.${dataset.structName}.value = ...\n`;
-            out += `	// dataModel.${dataset.structName}.publish();\n`;
+            out += `	// ${template.datamodel.varName}.${dataset.structName}.value = ...\n`;
+            out += `	// ${template.datamodel.varName}.${dataset.structName}.publish();\n`;
             out += `\n`;
         }
     }
     out += `\n`;
     out += `	while(true) {\n`;
-    out += `		dataModel.process();\n`;
+    out += `		${template.datamodel.varName}.process();\n`;
     out += `	}\n`;
     out += `\n`;
     out += `	return 0;\n`;
