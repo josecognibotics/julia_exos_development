@@ -99,6 +99,7 @@ function generateExosDataSetHeader(typName) {
     out += `        {\n`;
     out += `            case EXOS_DATASET_EVENT_UPDATED:\n`;
     out += `                VERBOSE("dataset %s updated! latency (us):%i", dataset->name, (exos_datamodel_get_nettime(dataset->datamodel,NULL) - dataset->nettime));\n`;
+    out += `                nettime = dataset->nettime;\n`;
     out += `                _onChange();\n`;
     out += `                break;\n`;
     out += `            case EXOS_DATASET_EVENT_PUBLISHED:\n`;
@@ -134,6 +135,7 @@ function generateExosDataSetHeader(typName) {
     out += `    ${typName}DataSet() {};\n`;
     out += `\n`;
     out += `    T value;\n`;
+    out += `    int nettime;\n`;
     out += `    void init(exos_datamodel_handle_t *datamodel, const char *browse_name, exos_log_handle_t* _logger) {\n`;
     out += `        EXOS_ASSERT_OK(exos_dataset_init(&dataset, datamodel, browse_name, &value, sizeof(value)));\n`;
     out += `        dataset.user_context = this;\n`;
@@ -195,6 +197,7 @@ function generateExosDataModelHeader(fileName, typName) {
     out += `	void connect();\n`;
     out += `	void disconnect();\n`;
     out += `	void setOperational();\n`;
+    out += `	int getNettime();\n`;
     out += `	void onConnectionChange(std::function<void()> f) {_onConnectionChange = std::move(f);};\n`;
     out += `\n`;
     out += `	bool isOperational = false;\n`;
@@ -274,6 +277,10 @@ function generateExosDataModelCpp(fileName, typName, moduleName, PubSubSwap) {
     out += `	exos_log_process(logger);\n`;
     out += `}\n`;
     out += `\n`;
+    out += `int ${typName}DataModel::getNettime() {\n`;
+    out += `	return exos_datamodel_get_nettime(&datamodel,NULL);\n`;
+    out += `}\n`;
+    out += `\n`;
     out += `void ${typName}DataModel::datamodelEvent(exos_datamodel_handle_t *datamodel, const EXOS_DATAMODEL_EVENT_TYPE event_type, void *info) {\n`;
     out += `	switch (event_type)\n`;
     out += `	{\n`;
@@ -313,6 +320,70 @@ function generateExosDataModelCpp(fileName, typName, moduleName, PubSubSwap) {
     return out;
 }
 
+function genenerateLegend(fileName, typName, PubSubSwap) {
+    let dmDelim = PubSubSwap ? "." : "->";
+    let out = "";
+
+    let template = configTemplate(fileName, typName);
+    out += `/* datamodel features:\n`;
+
+    out += `\nmain methods:\n`
+    out += `    datamodel${dmDelim}connect()\n`;
+    out += `    datamodel${dmDelim}disconnect()\n`;
+    out += `    datamodel${dmDelim}process()\n`;
+    out += `    datamodel${dmDelim}setOperational()\n`;
+    out += `    datamodel${dmDelim}dispose()\n`;
+    out += `    datamodel${dmDelim}getNettime() : (int32_t) get current nettime\n`;
+    out += `\nvoid(void) user lambda callback:\n`
+    out += `    datamodel${dmDelim}onConnectionChange([&] () {\n`;
+    out += `        // dataModel.connectionState ...\n`;
+    out += `    })\n`;
+    out += `\nboolean values:\n`
+    out += `    datamodel${dmDelim}isConnected\n`;
+    out += `    datamodel${dmDelim}isOperational\n`;
+//    out += `\nlogging methods:\n`
+//    out += `    datamodel${dmDelim}log.error(char *)\n`;
+//    out += `    datamodel${dmDelim}log.warning(char *)\n`;
+//    out += `    datamodel${dmDelim}log.success(char *)\n`;
+//    out += `    datamodel${dmDelim}log.info(char *)\n`;
+//    out += `    datamodel${dmDelim}log.debug(char *)\n`;
+//    out += `    datamodel${dmDelim}log.verbose(char *)\n`;  
+    for (let dataset of template.datasets) {
+        if (dataset.isSub || dataset.isPub) {
+            out += `\ndataset ${dataset.structName}:\n`;
+            
+            if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                out += `    datamodel${dmDelim}${dataset.structName}.publish()\n`;
+            }
+            if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                out += `    datamodel${dmDelim}${dataset.structName}.onChange([&] () {\n`;
+                out += `        datamodel${dmDelim}${dataset.structName}.value ...\n`;
+                out += `    })\n`;
+                out += `    datamodel${dmDelim}${dataset.structName}.nettime : (int32_t) nettime @ time of publish\n`;
+            }
+            out += `    datamodel${dmDelim}${dataset.structName}.value : (${header.convertPlcType(dataset.dataType)}`;
+            if (dataset.arraySize > 0) { // array comes before string length in c (unlike AS typ editor where it would be: STRING[80][0..1])
+                out += `[${parseInt(dataset.arraySize)}]`;
+            }
+            if (dataset.dataType.includes("STRING")) {
+                out += `[${parseInt(dataset.stringLength)}) `;
+            } else {
+                out += `) `;
+            }
+            out += ` actual dataset value`;
+            if(header.isScalarType(dataset.dataType, true)) {
+                out += `\n`;
+            }
+            else {
+                out += `s\n`;
+            }
+        }
+    }
+    out += `*/\n\n`;
+
+    return out;
+}
+
 function generateMainAR(fileName, typName) {
     let template = configTemplate(fileName, typName);
 
@@ -321,6 +392,8 @@ function generateMainAR(fileName, typName) {
     out += `#include <string.h>\n`;
     out += `#include <stdbool.h>\n`;
     out += `#include "${typName}DataModel.h"\n`;
+    out += `\n`;
+    out += genenerateLegend(fileName, typName, false);
     out += `\n`;
     out += `_BUR_PUBLIC void ${template.datamodel.structName}Init(struct ${template.datamodel.structName}Init *inst)\n`;
     out += `{\n`;
@@ -483,6 +556,8 @@ function generateMainLinux(fileName, typName) {
     out += `#include <string>\n`;
     out += `#include <csignal>\n`;
     out += `#include "${typName}DataModel.h"\n`;
+    out += `\n`;
+    out += genenerateLegend(fileName, typName, true);
     out += `\n`;
     out += `void catchTermination(int signum) {\n`;
     out += `	exit(signum);\n`;
