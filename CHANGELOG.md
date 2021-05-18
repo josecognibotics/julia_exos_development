@@ -3,12 +3,14 @@
 ## [Unreleased] - YYYY-MM-DD
 
 ### Added
-- Support for arrays in SWIG python. 
-  (Only in top-level struct (the ones with PUB/SUB) and untested on array of string)
+- Support for arrays in SWIG python.
 - Example code in on_changed in python and singleton
 
 ### Fixed
 - Naming of structs in singleton and swig had the library name removed (only in version 1.1.5 and 1.1.6)
+
+### Removed
+- SWIG NodeJS as it has been replaced by the more feature rich N-API NodeJS
 
 ## [1.1.6] - 2021-04-20
 

@@ -5,6 +5,83 @@
 const c_static_lib_template = require('../c-static-lib-template/c_static_lib_template')
 const header = require('../exos_header');
 
+function generateSwigArrayinfoPre(json) {
+    let out = ``;
+    for(let info of json.swiginfo) {
+        // Create a proxy with a reference to the real value 
+        // and extend that proxy structure with __getitem__ and __setitem__ which overloads [] in the target language
+
+        // A small test showed that all seems good in regard to memory. The address of $self->data[i] in __setitem__ is the same
+        // as the address of the value used for exos_dataset_init in ${template.datamodel.libStructName}.${template.datamodel.libStructName}_init()
+
+        out += `%immutable;\n`;
+        out += `%inline %{\n`;
+        out += `struct ${info.structname}_${info.membername}_wrapped_array {\n`;
+        if(info.stringsize === undefined || info.stringsize == 0) {
+            out += `    ${info.datatype} (&data)[${info.arraysize}];\n`;
+            out += `    ${info.structname}_${info.membername}_wrapped_array(${info.datatype} (&data)[${info.arraysize}]) : data(data) { }\n`;
+        } else {
+            out += `    ${info.datatype} (&data)[${info.arraysize}][${info.stringsize}];\n`;
+            out += `    ${info.structname}_${info.membername}_wrapped_array(${info.datatype} (&data)[${info.arraysize}][${info.stringsize}]) : data(data) { }\n`;
+        }
+        
+        out += `};\n`;
+        out += `%}\n`;
+        out += `%mutable;\n\n`;
+
+        out += `%extend ${info.structname}_${info.membername}_wrapped_array {\n`;
+        out += `    inline size_t __len__() const { return ${info.arraysize}; }\n\n`;
+        let datatype = info.datatype;
+        if(info.stringsize !== undefined && info.stringsize != 0)
+            datatype += "*";
+        else
+            datatype += "&";
+
+        out += `    inline const ${datatype} __getitem__(size_t i) const throw(std::out_of_range) {\n`;
+        out += `        if (i >= ${info.arraysize} || i < 0)\n`;
+        out += `            throw std::out_of_range("out of bounds");\n`;
+        if(info.stringsize === undefined || info.stringsize == 0)
+            out += `        return $self->data[i];\n`;
+        else
+            out += `        return &($self->data[i][0]);\n`;
+        out += `    }\n\n`;
+
+        out += `    inline void __setitem__(size_t i, const ${datatype} v) throw(std::out_of_range) {\n`;
+        out += `        if (i >= ${info.arraysize} || i < 0)\n`;
+        out += `            throw std::out_of_range("out of bounds");\n`;
+        if(info.stringsize === undefined || info.stringsize == 0)
+            out += `        $self->data[i] = v; \n`;
+        else
+            out += `        memcpy($self->data[i], v, ${info.stringsize-1}); \n`;
+        out += `    }\n`;
+        out += `}\n\n`;
+    }
+    return out;
+}
+
+function generateSwigArrayinfo(json) {
+    let out = ``;
+    for(let info of json.swiginfo) {
+        // the real value array in the real struct is outcommented to be able to add it with the extend below
+        // python code is added to re-enable the value, but calling a function getting the proxy struct from above
+        out += `%extend ${info.structname} {\n`;
+        out += `    ${info.structname}_${info.membername}_wrapped_array get_${info.structname}_${info.membername}(){\n`;
+        out += `        return ${info.structname}_${info.membername}_wrapped_array($self->${info.membername});\n`;
+        out += `    }\n`;
+        out += `    void set_${info.structname}_${info.membername}(${info.structname}_${info.membername}_wrapped_array val) throw (std::invalid_argument) {\n`;
+        out += `        throw std::invalid_argument("cant set array, use [] instead");\n`;
+        out += `    }\n\n`;
+
+        out += `    %pythoncode %{\n`;
+        out += `        __swig_getmethods__["${info.membername}"] = get_${info.structname}_${info.membername}\n`;
+        out += `        __swig_setmethods__["${info.membername}"] = set_${info.structname}_${info.membername}\n`;
+        out += `        if _newclass: ${info.membername} = property(get_${info.structname}_${info.membername}, set_${info.structname}_${info.membername})\n`;
+        out += `    %}\n`;
+        out += `}\n\n`;
+    }
+    return out;
+}
+
 function generateSwigInclude(fileName, typName, PubSubSwap) {
     let out = "";
 
@@ -24,32 +101,6 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
 
     out += `%include "typemaps.i"\n`;
     out += `%include "std_except.i"\n\n`;
-
-    out += `%immutable;\n`;
-    out += `%inline %{\n`;
-    out += `template <typename Type, size_t N>\n`;
-    out += `struct wrapped_array {\n`;
-    out += `    Type (&data)[N];\n`;
-    out += `    wrapped_array(Type (&data)[N]) : data(data) { }\n`;
-    out += `};\n`;
-    out += `%}\n`;
-    out += `%mutable;\n\n`;
-
-    out += `%extend wrapped_array {\n`;
-    out += `    inline size_t __len__() const { return N; }\n\n`;
-
-    out += `    inline const Type& __getitem__(size_t i) const throw(std::out_of_range) {\n`;
-    out += `        if (i >= N || i < 0)\n`;
-    out += `            throw std::out_of_range("out of bounds");\n`;
-    out += `        return $self->data[i];\n`;
-    out += `    }\n\n`;
-
-    out += `    inline void __setitem__(size_t i, const Type& v) throw(std::out_of_range) {\n`;
-    out += `        if (i >= N || i < 0)\n`;
-    out += `            throw std::out_of_range("out of bounds");\n`;
-    out += `        $self->data[i] = v;\n`;
-    out += `   }\n`;
-    out += `}\n\n`;
 
     out += `%feature("director") ${template.datamodel.dataType}EventHandler;\n`;
     out += `%inline %{\n`;
@@ -114,17 +165,53 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
     out += `    p${template.datamodel.dataType}EventHandler->${template.datamodel.varName} = ${template.datamodel.varName};\n`;
     out += `    handler = NULL;\n`;
     out += `}\n`;
-    out += `%}\n`;
-    out += `\n`;
-    out += `#define EXOS_INCLUDE_ONLY_DATATYPE\n`;
-    out += `%include "stdint.i"\n`;
-    out += `%include "${template.headerName}"\n`;
-    out += `\n`;
+    out += `%}\n\n`;
+
+    out += `%include "stdint.i"\n\n`;
+
+
+    out += `/* Handle arrays in substructures, structs could be exposed using these two lines:\n`;
+    out += `     #define EXOS_INCLUDE_ONLY_DATATYPE\n`;
+    out += `     %include "${template.headerName}"\n`;
+    out += `   But we need to disable the array members and add them again with the wrapped_array\n`;
+    out += `*/\n`;
+
+    let headerStructs = header.convertTyp2Struct(fileName, swig=true)
+    let idx = headerStructs.indexOf("<sai>")
+    if (idx > 0) {
+        do {
+            tmpOut = headerStructs.substring(0, idx); // TODO: not really important, but more struct could be in this substring and SwigArrayInfoPre could thereby be further away from its true struct than necessary
+            headerStructs = headerStructs.substring(idx + 5); // skip <sai>
+            let endIdx = headerStructs.indexOf("</sai>");
+            let arrayInfoStr = headerStructs.substring(0, endIdx);
+            let arrayInfo = JSON.parse(arrayInfoStr)
+
+            out += generateSwigArrayinfoPre(arrayInfo)
+            out += tmpOut;
+            out += generateSwigArrayinfo(arrayInfo);
+
+            headerStructs = headerStructs.substring(endIdx + 6); // skip </sai>
+
+        } while ((idx=headerStructs.indexOf("<sai>")) > 0)
+    }
+    else {
+        out += headerStructs;
+    }
+    
 
     for (let dataset of template.datasets) {
         if (dataset.isSub || dataset.isPub ) {
             let valueDatatype = header.convertPlcType(dataset.dataType);
             let valueArraysizeStr = parseInt(dataset.arraySize);
+            let valueStringsizeStr = "0"
+            if (dataset.stringLength !== undefined)
+                valueStringsizeStr = parseInt(dataset.stringLength);
+            let arrayInfo = {"swiginfo": [{"structname": `${dataset.libDataType}`, "membername": "value", "datatype": `${valueDatatype}`, "arraysize": `${valueArraysizeStr}`, "stringsize": `${valueStringsizeStr}`}]};
+
+            if (dataset.arraySize > 0) {
+                // array helpers:
+                out += generateSwigArrayinfoPre(arrayInfo);
+            }
 
             out += `typedef struct ${dataset.libDataType}\n`;
             out += `{\n`;
@@ -151,22 +238,7 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
 
             if (dataset.arraySize > 0) {
                 // array helpers:
-                out += `%template (${dataset.libDataType}_valuearray) wrapped_array<${valueDatatype}, ${valueArraysizeStr}>;\n\n`;
-
-                out += `%extend ${dataset.libDataType} {\n`;
-                out += `    wrapped_array<${valueDatatype}, ${valueArraysizeStr}> getValue(){\n`;
-                out += `        return wrapped_array<${valueDatatype}, ${valueArraysizeStr}>($self->value);\n`;
-                out += `    }\n`;
-                out += `    void setValue(wrapped_array<${valueDatatype}, ${valueArraysizeStr}> val) throw (std::invalid_argument) {\n`;
-                out += `        throw std::invalid_argument("cant set array, use [] instead");\n`;
-                out += `    }\n\n`;
-
-                out += `    %pythoncode %{\n`;
-                out += `        __swig_getmethods__["value"] = getValue\n`;
-                out += `        __swig_setmethods__["value"] = setValue\n`;
-                out += `        if _newclass: value = property(getValue, setValue)\n`;
-                out += `    %}\n`;
-                out += `}\n\n`;
+                out += generateSwigArrayinfo(arrayInfo);
             }
         }
     }
@@ -243,17 +315,17 @@ function generatePythonMain(fileName, typName, PubSubSwap) {
 
             if(dataset.arraySize == 0) {
                 if(header.isScalarType(dataset.dataType, false)) {
-                    out += `        ${prepend}print("on_change: ${template.datamodel.varName}.${dataset.structName}: " + str(self.${template.datamodel.varName}.${dataset.structName}.value))\n`;
+                    out += `        ${prepend}self.${template.datamodel.varName}.log.debug("on_change: ${template.datamodel.varName}.${dataset.structName}: " + str(self.${template.datamodel.varName}.${dataset.structName}.value))\n`;
                 } else {
-                    out += `        ${prepend}print("on_change: ${template.datamodel.varName}.${dataset.structName}: " + self.${template.datamodel.varName}.${dataset.structName}.value)\n`;
+                    out += `        ${prepend}self.${template.datamodel.varName}.log.debug("on_change: ${template.datamodel.varName}.${dataset.structName}: " + self.${template.datamodel.varName}.${dataset.structName}.value)\n`;
                 }
             } else {
-                out += `        ${prepend}print("on_change: ${template.datamodel.varName}.${dataset.structName}: Array of ${header.convertPlcType(dataset.dataType)}${dataset.dataType.includes("STRING")?"[]":""}")\n`;
+                out += `        ${prepend}self.${template.datamodel.varName}.log.debug("on_change: ${template.datamodel.varName}.${dataset.structName}: Array of ${header.convertPlcType(dataset.dataType)}${dataset.dataType.includes("STRING")?"[]":""}")\n`;
                 out += `        ${prepend}for index in range(len(self.${template.datamodel.varName}.${dataset.structName}.value)):\n`;
-                out += `        ${prepend}    print(str(index) + ": " + str(self.${template.datamodel.varName}.${dataset.structName}.value[index]))\n`;
+                out += `        ${prepend}    self.${template.datamodel.varName}.log.debug(str(index) + ": " + str(self.${template.datamodel.varName}.${dataset.structName}.value[index]))\n`;
                 out += `        ## alternatively:\n`;
                 out += `        ## for item in self.${template.datamodel.varName}.${dataset.structName}.value:\n`;
-                out += `        ##    print("  " + str(item))\n`;
+                out += `        ##    self.${template.datamodel.varName}.log.debugself.${template.datamodel.varName}.log.debug("  " + str(item))\n`;
             }
             out += `        \n`;
             out += `        # Your code here...\n`;
@@ -280,7 +352,7 @@ function generatePythonMain(fileName, typName, PubSubSwap) {
         }
     }
     out += `except(KeyboardInterrupt, SystemExit):\n`;
-    out += `    print('Application terminated, shutting down')\n`;
+    out += `    ${template.datamodel.varName}.log.success("Application terminated, shutting down")\n`;
     out += `\n`;
     out += `${template.datamodel.varName}.disconnect()\n`;
     out += `${template.datamodel.varName}.dispose()\n`;
@@ -289,51 +361,7 @@ function generatePythonMain(fileName, typName, PubSubSwap) {
     return out;
 }
 
-function generateNodeJSMain(fileName, typName, PubSubSwap) {
-    let out = "";
-    let template = c_static_lib_template.configTemplate(fileName, typName);
-
-    out += `const process = require("process");\n`;
-    out += `const lib${typName} = require("./l_${typName.toLowerCase()}");\n`;
-    out += `\n`;
-    out += `let ${typName.toLowerCase()} = lib${typName}.lib${typName}_init();\n`;
-    out += `\n`;
-    out += `try {\n`;
-    out += `    ${typName.toLowerCase()}.connect();\n`;
-    out += `} catch (e) {\n`;
-    out += `    console.error(e);\n`;
-    out += `    process.exit(1);\n`;
-    out += `}\n`;
-    out += `\n`;
-    out += `setInterval(() => {\n`;
-    out += `    try {\n`;
-    out += `        ${typName.toLowerCase()}.process()\n`;
-    out += `\n`;
-    out += `        if (${typName.toLowerCase()}.is_connected) { // && ${typName.toLowerCase()}.is_operational) {\n`;
-    for (let dataset of template.datasets) {
-        if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
-            out += `            //${template.datamodel.varName}.${dataset.structName}.value = .. \n`;
-            out += `            //${template.datamodel.varName}.${dataset.structName}.publish();\n`;
-        }
-    }
-    out += `        }\n`;
-    out += `    } catch (e) {\n`;
-    out += `        console.error(e);\n`;
-    out += `        process.exit(2);\n`;
-    out += `    }\n`;
-    out += `}, 0);\n`;
-    out += `\n`;
-    out += `process.on('exit', (code) => {\n`;
-    out += `    ${typName.toLowerCase()}.disconnect()\n`;
-    out += `    ${typName.toLowerCase()}.dispose()\n`;
-    out += `    console.log("Exiting with code: " + code);\n`;
-    out += `});\n`;
-
-    return out;
-}
-
 module.exports = {
     generateSwigInclude,
-    generatePythonMain,
-    generateNodeJSMain
+    generatePythonMain
 }

@@ -118,26 +118,6 @@ function activate(context) {
 	});
 	context.subscriptions.push(generateSwigPythonTemplate);
 
-
-	let generateSwigNodeJSTemplate = vscode.commands.registerCommand('exos-component-extension.generateSwigNodeJSTemplate', function (uri) {
-		vscode.window.showInputBox({prompt:"Name of the DataType:"}).then(selection => {
-			
-			try {
-				swigtemplate.generateNodeJSTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
-				vscode.window.showInformationMessage(`Generated C-Lib SWIG NodeJS Template for ${selection}`);
-
-				if(exosas.replaceTypWithPackage(uri.fsPath, selection)) {
-					vscode.window.showInformationMessage(`Replaced ${path.basename(uri.fsPath)} with ${selection} Package. The file ${path.basename(uri.fsPath)} has been copied to the ${selection.substring(0,10)} Library`);
-				}
-				
-			} catch (error) {
-				vscode.window.showErrorMessage(error);	
-			}
-
-		});
-	});
-	context.subscriptions.push(generateSwigNodeJSTemplate);
-
 	let generateNapiNodeJSTemplate = vscode.commands.registerCommand('exos-component-extension.generateNapiNodeJSTemplate', function (uri) {
 		vscode.window.showInputBox({prompt:"Name of the DataType:"}).then(selection => {
 			
@@ -226,13 +206,6 @@ function activate(context) {
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
 				infoMessage += `, 'C-Lib SWIG Python'`;
 				vscode.debug.activeDebugConsole.appendLine('C-Lib SWIG Python');
-				
-				finalName = `${path.dirname(uri.fsPath)}/${selection}_js`;
-				fse.removeSync(finalName);
-				swigtemplate.generateNodeJSTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
-				fse.moveSync(`${path.dirname(uri.fsPath)}/${selection}`, finalName);
-				infoMessage += `, 'C-Lib SWIG NodeJS'`;
-				vscode.debug.activeDebugConsole.appendLine('C-Lib SWIG NodeJS');
 
 				finalName = `${path.dirname(uri.fsPath)}/${selection}_napi`;
 				fse.removeSync(finalName);
