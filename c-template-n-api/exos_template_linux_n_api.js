@@ -492,27 +492,27 @@ function generateConnectionCallbacks(template) {
     out += `    switch (${template.datamodel.varName}_datamodel.connection_state)\n`;
     out += `    {\n`;
     out += `    case EXOS_STATE_DISCONNECTED:\n`;
-    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_connected", napi_false))\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "isConnected", napi_false))\n`;
     out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
-    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_operational", napi_false))\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "isOperational", napi_false))\n`;
     out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
     out += `        break;\n`;
     out += `    case EXOS_STATE_CONNECTED:\n`;
-    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_connected", napi_true))\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "isConnected", napi_true))\n`;
     out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
-    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_operational", napi_false))\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "isOperational", napi_false))\n`;
     out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
     out += `        break;\n`;
     out += `    case EXOS_STATE_OPERATIONAL:\n`;
-    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_connected", napi_true))\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "isConnected", napi_true))\n`;
     out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
-    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_operational", napi_true))\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "isOperational", napi_true))\n`;
     out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
     out += `        break;\n`;
     out += `    case EXOS_STATE_ABORTED:\n`;
-    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_connected", napi_false))\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "isConnected", napi_false))\n`;
     out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
-    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "is_operational", napi_false))\n`;
+    out += `        if (napi_ok != napi_set_named_property(env, ${template.datamodel.varName}.object_value, "isOperational", napi_false))\n`;
     out += `            napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
     out += `        break;\n`;
     out += `    }\n\n`;
@@ -521,7 +521,7 @@ function generateConnectionCallbacks(template) {
     out += `        napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${template.datamodel.varName}");\n\n`;
 
     out += `    if (napi_ok != napi_call_function(env, undefined, js_cb, 0, NULL, NULL))\n`;
-    out += `        throw_fatal_exception_callbacks(env, "EINVAL", "Can't call connectionOnChange callback - ${template.datamodel.varName}");\n`;
+    out += `        throw_fatal_exception_callbacks(env, "EINVAL", "Can't call onConnectionChange callback - ${template.datamodel.varName}");\n`;
     out += `}\n\n`;
 
     out += `static void ${template.datamodel.varName}_onprocessed_js_cb(napi_env env, napi_value js_cb, void *context, void *data)\n`;
@@ -554,7 +554,7 @@ function generateConnectionCallbacks(template) {
             out += `        napi_throw_error(env, "EINVAL", "Can't set connectionState property - ${dataset.structName}");\n\n`;
 
             out += `    if (napi_ok != napi_call_function(env, undefined, js_cb, 0, NULL, NULL))\n`;
-            out += `        throw_fatal_exception_callbacks(env, "EINVAL", "Can't call connectionOnChange callback - ${dataset.structName}");\n`;
+            out += `        throw_fatal_exception_callbacks(env, "EINVAL", "Can't call onConnectionChange callback - ${dataset.structName}");\n`;
             out += `}\n\n`;
         }
     }
@@ -741,7 +741,7 @@ function generateValueCallbacks(fileName, template) {
             out += `        int32_t _latency = exos_datamodel_get_nettime(&${template.datamodel.varName}_datamodel, NULL) - *(int32_t *)netTime_exos;\n`;
             out += `        napi_create_int32(env, *(int32_t *)netTime_exos, &netTime);\n`;
             out += `        napi_create_int32(env, _latency, &latency);\n`;
-            out += `        napi_set_named_property(env, ${dataset.structName}.object_value, "netTime", netTime);\n`;
+            out += `        napi_set_named_property(env, ${dataset.structName}.object_value, "nettime", netTime);\n`;
             out += `        napi_set_named_property(env, ${dataset.structName}.object_value, "latency", latency);\n`;
             out += `    if (napi_ok != napi_set_named_property(env, ${dataset.structName}.object_value, "value", ${dataset.structName}.value))\n`;
             out += `    {\n`;
@@ -1247,7 +1247,7 @@ function generateInitFunction(fileName, template) {
         if (dataset.isPub) {
             out2 += `    napi_create_function(env, NULL, 0, ${dataset.structName}_onchange_init, NULL, &${dataset.structName}_onchange);\n`;
             out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "onChange", ${dataset.structName}_onchange);\n`;
-            out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "netTime", undefined);\n`;
+            out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "nettime", undefined);\n`;
             out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "latency", undefined);\n`;
         }
         if (dataset.isSub) {
@@ -1262,7 +1262,7 @@ function generateInitFunction(fileName, template) {
             out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "value", ${dataset.structName}_value);\n`;
 
             out3 += `    napi_create_function(env, NULL, 0, ${dataset.structName}_connonchange_init, NULL, &${dataset.structName}_conn_change);\n`;
-            out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "connectionOnChange", ${dataset.structName}_conn_change);\n`;
+            out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "onConnectionChange", ${dataset.structName}_conn_change);\n`;
             out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "connectionState", def_string);\n\n`;
 
             out_structs += out1 + out2 + out3;
@@ -1276,18 +1276,19 @@ function generateInitFunction(fileName, template) {
     // declarations
     out += `    napi_value `;
     out += `${template.datamodel.varName}_conn_change, ${template.datamodel.varName}_onprocessed,`;
+    let atleastone = false;
     for (let i = 0; i < template.datasets.length; i++) {
         if (template.datasets[i].isPub || template.datasets[i].isSub) {
-            out += ` ${template.datasets[i].structName}_conn_change`;
-
-            if ((i + 1) != template.datasets.length) {
+            if (atleastone == true) {
                 out += `,`;
             }
+            out += ` ${template.datasets[i].structName}_conn_change`;
+            atleastone = true;
         }
     }
     out += `;\n`;
 
-    let atleastone = false;
+    atleastone = false;
     for (let i = 0; i < template.datasets.length; i++) {
         if (template.datasets[i].isPub) {
             if (atleastone == true) {
@@ -1399,14 +1400,14 @@ function generateInitFunction(fileName, template) {
     }
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "dataModel", dataModel); \n`;
     out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_connonchange_init, NULL, &${template.datamodel.varName}_conn_change); \n`;
-    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionOnChange", ${template.datamodel.varName}_conn_change); \n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "onConnectionChange", ${template.datamodel.varName}_conn_change); \n`;
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionState", def_string);\n`;
-    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "is_connected", def_bool);\n`;
-    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "is_operational", def_bool);\n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "isConnected", def_bool);\n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "isOperational", def_bool);\n`;
     out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_onprocessed_init, NULL, &${template.datamodel.varName}_onprocessed); \n`;
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "onProcessed", ${template.datamodel.varName}_onprocessed); \n`;
     out += `    napi_create_function(env, NULL, 0, get_net_time, NULL, &getNetTime);\n`;
-    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "netTime", getNetTime);\n`;
+    out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "nettime", getNetTime);\n`;
     out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "log", log);\n`;
 
     //export the application
@@ -1634,7 +1635,7 @@ function generateIndexJS(fileName, typName) {
     out += genenerateLegend(fileName, typName, true);
 
     out += `//connection state changes\n`;
-    out += `${template.datamodel.varName}.connectionOnChange(() => {\n`;
+    out += `${template.datamodel.varName}.onConnectionChange(() => {\n`;
     out += `    switch (${template.datamodel.varName}.connectionState) {\n`;
     out += `    case "Connected":\n        break;\n`;
     out += `    case "Operational":\n        break;\n`;
@@ -1644,7 +1645,7 @@ function generateIndexJS(fileName, typName) {
     out += `});\n`;
     for (let i = 0; i < template.datasets.length; i++) {
         if (template.datasets[i].isPub || template.datasets[i].isSub) {
-            out += `${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.connectionOnChange(() => {\n`;
+            out += `${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.onConnectionChange(() => {\n`;
             out += `    // switch (${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.connectionState) ...\n`;
             out += `});\n`;
         }
@@ -1686,10 +1687,9 @@ function genenerateLegend(fileName, typName, PubSubSwap) {
     out += `/* datamodel features:\n`;
 
     out += `\nmain methods:\n`
-    out += `    ${template.datamodel.varName}.setOperational()\n`;
-    out += `    ${template.datamodel.varName}.netTime() : (int32_t) get current nettime\n`;
+    out += `    ${template.datamodel.varName}.nettime() : (int32_t) get current nettime\n`;
     out += `\nstate change events:\n`
-    out += `    ${template.datamodel.varName}.connectionOnChange(() => {\n`;
+    out += `    ${template.datamodel.varName}.onConnectionChange(() => {\n`;
     out += `        ${template.datamodel.varName}.connectionState : (string) "Connected", "Operational", "Disconnected" or "Aborted" \n`;
     out += `    })\n`;
     out += `\nboolean values:\n`
@@ -1733,7 +1733,7 @@ function genenerateLegend(fileName, typName, PubSubSwap) {
                 out += `        ${template.datamodel.varName}.dataModel.${dataset.structName}.latency : (int32_t) time in us between publish and arrival\n`;
                 out += `    })\n`;
             }
-            out += `    ${template.datamodel.varName}.dataModel.${dataset.structName}.connectionOnChange(() => {\n`;
+            out += `    ${template.datamodel.varName}.dataModel.${dataset.structName}.onConnectionChange(() => {\n`;
             out += `        ${template.datamodel.varName}.dataModel.${dataset.structName}.connectionState : (string) "Connected", "Operational", "Disconnected" or "Aborted"\n`;
             out += `    });\n`;
             
