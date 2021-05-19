@@ -131,7 +131,6 @@ function generateLinuxPackage(typName) {
     out += `  <Objects>\n`;
     out += `    <Object Type="File">build.sh</Object>\n`;
     out += `    <Object Type="File">CMakeLists.txt</Object>\n`;
-    out += `    <Object Type="File">index.js</Object>\n`;
     out += `    <Object Type="File">${typName.toLowerCase()}.js</Object>\n`;
     out += `    <Object Type="File">l_${typName}.node</Object>\n`;
     out += `    <Object Type="File">package.json</Object>\n`;
@@ -231,8 +230,8 @@ function generateExosPkg(typName, libName, fileName) {
     out += `    <Service Name="${typName} Runtime Service" Executable="/usr/bin/npm" Arguments="start --prefix /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <DataModelInstance Name="${typName}"/>\n`;
     out += `    <File Name="exos-comp-${typName.toLowerCase()}" FileName="Linux\\exos-comp-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
-    out += `    <File Name="main-script" FileName="Linux\\index.js" Type="Project"/>\n`;
-    out += `    <Installation Type="Prerun" Command="cp /var/cache/exos/index.js /home/user/${typName.toLowerCase()}/"/>\n`;
+    out += `    <File Name="main-script" FileName="Linux\\${typName.toLowerCase()}.js" Type="Project"/>\n`;
+    out += `    <Installation Type="Prerun" Command="cp ${typName.toLowerCase()}.js /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <Build>\n`;
     out += `        <GenerateHeader FileName="${typName}\\${typName}.typ" TypeName="${typName}">\n`;
     out += `            <SG4 Include="${fileName.split(".")[0].toLowerCase()}.h"/>\n`;
@@ -243,7 +242,6 @@ function generateExosPkg(typName, libName, fileName) {
     out += `            <Dependency FileName="Linux\\CMakeLists.txt"/>\n`;
     out += `            <Dependency FileName="Linux\\exos_${typName.toLowerCase()}.h"/>\n`;
     out += `            <Dependency FileName="Linux\\lib${typName.toLowerCase()}.c"/>\n`;
-    out += `            <Dependency FileName="Linux\\${typName.toLowerCase()}.js"/>\n`;
     out += `            <Dependency FileName="Linux\\binding.gyp"/>\n`;
     out += `            <Dependency FileName="Linux\\package.json"/>\n`;
     out += `            <Dependency FileName="Linux\\package-lock.json"/>\n`;
@@ -1626,88 +1624,127 @@ function generateLibTemplate(fileName, typName) {
 //END lib____.c file generator functions basically in order of call from configtemplate() (and in lib____.c file order)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-function generateJSmodule(fileName, typName) {
-    let out = "";
-
-    let template = configTemplate(fileName, typName);
-
-    out += `var binding = require("./l_${template.datamodel.structName}.node");\n\n`;
-    out += `module.exports = binding.${template.datamodel.structName};\n`;
-
-    return out;
-}
-
 function generateIndexJS(fileName, typName) {
     let out = "";
 
     let template = configTemplate(fileName, typName);
 
-    out += `let ${template.datamodel.structName} = require('./${template.datamodel.varName}.js');\n\n`;
+    out += `let ${template.datamodel.varName} = require("./l_${template.datamodel.structName}.node").${template.datamodel.structName};\n\n`;
 
-    out += `//connection callbacks\n`;
-    out += `${template.datamodel.structName}.connectionOnChange(() => {\n`;
-    out += `    //${template.datamodel.structName}.connectionState.....;\n`;
+    out += genenerateLegend(fileName, typName, true);
+
+    out += `//connection state changes\n`;
+    out += `${template.datamodel.varName}.connectionOnChange(() => {\n`;
+    out += `    switch (${template.datamodel.varName}.connectionState) {\n`;
+    out += `    case "Connected":\n        break;\n`;
+    out += `    case "Operational":\n        break;\n`;
+    out += `    case "Disconnected":\n        break;\n`;
+    out += `    case "Aborted":\n        break;\n`;
+    out += `    }\n`;
     out += `});\n`;
     for (let i = 0; i < template.datasets.length; i++) {
         if (template.datasets[i].isPub || template.datasets[i].isSub) {
-            out += `${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.connectionOnChange(() => {\n`;
-            out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.connectionState ...\n`;
+            out += `${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.connectionOnChange(() => {\n`;
+            out += `    // switch (${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.connectionState) ...\n`;
             out += `});\n`;
         }
     }
 
     out += `\n`;
 
-    out += `//value callbacks from Automation Runtime\n`;
+    out += `//value change events\n`;
     for (let i = 0; i < template.datasets.length; i++) {
         if (template.datasets[i].isPub) {
-            out += `${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.onChange(() => {\n`;
-            out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.value..\n`;
+            out += `${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.onChange(() => {\n`;
+            out += `    //${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.value..\n`;
             out += `});\n`;
         }
     }
 
     out += `\n`;
-    out += `//read current nettime\n`;
-    out += `setInterval(() => {\n`;
-    out += `    //console.log("current netTime is: " + ${template.datamodel.structName}.netTime().toString());\n`;
-    out += `}, 2000);\n\n`;
 
-    out += `/*
-All values in ${template.datamodel.structName}.dataModel that has a .onChange() callback will
-have the corresponding "netTime" and "latency" datas. These are initialized to "undefined" until
-the first data have arrived via the call to .onchange().
-
-- "latency" describes the time it took ´for the data to be transmitted from Automation Runtime 
-  (real time OS) to this application.
-- "netTime" describes the local timestamp (CLOCK_MONOTONIC) when the last data arrived to this 
-  application.
-
-To check the current time, call the ${template.datamodel.structName}.netTime() method that 
-returns current netTime.
-
-Note that ALL netTime and latency values are created from int32_t datatype and the wrapping of
-these values are not considered/handled in the imported module.
-*/\n\n`;
-
-    out += `//Cyclic call from Automation Runtime\n`;
-    out += `${template.datamodel.structName}.onProcessed(() => {\n`;
-    out += `    //Code placed here will be called in sync with Automation Runtime.\n`;
-    out += `});\n\n`;
-
-    out += `//publishing of values to Automation Runtime\n`;
-    out += `if (1 === 0) {\n`;
+    out += `//Cyclic call triggered from the Component Server\n`;
+    out += `${template.datamodel.varName}.onProcessed(() => {\n`;
+    out += `    //Publish values\n`;
+    out += `    //if (${template.datamodel.varName}.isConnected) {\n`;
     for (let i = 0; i < template.datasets.length; i++) {
         if (template.datasets[i].isSub) {
-            out += `    //${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.value = ..\n`;
-            out += `    ${template.datamodel.structName}.dataModel.${template.datasets[i].structName}.publish();\n`;
+            out += `        //${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.value = ..\n`;
+            out += `        //${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.publish();\n`;
         }
     }
-    out += `}\n\n`;
+    out += `    //}\n`;
+    out += `});\n\n`;
 
     return out;
 }
+
+function genenerateLegend(fileName, typName, PubSubSwap) {
+    let out = "";
+
+    let template = configTemplate(fileName, typName);
+    out += `/* datamodel features:\n`;
+
+    out += `\nmain methods:\n`
+    out += `    ${template.datamodel.varName}.setOperational()\n`;
+    out += `    ${template.datamodel.varName}.netTime() : (int32_t) get current nettime\n`;
+    out += `\nstate change events:\n`
+    out += `    ${template.datamodel.varName}.connectionOnChange(() => {\n`;
+    out += `        ${template.datamodel.varName}.connectionState : (string) "Connected", "Operational", "Disconnected" or "Aborted" \n`;
+    out += `    })\n`;
+    out += `\nboolean values:\n`
+    out += `    ${template.datamodel.varName}.isConnected\n`;
+    out += `    ${template.datamodel.varName}.isOperational\n`;
+    out += `\nlogging methods:\n`
+    out += `    ${template.datamodel.varName}.log.error(string)\n`;
+    out += `    ${template.datamodel.varName}.log.warning(string)\n`;
+    out += `    ${template.datamodel.varName}.log.success(string)\n`;
+    out += `    ${template.datamodel.varName}.log.info(string)\n`;
+    out += `    ${template.datamodel.varName}.log.debug(string)\n`;
+    out += `    ${template.datamodel.varName}.log.verbose(string)\n`;  
+    for (let dataset of template.datasets) {
+        if (dataset.isSub || dataset.isPub) {
+            out += `\ndataset ${dataset.structName}:\n`;
+            
+            out += `    ${template.datamodel.varName}.dataModel.${dataset.structName}.value : (${header.convertPlcType(dataset.dataType)}`;
+            if (dataset.arraySize > 0) { // array comes before string length in c (unlike AS typ editor where it would be: STRING[80][0..1])
+                out += `[${parseInt(dataset.arraySize)}]`;
+            }
+            if (dataset.dataType.includes("STRING")) {
+                out += `[${parseInt(dataset.stringLength)}) `;
+            } else {
+                out += `) `;
+            }
+            out += ` actual dataset value`;
+            if(header.isScalarType(dataset.dataType, true)) {
+                out += `\n`;
+            }
+            else {
+                out += `s\n`;
+            }
+
+            if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                out += `    ${template.datamodel.varName}.dataModel.${dataset.structName}.publish()\n`;
+            }
+            if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                out += `    ${template.datamodel.varName}.dataModel.${dataset.structName}.onChange(() => {\n`;
+                out += `        ${template.datamodel.varName}.dataModel.${dataset.structName}.value ...\n`;
+                out += `        ${template.datamodel.varName}.dataModel.${dataset.structName}.nettime : (int32_t) nettime @ time of publish\n`;
+                out += `        ${template.datamodel.varName}.dataModel.${dataset.structName}.latency : (int32_t) time in us between publish and arrival\n`;
+                out += `    })\n`;
+            }
+            out += `    ${template.datamodel.varName}.dataModel.${dataset.structName}.connectionOnChange(() => {\n`;
+            out += `        ${template.datamodel.varName}.dataModel.${dataset.structName}.connectionState : (string) "Connected", "Operational", "Disconnected" or "Aborted"\n`;
+            out += `    });\n`;
+            
+            
+        }
+    }
+    out += `*/\n\n`;
+
+    return out;
+}
+
 
 function generatePackageLockJSON(fileName, typName) {
     let out = "";
@@ -1732,9 +1769,9 @@ function generatePackageJSON(fileName, typName) {
     out += `  "name": "${template.datamodel.varName}",\n`;
     out += `  "version": "1.0.0",\n`;
     out += `  "description": "implementation of exOS data exchange defined by datatype ${template.datamodel.structName} from file ${path.basename(fileName)}",\n`;
-    out += `  "main": "index.js",\n`;
+    out += `  "main": "${typName.toLowerCase()}.js",\n`;
     out += `  "scripts": {\n`;
-    out += `    "start": "node index.js"\n`;
+    out += `    "start": "node ${typName.toLowerCase()}.js"\n`;
     out += `  },\n`;
     out += `  "author": "your name",\n`;
     out += `  "license": "MIT"\n`;
@@ -1831,7 +1868,6 @@ module.exports = {
     generateLinuxPackage,
     generateGyp,
     generateLibTemplate,
-    generateJSmodule,
     generateIndexJS,
     generateShBuild,
     generatePackageJSON,
