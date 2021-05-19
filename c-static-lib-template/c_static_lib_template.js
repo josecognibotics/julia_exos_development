@@ -386,7 +386,7 @@ function genenerateLegend(fileName, typName, PubSubSwap) {
                 out += `[${parseInt(dataset.arraySize)}]`;
             }
             if (dataset.dataType.includes("STRING")) {
-                out += `[${parseInt(dataset.stringLength)}) `;
+                out += `[${parseInt(dataset.stringLength)}]) `;
             } else {
                 out += `) `;
             }

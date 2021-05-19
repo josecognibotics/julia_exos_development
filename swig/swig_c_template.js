@@ -279,6 +279,72 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
     return out;
 }
 
+function genenerateLegend(fileName, typName, PubSubSwap) {
+    let out = "";
+
+    let template = c_static_lib_template.configTemplate(fileName, typName);
+    out += `"""\n${template.datamodel.libStructName} datamodel features:\n`;
+
+    out += `\ninitialize and setup callback handler:\n`
+    out += `    ${template.datamodel.varName} = ${template.datamodel.libStructName}.${template.datamodel.libStructName}_init()\n`;
+    out += `    handler = ${template.datamodel.dataType}EventHandler()\n`;
+    out += `    ${template.datamodel.libStructName}.add_event_handler(${template.datamodel.varName}, handler)\n`;
+
+    out += `\nmain methods:\n`
+    out += `    ${template.datamodel.varName}.connect()\n`;
+    out += `    ${template.datamodel.varName}.disconnect()\n`;
+    out += `    ${template.datamodel.varName}.process()\n`;
+    out += `    ${template.datamodel.varName}.set_operational()\n`;
+    out += `    ${template.datamodel.varName}.dispose()\n`;
+    out += `    ${template.datamodel.varName}.get_nettime() : (int32_t) get current nettime\n`;
+    out += `\ndef user callbacks in class ${template.datamodel.dataType}EventHandler:\n`
+    out += `    on_connected\n`;
+    out += `    on_disconnected\n`;
+    out += `    on_operational\n`;
+    out += `\nboolean values:\n`
+    out += `    ${template.datamodel.varName}.is_connected\n`;
+    out += `    ${template.datamodel.varName}.is_operational\n`;
+    out += `\nlogging methods:\n`
+    out += `    ${template.datamodel.varName}.log.error(str)\n`;
+    out += `    ${template.datamodel.varName}.log.warning(str)\n`;
+    out += `    ${template.datamodel.varName}.log.success(str)\n`;
+    out += `    ${template.datamodel.varName}.log.info(str)\n`;
+    out += `    ${template.datamodel.varName}.log.debug(str)\n`;
+    out += `    ${template.datamodel.varName}.log.verbose(str)\n`;  
+    for (let dataset of template.datasets) {
+        if (dataset.isSub || dataset.isPub) {
+            out += `\ndataset ${dataset.structName}:\n`;
+            
+            if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                out += `    ${template.datamodel.varName}.${dataset.structName}.publish()\n`;
+            }
+            if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                out += `    ${template.datamodel.dataType}EventHandler:on_change_${dataset.structName} : void(void) user callback function\n`;
+                out += `    ${template.datamodel.varName}.${dataset.structName}.nettime : (int32_t) nettime @ time of publish\n`;
+            }
+            out += `    ${template.datamodel.varName}.${dataset.structName}.value : (${header.convertPlcType(dataset.dataType)}`;
+            if (dataset.arraySize > 0) { // array comes before string length in c (unlike AS typ editor where it would be: STRING[80][0..1])
+                out += `[${parseInt(dataset.arraySize)}]`;
+            }
+            if (dataset.dataType.includes("STRING")) {
+                out += `[${parseInt(dataset.stringLength)}]) `;
+            } else {
+                out += `) `;
+            }
+            out += ` actual dataset value`;
+            if(header.isScalarType(dataset.dataType, true)) {
+                out += `\n`;
+            }
+            else {
+                out += `s\n`;
+            }
+        }
+    }
+    out += `"""\n\n`;
+
+    return out;
+}
+
 function generatePythonMain(fileName, typName, PubSubSwap) {
     let out = "";
     let prepend = "# ";
@@ -292,8 +358,10 @@ function generatePythonMain(fileName, typName, PubSubSwap) {
     out += `# The path should point to the directory containing _lib${typName}.so\n`;
     out += `${prepend}import sys\n`;
     out += `${prepend}sys.path.insert(1, '${template.datamodel.dataType}_py/Linux')\n`;
-    out += `import ${template.datamodel.libStructName}\n`;
-    out += `\n`;
+    out += `import ${template.datamodel.libStructName}\n\n`;
+
+    out += genenerateLegend(fileName, typName, PubSubSwap);
+
     out += `class ${template.datamodel.dataType}EventHandler(${template.datamodel.libStructName}.${template.datamodel.dataType}EventHandler):\n`;
     out += `\n`;
     out += `    def __init__(self):\n`;
