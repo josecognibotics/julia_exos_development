@@ -40,6 +40,8 @@ function generateLinuxPackage(typName) {
     out += `    <Object Type="File">${typName}DataModel.cpp</Object>\n`;
     out += `    <Object Type="File">${typName}DataModel.h</Object>\n`;
     out += `    <Object Type="File">${typName}DataSet.h</Object>\n`;
+    out += `    <Object Type="File">${typName}Logger.cpp</Object>\n`;
+    out += `    <Object Type="File">${typName}Logger.h</Object>\n`;
     out += `    <Object Type="File">exos-comp-${typName.toLowerCase()}-1.0.0.deb</Object>\n`;
     out += `  </Objects>\n`;
     out += `</Package>\n`;
@@ -87,7 +89,7 @@ function generateCMakeLists(typName) {
     out += `\n`;
     out += `project(${typName.toLowerCase()})\n`;
     out += `\n`;
-    out += `add_library(libExosCpp STATIC ${typName}DataModel.h ${typName}DataModel.cpp ${typName}DataSet.h)\n`;
+    out += `add_library(libExosCpp STATIC ${typName}DataModel.h ${typName}DataModel.cpp ${typName}DataSet.h ${typName}Logger.h ${typName}Logger.cpp)\n`;
     out += `target_include_directories(libExosCpp PUBLIC ..)\n`;
     out += `add_executable(${typName.toLowerCase()} main.cpp)\n`;
     out += `target_include_directories(${typName.toLowerCase()} PUBLIC ..)\n`;

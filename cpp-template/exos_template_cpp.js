@@ -16,7 +16,9 @@ function generateCLibrary(fileName, typName, libName) {
     out += `    <File>${typName}DataModel.cpp</File>\n`;
     out += `    <File>${typName}DataModel.h</File>\n`;
     out += `    <File>${typName}DataSet.h</File>\n`;
-    out += `  </Files>\n`;
+    out += `    <File>${typName}Logger.cpp</File>\n`;
+    out += `    <File>${typName}Logger.h</File>\n`;
+   out += `  </Files>\n`;
     out += `  <Dependencies>\n`;
     out += `    <Dependency ObjectName="ExApi" />\n`;
     out += `  </Dependencies>\n`;
@@ -77,39 +79,45 @@ function generateExosDataSetHeader(typName) {
     out += `#include <functional>\n`;
     out += `\n`;
     out += `extern "C" {\n`;
-    out += `    #define EXOS_ASSERT_LOG logger\n`;
-    out += `    #include "exos_log.h"\n`;
     out += `    #include "exos_${typName.toLowerCase()}.h"\n`;
     out += `}\n`;
     out += `\n`;
-    out += `#define SUCCESS(_format_, ...) exos_log_success(logger, EXOS_LOG_TYPE_USER, _format_, ##__VA_ARGS__);\n`;
-    out += `#define INFO(_format_, ...) exos_log_info(logger, EXOS_LOG_TYPE_USER, _format_, ##__VA_ARGS__);\n`;
-    out += `#define VERBOSE(_format_, ...) exos_log_debug(logger, (EXOS_LOG_TYPE)(EXOS_LOG_TYPE_USER + EXOS_LOG_TYPE_VERBOSE), _format_, ##__VA_ARGS__);\n`;
-    out += `#define ERROR(_format_, ...) exos_log_error(logger, _format_, ##__VA_ARGS__);\n`;
+    out += `#include "${typName}Logger.h"\n`;
+    out += `#define exos_assert_ok(_plog_,_exp_)                                                                                                    \\\n`;
+    out += `    do                                                                                                                                  \\\n`;
+    out += `    {                                                                                                                                   \\\n`;
+    out += `        EXOS_ERROR_CODE err = _exp_;                                                                                                    \\\n`;
+    out += `        if (EXOS_ERROR_OK != err)                                                                                                       \\\n`;
+    out += `        {                                                                                                                               \\\n`;
+    out += `            _plog_->error << "Error in file " << __FILE__ << ":" << __LINE__ << std::endl;                                               \\\n`;
+    out += `            _plog_->error << #_exp_ " returned " << err << " (" << exos_get_error_string(err) << ") instead of expected 0" << std::endl; \\\n`;
+    out += `        }                                                                                                                               \\\n`;
+    out += `    } while (0)\n`;
+    
     out += `\n`;
     out += `template <typename T>\n`;
     out += `class ${typName}DataSet\n`;
     out += `{\n`;
     out += `private:\n`;
     out += `    exos_dataset_handle_t dataset = {};\n`;
-    out += `    exos_log_handle_t* logger;\n`;
+    out += `    ${typName}Logger* log;\n`;
     out += `    std::function<void()> _onChange = [](){};\n`;
     out += `    void datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE event_type, void *info) {\n`;
     out += `        switch (event_type)\n`;
     out += `        {\n`;
     out += `            case EXOS_DATASET_EVENT_UPDATED:\n`;
-    out += `                VERBOSE("dataset %s updated! latency (us):%i", dataset->name, (exos_datamodel_get_nettime(dataset->datamodel,NULL) - dataset->nettime));\n`;
+    out += `                log->verbose << "dataset " << dataset->name << " updated! latency (us):" << (exos_datamodel_get_nettime(dataset->datamodel,NULL) - dataset->nettime) << std::endl;\n`;
     out += `                nettime = dataset->nettime;\n`;
     out += `                _onChange();\n`;
     out += `                break;\n`;
     out += `            case EXOS_DATASET_EVENT_PUBLISHED:\n`;
-    out += `                VERBOSE("dataset %s published to local server for distribution! send buffer free:%i", dataset->name, dataset->send_buffer.free);\n`;
+    out += `                log->verbose << "dataset " << dataset->name << "  published to local server for distribution! send buffer free:" << dataset->send_buffer.free << std::endl;\n`;
     out += `                break;\n`;
     out += `            case EXOS_DATASET_EVENT_DELIVERED:\n`;
-    out += `                VERBOSE("dataset %s delivered to remote server for distribution! send buffer free:%i", dataset->name, dataset->send_buffer.free);\n`;
+    out += `                log->verbose << "dataset " << dataset->name << " delivered to remote server for distribution! send buffer free:" << dataset->send_buffer.free << std::endl;\n`;
     out += `                break;\n`;
     out += `            case EXOS_DATASET_EVENT_CONNECTION_CHANGED:\n`;
-    out += `                INFO("dataset %s changed state to %s", dataset->name, exos_get_state_string(dataset->connection_state));\n`;
+    out += `                log->info << "dataset " << dataset->name << " changed state to " << exos_get_state_string(dataset->connection_state) << std::endl;\n`;
     out += `\n`;
     out += `                switch (dataset->connection_state)\n`;
     out += `                {\n`;
@@ -120,7 +128,7 @@ function generateExosDataSetHeader(typName) {
     out += `                    case EXOS_STATE_OPERATIONAL:\n`;
     out += `                        break;\n`;
     out += `                    case EXOS_STATE_ABORTED:\n`;
-    out += `                        ERROR("dataset %s error %d (%s) occured", dataset->name, dataset->error, exos_get_error_string(dataset->error));\n`;
+    out += `                        log->error << "dataset " << dataset->name << " error " << dataset->error << " (" << exos_get_error_string(dataset->error) << ") occured" << std::endl;\n`;
     out += `                        break;\n`;
     out += `                }\n`;
     out += `                break;\n`;
@@ -136,13 +144,13 @@ function generateExosDataSetHeader(typName) {
     out += `\n`;
     out += `    T value;\n`;
     out += `    int nettime;\n`;
-    out += `    void init(exos_datamodel_handle_t *datamodel, const char *browse_name, exos_log_handle_t* _logger) {\n`;
-    out += `        EXOS_ASSERT_OK(exos_dataset_init(&dataset, datamodel, browse_name, &value, sizeof(value)));\n`;
+    out += `    void init(exos_datamodel_handle_t *datamodel, const char *browse_name, ${typName}Logger* _log) {\n`;
+    out += `        log = _log;\n`;
+    out += `        exos_assert_ok(log, exos_dataset_init(&dataset, datamodel, browse_name, &value, sizeof(value)));\n`;
     out += `        dataset.user_context = this;\n`;
-    out += `        logger = _logger;\n`;
     out += `    };\n`;
     out += `    void connect(EXOS_DATASET_TYPE type) {\n`;
-    out += `        EXOS_ASSERT_OK(exos_dataset_connect(&dataset, type, &${typName}DataSet::_datasetEvent));\n`;
+    out += `        exos_assert_ok(log, exos_dataset_connect(&dataset, type, &${typName}DataSet::_datasetEvent));\n`;
     out += `    };\n`;
     out += `    void publish() {\n`;
     out += `        exos_dataset_publish(&dataset);\n`;
@@ -150,7 +158,7 @@ function generateExosDataSetHeader(typName) {
     out += `    void onChange(std::function<void()> f) {_onChange = std::move(f);};\n`;
     out += `\n`;
     out += `    ~${typName}DataSet() {\n`;
-    out += `		EXOS_ASSERT_OK(exos_dataset_delete(&dataset));\n`;
+    out += `		exos_assert_ok(log, exos_dataset_delete(&dataset));\n`;
     out += `	};\n`;
     out += `};\n`;
     out += `\n`;
@@ -158,6 +166,141 @@ function generateExosDataSetHeader(typName) {
 
     return out;
 }
+
+
+function generateExosLoggerHeader(fileName, typName) {
+    let template = configTemplate(fileName, typName);
+
+    let out = "";
+    
+    out += `#ifndef _${typName.toUpperCase()}_LOGGER_H_\n`;
+    out += `#define _${typName.toUpperCase()}_LOGGER_H_\n`;
+    out += `\n`;
+    out += `#include <iostream>\n`;
+    out += `#include <sstream>\n`;
+    out += `#include <string>\n`;
+    out += `\n`;
+    out += `extern "C" {\n`;
+    out += `	#include "exos_log.h"\n`;
+    out += `}\n`;
+    out += `\n`;
+    out += `class ExosLogger\n`;
+    out += `{\n`;
+    out += `private:\n`;
+    out += `	exos_log_handle_t* logger;\n`;
+    out += `	EXOS_LOG_LEVEL logLevel;\n`;
+    out += `	EXOS_LOG_TYPE logType;\n`;
+    out += `	std::stringstream sstream;\n`;
+    out += `public:\n`;
+    out += `	typedef std::ostream&  (*ManipFn)(std::ostream&);\n`;
+    out += `	typedef std::ios_base& (*FlagsFn)(std::ios_base&);\n`;
+    out += `\n`;
+    out += `	ExosLogger(exos_log_handle_t* logger, EXOS_LOG_LEVEL logLevel, EXOS_LOG_TYPE logType);\n`;
+    out += `	\n`;
+    out += `	template<class T>  // int, double, strings, etc\n`;
+    out += `		ExosLogger& operator<<(const T& output)\n`;
+    out += `	{\n`;
+    out += `		sstream << output;\n`;
+    out += `		return *this;\n`;
+    out += `	}\n`;
+    out += `\n`;
+    out += `	ExosLogger& operator<<(ManipFn manip) /// endl, flush, setw, setfill, etc.\n`;
+    out += `	{ \n`;
+    out += `		manip(sstream);\n`;
+    out += `\n`;
+    out += `		if (manip == static_cast<ManipFn>(std::flush)\n`;
+    out += `			|| manip == static_cast<ManipFn>(std::endl ) )\n`;
+    out += `			this->flush();\n`;
+    out += `\n`;
+    out += `		return *this;\n`;
+    out += `	}\n`;
+    out += `\n`;
+    out += `	ExosLogger& operator<<(FlagsFn manip) /// setiosflags, resetiosflags\n`;
+    out += `	{\n`;
+    out += `		manip(sstream);\n`;
+    out += `		return *this;\n`;
+    out += `	}\n`;
+    out += `	\n`;
+    out += `	void flush();\n`;
+    out += `\n`;
+    out += `	ExosLogger();\n`;
+    out += `};\n`;
+    out += `\n`;
+    out += `class ${typName}Logger\n`;
+    out += `{\n`;
+    out += `public:\n`;
+    out += `	${typName}Logger(std::string name)\n`;
+    out += `		: info(&logger, EXOS_LOG_LEVEL_INFO, EXOS_LOG_TYPE_USER)\n`;
+    out += `		, warning(&logger, EXOS_LOG_LEVEL_WARNING, EXOS_LOG_TYPE_USER)\n`;
+    out += `		, error(&logger, EXOS_LOG_LEVEL_ERROR, EXOS_LOG_TYPE_USER)\n`;
+    out += `		, debug(&logger, EXOS_LOG_LEVEL_DEBUG, EXOS_LOG_TYPE_USER)\n`;
+    out += `		, verbose(&logger, EXOS_LOG_LEVEL_WARNING, EXOS_LOG_TYPE(EXOS_LOG_TYPE_USER+EXOS_LOG_TYPE_VERBOSE))\n`;
+    out += `		, success(&logger, EXOS_LOG_LEVEL_SUCCESS, EXOS_LOG_TYPE_USER)\n`;
+    out += `	{\n`;
+    out += `		exos_log_init(&logger, name.c_str());\n`;
+    out += `	};\n`;
+    out += `	void process() {\n`;
+    out += `		exos_log_process(&logger);\n`;
+    out += `	}\n`;
+    out += `	~${typName}Logger() {\n`;
+    out += `		exos_log_delete(&logger);\n`;
+    out += `	};\n`;
+    out += `	ExosLogger info;\n`;
+    out += `	ExosLogger warning;\n`;
+    out += `	ExosLogger error;\n`;
+    out += `	ExosLogger debug;\n`;
+    out += `	ExosLogger verbose;\n`;
+    out += `	ExosLogger success;\n`;
+    out += `private:\n`;
+    out += `	exos_log_handle_t logger = {};\n`;
+    out += `};\n`;
+    out += `\n`;
+    out += `#endif\n`;
+    
+    return out;
+}
+
+function generateExosLoggerCpp(fileName, typName) {
+    let template = configTemplate(fileName, typName);
+
+    let out = "";
+    
+    out += `#include "${typName}Logger.h"\n`;
+    out += `\n`;
+    out += `ExosLogger::ExosLogger(exos_log_handle_t* logger, EXOS_LOG_LEVEL logLevel, EXOS_LOG_TYPE logType)\n`;
+    out += `	: logger(logger)\n`;
+    out += `	, logLevel(logLevel)\n`;
+    out += `	, logType(logType)\n`;
+    out += `{ \n`;
+    out += `}\n`;
+    out += `\n`;
+    out += `void ExosLogger::flush() \n`;
+    out += `{\n`;
+    out += `	switch(logLevel)\n`;
+    out += `	{\n`;
+    out += `		case EXOS_LOG_LEVEL_INFO:\n`;
+    out += `			exos_log_info(logger, logType, const_cast<char*>(sstream.str().c_str()));\n`;
+    out += `			break;\n`;
+    out += `		case EXOS_LOG_LEVEL_DEBUG:\n`;
+    out += `			exos_log_debug(logger, logType, const_cast<char*>(sstream.str().c_str()));\n`;
+    out += `			break;\n`;
+    out += `		case EXOS_LOG_LEVEL_ERROR:\n`;
+    out += `			exos_log_error(logger, const_cast<char*>(sstream.str().c_str()));\n`;
+    out += `			break;\n`;
+    out += `		case EXOS_LOG_LEVEL_SUCCESS:\n`;
+    out += `			exos_log_success(logger, logType, const_cast<char*>(sstream.str().c_str()));\n`;
+    out += `			break;\n`;
+    out += `		case EXOS_LOG_LEVEL_WARNING:\n`;
+    out += `			exos_log_warning(logger, logType, const_cast<char*>(sstream.str().c_str()));\n`;
+    out += `			break;\n`;
+    out += `	}\n`;
+    out += `	sstream.str(std::string());\n`;
+    out += `	sstream.clear();\n`;
+    out += `}\n`;
+
+    return out;
+}
+
 
 function generateExosDataModelHeader(fileName, typName) {
     let template = configTemplate(fileName, typName);
@@ -173,16 +316,10 @@ function generateExosDataModelHeader(fileName, typName) {
     out += `#include <functional>\n`;
     out += `#include "${typName}DataSet.h"\n`;
     out += `\n`;
-    out += `extern "C" {\n`;
-    out += `#include "exos_log.h"\n`;
-    out += `}\n`;
-    out += `\n`;
     out += `class ${typName}DataModel\n`;
     out += `{\n`;
     out += `private:\n`;
     out += `    exos_datamodel_handle_t datamodel = {};\n`;
-    out += `	exos_log_handle_t log = {};\n`;
-    out += `    exos_log_handle_t* logger;\n`;
     out += `	std::function<void()> _onConnectionChange = [](){};\n`;
     out += `\n`;
     out += `	void datamodelEvent(exos_datamodel_handle_t *datamodel, const EXOS_DATAMODEL_EVENT_TYPE event_type, void *info);\n`;
@@ -203,6 +340,8 @@ function generateExosDataModelHeader(fileName, typName) {
     out += `	bool isOperational = false;\n`;
     out += `	bool isConnected = false;\n`;
     out += `	EXOS_CONNECTION_STATE connectionState = EXOS_STATE_DISCONNECTED;\n`;
+    out += `\n`;
+    out += `    ${typName}Logger log;\n`;
     out += `\n`;
     for (let dataset of template.datasets) {
         if (dataset.isPub || dataset.isSub) {
@@ -233,23 +372,23 @@ function generateExosDataModelCpp(fileName, typName, moduleName, PubSubSwap) {
     out += `#define EXOS_STATIC_INCLUDE\n`;
     out += `#include "${typName}DataModel.h"\n`;
     out += `\n`;
-    out += `${typName}DataModel::${typName}DataModel() {\n`;
-    out += `    logger = &log;\n`;
-    out += `	exos_log_init(logger, "${moduleName}");\n`;
-    out += `	SUCCESS("starting ${moduleName} application..");\n`;
+    out += `${typName}DataModel::${typName}DataModel()\n`;
+    out += `    : log("${moduleName}")\n`;
+    out += `{\n`;
+    out += `    log.success << "starting ${moduleName} application.." << std::endl;\n`;
     out += `\n`;
-    out += `	EXOS_ASSERT_OK(exos_datamodel_init(&datamodel, "${template.datamodel.structName}", "${moduleName}"));\n`;
+    out += `	exos_assert_ok((&log), exos_datamodel_init(&datamodel, "${template.datamodel.structName}", "${moduleName}"));\n`;
     out += `	datamodel.user_context = this;\n`;
     out += `\n`;
     for (let dataset of template.datasets) {
         if (dataset.isPub || dataset.isSub) {
-            out += `    ${dataset.structName}.init(&datamodel, "${dataset.structName}", logger);\n`;
+            out += `    ${dataset.structName}.init(&datamodel, "${dataset.structName}", &log);\n`;
         }
     }
     out += `}\n`;
     out += `\n`;
     out += `void ${typName}DataModel::connect() {\n`;
-    out += `	EXOS_ASSERT_OK(exos_datamodel_connect_${typName.toLowerCase()}(&datamodel, &${typName}DataModel::_datamodelEvent));\n`;
+    out += `	exos_assert_ok((&log), exos_datamodel_connect_${typName.toLowerCase()}(&datamodel, &${typName}DataModel::_datamodelEvent));\n`;
     out += `\n`;
     for (let dataset of template.datasets) {
         if (dataset.isPub && dataset.isSub) {
@@ -265,16 +404,16 @@ function generateExosDataModelCpp(fileName, typName, moduleName, PubSubSwap) {
     out += `}\n`;
     out += `\n`;
     out += `void ${typName}DataModel::disconnect() {\n`;
-    out += `	EXOS_ASSERT_OK(exos_datamodel_disconnect(&datamodel));\n`;
+    out += `	exos_assert_ok((&log), exos_datamodel_disconnect(&datamodel));\n`;
     out += `}\n`;
     out += `\n`;
     out += `void ${typName}DataModel::setOperational() {\n`;
-    out += `	EXOS_ASSERT_OK(exos_datamodel_set_operational(&datamodel));\n`;
+    out += `	exos_assert_ok((&log), exos_datamodel_set_operational(&datamodel));\n`;
     out += `}\n`;
     out += `\n`;
     out += `void ${typName}DataModel::process() {\n`;
-    out += `	EXOS_ASSERT_OK(exos_datamodel_process(&datamodel));\n`;
-    out += `	exos_log_process(logger);\n`;
+    out += `	exos_assert_ok((&log), exos_datamodel_process(&datamodel));\n`;
+    out += `	log.process();\n`;
     out += `}\n`;
     out += `\n`;
     out += `int ${typName}DataModel::getNettime() {\n`;
@@ -285,7 +424,7 @@ function generateExosDataModelCpp(fileName, typName, moduleName, PubSubSwap) {
     out += `	switch (event_type)\n`;
     out += `	{\n`;
     out += `		case EXOS_DATAMODEL_EVENT_CONNECTION_CHANGED:\n`;
-    out += `			INFO("application changed state to %s", exos_get_state_string(datamodel->connection_state));\n`;
+    out += `			log.info << "application changed state to " << exos_get_state_string(datamodel->connection_state) << std::endl;\n`;
     out += `			connectionState = datamodel->connection_state;\n`;
     out += `			_onConnectionChange();\n`;
     out += `			switch (datamodel->connection_state)\n`;
@@ -298,11 +437,11 @@ function generateExosDataModelCpp(fileName, typName, moduleName, PubSubSwap) {
     out += `					isConnected = true;\n`;
     out += `					break;\n`;
     out += `				case EXOS_STATE_OPERATIONAL:\n`;
-    out += `					SUCCESS("${typName}DataModel operational!");\n`;
+    out += `					log.success << "${moduleName} operational!" << std::endl;\n`;
     out += `					isOperational = true;\n`;
     out += `					break;\n`;
     out += `				case EXOS_STATE_ABORTED:\n`;
-    out += `					ERROR("application error %d (%s) occured", datamodel->error, exos_get_error_string(datamodel->error));\n`;
+    out += `					log.error << "application error " << datamodel->error << " (" << exos_get_error_string(datamodel->error) << ") occured" << std::endl;\n`;
     out += `					isOperational = false;\n`;
     out += `					isConnected = false;\n`;
     out += `					break;\n`;
@@ -313,8 +452,7 @@ function generateExosDataModelCpp(fileName, typName, moduleName, PubSubSwap) {
     out += `\n`;
     out += `${typName}DataModel::~${typName}DataModel()\n`;
     out += `{\n`;
-    out += `	EXOS_ASSERT_OK(exos_datamodel_delete(&datamodel));\n`;
-    out += `	exos_log_delete(logger);\n`;
+    out += `	exos_assert_ok((&log), exos_datamodel_delete(&datamodel));\n`;
     out += `}\n`;
 
     return out;
@@ -341,13 +479,13 @@ function genenerateLegend(fileName, typName, PubSubSwap) {
     out += `\nboolean values:\n`
     out += `    ${template.datamodel.varName}${dmDelim}isConnected\n`;
     out += `    ${template.datamodel.varName}${dmDelim}isOperational\n`;
-//    out += `\nlogging methods:\n`
-//    out += `    ${template.datamodel.varName}${dmDelim}log.error(char *)\n`;
-//    out += `    ${template.datamodel.varName}${dmDelim}log.warning(char *)\n`;
-//    out += `    ${template.datamodel.varName}${dmDelim}log.success(char *)\n`;
-//    out += `    ${template.datamodel.varName}${dmDelim}log.info(char *)\n`;
-//    out += `    ${template.datamodel.varName}${dmDelim}log.debug(char *)\n`;
-//    out += `    ${template.datamodel.varName}${dmDelim}log.verbose(char *)\n`;  
+    out += `\nlogging methods:\n`
+    out += `    ${template.datamodel.varName}${dmDelim}log.error << "some value:" << 1 << std::endl;\n`;
+    out += `    ${template.datamodel.varName}${dmDelim}log.warning << "some value:" << 1 << std::endl;\n`;
+    out += `    ${template.datamodel.varName}${dmDelim}log.success << "some value:" << 1 << std::endl;\n`;
+    out += `    ${template.datamodel.varName}${dmDelim}log.info << "some value:" << 1 << std::endl;\n`;
+    out += `    ${template.datamodel.varName}${dmDelim}log.debug << "some value:" << 1 << std::endl;\n`;
+    out += `    ${template.datamodel.varName}${dmDelim}log.verbose << "some value:" << 1 << std::endl;\n`;  
     for (let dataset of template.datasets) {
         if (dataset.isSub || dataset.isPub) {
             out += `\ndataset ${dataset.structName}:\n`;
@@ -681,6 +819,8 @@ module.exports = {
     generateExosDataModelCpp,
     generateExosDataModelHeader,
     generateExosDataSetHeader,
+    generateExosLoggerHeader,
+    generateExosLoggerCpp,
     generateMainAR,
     generateIECProgram,
     generateIECProgramVar,

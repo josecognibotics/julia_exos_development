@@ -68,6 +68,12 @@ function generateTemplate(fileName, structName, outPath) {
     out = template_cpp.generateFun(fileName, structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${libName}.fun`, out);
 
+    out = template_cpp.generateExosLoggerCpp(fileName, structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}Logger.cpp`, out);
+
+    out = template_cpp.generateExosLoggerHeader(fileName, structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}Logger.h`, out);
+
     out = template_cpp.generateExosDataModelCpp(fileName, structName, structName + "_0", false);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}DataModel.cpp`, out);
 
@@ -90,6 +96,12 @@ function generateTemplate(fileName, structName, outPath) {
 
     out = template_linux.generateCMakeLists(structName);
     fs.writeFileSync(`${outPath}/${structName}/Linux/CMakeLists.txt`, out);
+    
+    out = template_cpp.generateExosLoggerCpp(fileName, structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/${structName}Logger.cpp`, out);
+
+    out = template_cpp.generateExosLoggerHeader(fileName, structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/${structName}Logger.h`, out);
 
     out = template_cpp.generateExosDataModelCpp(fileName, structName, structName + "_0", true);
     fs.writeFileSync(`${outPath}/${structName}/Linux/${structName}DataModel.cpp`, out);
@@ -142,9 +154,13 @@ function updateTemplate(fileName) {
 
     if(!fs.existsSync(typFile)) throw(`Typ source file ${typFile} not found`);
 
+    if(!fs.existsSync(`${path.dirname(fileName)}/${libName}/${structName}Logger.cpp`)) throw(`${path.dirname(fileName)}/${libName}/${structName}Logger.cpp does not exist!`);
+    if(!fs.existsSync(`${path.dirname(fileName)}/${libName}/${structName}Logger.h`)) throw(`${path.dirname(fileName)}/${libName}/${structName}Logger.h does not exist!`);
     if(!fs.existsSync(`${path.dirname(fileName)}/${libName}/${structName}DataModel.cpp`)) throw(`${path.dirname(fileName)}/${libName}/${structName}DataModel.cpp does not exist!`);
     if(!fs.existsSync(`${path.dirname(fileName)}/${libName}/${structName}DataModel.h`)) throw(`${path.dirname(fileName)}/${libName}/${structName}DataModel.h does not exist!`);
     if(!fs.existsSync(`${path.dirname(fileName)}/${libName}/${structName}DataSet.h`)) throw(`${path.dirname(fileName)}/${libName}/${structName}DataSet.h does not exist!`);
+    if(!fs.existsSync(`${path.dirname(fileName)}/Linux/${structName}Logger.cpp`)) throw(`${path.dirname(fileName)}/Linux/${structName}Logger.cpp does not exist!`);
+    if(!fs.existsSync(`${path.dirname(fileName)}/Linux/${structName}Logger.h`)) throw(`${path.dirname(fileName)}/Linux/${structName}Logger.h does not exist!`);
     if(!fs.existsSync(`${path.dirname(fileName)}/Linux/${structName}DataModel.cpp`)) throw(`${path.dirname(fileName)}/Linux/${structName}DataModel.cpp does not exist!`);
     if(!fs.existsSync(`${path.dirname(fileName)}/Linux/${structName}DataModel.h`)) throw(`${path.dirname(fileName)}/Linux/${structName}DataModel.h does not exist!`);
     if(!fs.existsSync(`${path.dirname(fileName)}/Linux/${structName}DataSet.h`)) throw(`${path.dirname(fileName)}/Linux/${structName}DataSet.h does not exist!`);
@@ -164,6 +180,12 @@ function updateTemplate(fileName) {
     out = template_cpp.generateFun(typFile, structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${libName}.fun`, out);
 
+    out = template_cpp.generateExosLoggerCpp(typFile, structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}Logger.cpp`, out);
+
+    out = template_cpp.generateExosLoggerHeader(typFile, structName);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}Logger.h`, out);
+
     out = template_cpp.generateExosDataModelCpp(typFile, structName, structName + "_0", false);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}DataModel.cpp`, out);
 
@@ -172,6 +194,12 @@ function updateTemplate(fileName) {
 
     out = template_cpp.generateExosDataSetHeader(structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${structName}DataSet.h`, out);
+
+    out = template_cpp.generateExosLoggerCpp(typFile, structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/${structName}Logger.cpp`, out);
+
+    out = template_cpp.generateExosLoggerHeader(typFile, structName);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/${structName}Logger.h`, out);
 
     out = template_cpp.generateExosDataModelCpp(typFile, structName, structName + "_0", true);
     fs.writeFileSync(`${outPath}/${structName}/Linux/${structName}DataModel.cpp`, out);
