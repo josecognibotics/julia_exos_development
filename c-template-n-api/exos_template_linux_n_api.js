@@ -155,9 +155,7 @@ function generateShBuild() {
 
     out += `finalize() {\n`;
     out += `    rm -rf build/*\n`;
-    out += `    rm -r build\n`;
     out += `    rm -rf node_modules/*\n`;
-    out += `    rm -r node_modules\n`;
     out += `    rm -f Makefile\n`;
     out += `    sync\n`;
     out += `    exit $1\n`;
@@ -170,7 +168,7 @@ function generateShBuild() {
 
     out += `cp -f build/Release/l_*.node .\n\n`;
 
-    out += `mkdir node_modules #make sure the folder exists even if no submodules are needed\n\n`;
+    out += `mkdir -p node_modules #make sure the folder exists even if no submodules are needed\n\n`;
 
     out += `rm -rf build/*\n`;
 
@@ -231,7 +229,7 @@ function generateExosPkg(typName, libName, fileName) {
     out += `    <DataModelInstance Name="${typName}"/>\n`;
     out += `    <File Name="exos-comp-${typName.toLowerCase()}" FileName="Linux\\exos-comp-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
     out += `    <File Name="main-script" FileName="Linux\\${typName.toLowerCase()}.js" Type="Project"/>\n`;
-    out += `    <Installation Type="Prerun" Command="cp ${typName.toLowerCase()}.js /home/user/${typName.toLowerCase()}/"/>\n`;
+    out += `    <Installation Type="Prerun" Command="yes | cp -f ${typName.toLowerCase()}.js /home/user/${typName.toLowerCase()}/"/>\n`;
     out += `    <Build>\n`;
     out += `        <GenerateHeader FileName="${typName}\\${typName}.typ" TypeName="${typName}">\n`;
     out += `            <SG4 Include="${fileName.split(".")[0].toLowerCase()}.h"/>\n`;
@@ -1701,11 +1699,11 @@ function genenerateLegend(fileName, typName, PubSubSwap) {
     out += `    ${template.datamodel.varName}.log.success(string)\n`;
     out += `    ${template.datamodel.varName}.log.info(string)\n`;
     out += `    ${template.datamodel.varName}.log.debug(string)\n`;
-    out += `    ${template.datamodel.varName}.log.verbose(string)\n`;  
+    out += `    ${template.datamodel.varName}.log.verbose(string)\n`;
     for (let dataset of template.datasets) {
         if (dataset.isSub || dataset.isPub) {
             out += `\ndataset ${dataset.structName}:\n`;
-            
+
             out += `    ${template.datamodel.varName}.dataModel.${dataset.structName}.value : (${header.convertPlcType(dataset.dataType)}`;
             if (dataset.arraySize > 0) { // array comes before string length in c (unlike AS typ editor where it would be: STRING[80][0..1])
                 out += `[${parseInt(dataset.arraySize)}]`;
@@ -1716,7 +1714,7 @@ function genenerateLegend(fileName, typName, PubSubSwap) {
                 out += `) `;
             }
             out += ` actual dataset value`;
-            if(header.isScalarType(dataset.dataType, true)) {
+            if (header.isScalarType(dataset.dataType, true)) {
                 out += `\n`;
             }
             else {
@@ -1736,8 +1734,8 @@ function genenerateLegend(fileName, typName, PubSubSwap) {
             out += `    ${template.datamodel.varName}.dataModel.${dataset.structName}.onConnectionChange(() => {\n`;
             out += `        ${template.datamodel.varName}.dataModel.${dataset.structName}.connectionState : (string) "Connected", "Operational", "Disconnected" or "Aborted"\n`;
             out += `    });\n`;
-            
-            
+
+
         }
     }
     out += `*/\n\n`;
