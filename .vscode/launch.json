@@ -49,6 +49,17 @@
 				"WaterTank",
 				"."
 			]
+		},
+		{
+			"name": "Debug Updater N-Api",
+			"type": "node",
+			"request": "launch",
+			"cwd": "${workspaceFolder}/c-template-n-api/",
+			"program": "${workspaceFolder}/c-template-n-api/exos_template.js",
+			"args": [
+				"-u",
+				"${workspaceFolder}/c-template-n-api/WaterTank/WaterTank.exospkg"
+			]
 		}
 	]
 }
