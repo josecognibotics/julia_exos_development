@@ -157,7 +157,7 @@ function updateTemplate(fileName) {
     out = template_ar.generateFun(typFile, structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${libName}.fun`, out);
 
-    out = template_ar.generateCLibrary(path.basename(fileName), structName);
+    out = template_ar.generateCLibrary(path.basename(typFile), structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/ANSIC.lby`, out);
 
     fs.writeFileSync(`${outPath}/${structName}/${libName}/dynamic_heap.cpp`, "unsigned long bur_heap_size = 100000;\n");
@@ -190,7 +190,8 @@ if (require.main === module) {
             }
         } else {
             let fileName = process.argv[3];
-
+            // structName not defined here? 
+            // why use argv[3] when argv[2] is unused, and normally points to a file??
             try {
                 updateTemplate(fileName);
                 process.stdout.write(`exos_template ${structName} generated at ${outPath}`);
