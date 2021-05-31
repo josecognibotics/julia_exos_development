@@ -137,6 +137,18 @@ function activate(context) {
 	});
 	context.subscriptions.push(generateNapiNodeJSTemplate);
 
+	let updateNapiNodeJSTemplate = vscode.commands.registerCommand('exos-component-extension.updateNapiNodeJSTemplate', function (uri) {
+		try {
+			let selection = napitemplate.updateTemplate(uri.fsPath);
+			vscode.window.showInformationMessage(`Updated Node-API template for ${selection}`);
+
+		} catch (error) {
+			vscode.window.showErrorMessage(error);
+		}
+	});
+	context.subscriptions.push(updateNapiNodeJSTemplate);
+
+
 	let generateCppTemplate = vscode.commands.registerCommand('exos-component-extension.generateCppTemplate', function (uri) {
 		vscode.window.showInputBox({prompt:"Name of the DataType:"}).then(selection => {
 			
