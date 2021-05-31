@@ -1,10 +1,18 @@
 # exOS-Components Generator
 
-This VsCode plugin creates exOS components (code templates) via the context menu of a `.typ` datamodel (datatype) file. Datasets (structure members) are automatically added to the code template as publish or subscribe datasets by adding the comment `PUB` or `SUB`. Publish and Subscribe is seen from the perspective of Automation Runtime, menaing a `PUB` variable is published by AR and subscribed to from Linux. For bidirectional datasets, you can add both types to the comment, like `PUB SUB`. 
+## Usage
+
+This VsCode plugin creates exOS components (code templates) via the context menu of / right clicking on a `.typ` datamodel (datatype) file. Datasets (structure members) are automatically added to the code template as publish or subscribe datasets by adding the comment `PUB` or `SUB`. Publish and Subscribe is seen from the perspective of Automation Runtime, menaing a `PUB` variable is published by AR and subscribed to from Linux. For bidirectional datasets, you can add both types to the comment, like `PUB SUB`. 
 
 The purpose of the templates is to give an easy start for application development. Here, a base frame of Automation Runtime and Linux code is created for the application, and the build instructions for the component are configured to create Debian packages with the exOS build-chain in Automation Studio.
 
 If the .typ file is located within an Automation Studio project (part of the Package.pkg definition), the .typ file is replaced by an exOS package and moved in to a suitable object, like a dynamic library or a program.
+
+## Update
+
+For all templates except the `Instantiatable C Template` theres a functionality to regenerate the "inner" parts of the template, which is defining the datamodel by using the exos-api functions.
+
+This is done via the context menu of / right clicking on the `.exospkg` which was initially generated. Note that is is only possible to **update same kind of Template that was initially created**, and there is little error handling to check the behaviour for improper usage.
 
 ## Example
 
@@ -69,6 +77,7 @@ For both variants, the Datatype which is used to generate the template with is a
 - Requirements
 
     In order to compile this template, (only) NodeJS needs to be installed.
+    
 ## Singleton C Template
 
 - Automation Runtime 

@@ -1,10 +1,11 @@
 # Changelog
 
-## [Unreleased] - YYYY-MM-DD
+## [1.2.0] - 2021-05-31
 
 ### Added
 - Support for arrays in SWIG python.
 - Example code in on_changed in python and singleton
+- Update template available for NodeJS NAPI
 
 ### Fixed
 - Naming of structs in singleton and swig had the library name removed (only in version 1.1.5 and 1.1.6)
