@@ -704,10 +704,10 @@ function generateMainLinux(fileName, typName) {
     out += `int main(int argc, char ** argv)\n`;
     out += `{\n`;
     out += `	signal(SIGINT, catchTermination);\n`;
-    out += `\n`;
+    out += `    \n`;
     out += `	${typName}DataModel ${template.datamodel.varName};\n`;
     out += `	${template.datamodel.varName}.connect();\n`;
-    out += `\n`;
+    out += `    \n`;
     out += `	${template.datamodel.varName}.onConnectionChange([&] () {\n`;
     out += `		if(${template.datamodel.varName}.connectionState == EXOS_STATE_CONNECTED) {\n`;
     out += `			// Datamodel connected\n`;
@@ -725,18 +725,20 @@ function generateMainLinux(fileName, typName) {
             out += `\n`;
         }
     }
-    out += `	// publishing of values\n`;
-    out += `\n`;
-    for (let dataset of template.datasets) {
-        if (dataset.isSub) {
-            out += `	// ${template.datamodel.varName}.${dataset.structName}.value = ...\n`;
-            out += `	// ${template.datamodel.varName}.${dataset.structName}.publish();\n`;
-            out += `\n`;
-        }
-    }
     out += `\n`;
     out += `	while(true) {\n`;
+    out += `	    // trigger callbacks\n`;
     out += `		${template.datamodel.varName}.process();\n`;
+    out += `        \n`;
+    out += `	    // publish datasets\n`;
+    out += `        \n`;
+    for (let dataset of template.datasets) {
+        if (dataset.isSub) {
+            out += `	    // ${template.datamodel.varName}.${dataset.structName}.value = ...\n`;
+            out += `	    // ${template.datamodel.varName}.${dataset.structName}.publish();\n`;
+            out += `        \n`;
+        }
+    }
     out += `	}\n`;
     out += `\n`;
     out += `	return 0;\n`;
