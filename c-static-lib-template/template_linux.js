@@ -174,7 +174,7 @@ function generateTermination() {
     out += `	size = backtrace(array, 10);\n`;
     out += `\n`;
     out += `	// print out all the frames to stderr\n`;
-    out += `	fprintf(stderr, "Error: segfault\n");\n`;
+    out += `	fprintf(stderr, "Error: segfault\\n");\n`;
     out += `	backtrace_symbols_fd(array, size, STDERR_FILENO);\n`;
     out += `	exit(1);\n`;
     out += `}\n`;
