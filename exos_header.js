@@ -3,10 +3,13 @@ const version = "0.7.1";
 
 //limit constants - generates error of exceeded
 const MAX_ARRAY_NEST = 10;
+const MAX_STRUCT_NEST = 32; // avoid infinite loops with cyclic declared types. Not sure what the AS limit is (There is a limit e.g. Error number: 5868)
+const SORT_STRUCT_MAX = 5000;
 const MAX_IDS = 256;
 const MAX_AREA_NAME_LENGTH = 256;
 const MAX_CONFIG_LENGTH = 60000;
 let nestingDepth = 0;
+let structNestingDepth = 0;
 
 /**
  * Not yet implemented:
@@ -24,6 +27,7 @@ let nestingDepth = 0;
 
 const fs = require('fs');
 const path = require('path');
+const { window } = require('vscode');
 
 
 /************************ JSON ***************************/
@@ -192,7 +196,9 @@ function parseStructMember(fileLines, index) {
         }
         else {
             //datatype detected = dig deeper
+            structNestingDepth++;
             let result = parseTyp(fileLines, name, type, comment, arraySize, false);
+            structNestingDepth--;
             if (arraySize > 0) nestingDepth -= dimensions.length;
             return result
         }
@@ -207,6 +213,7 @@ function parseTyp(fileLines, name, type, comment, arraySize, init) {
     //set root type properties and inits
     if (init) {
         nestingDepth = 0;
+        structNestingDepth = 0;
         name = "<NAME>";
     }
 
@@ -215,6 +222,10 @@ function parseTyp(fileLines, name, type, comment, arraySize, init) {
     if (start != -1) {
         let i = 1;
         while (!fileLines[start + i].includes("END_STRUCT")) {
+            if (structNestingDepth > MAX_STRUCT_NEST)
+            {
+                throw (`Member "${name} : ${type}" has struct nesting depth of ${structNestingDepth} which exceeds the maximum of ${MAX_STRUCT_NEST} nests (possible recursion)`);
+            }
             let member = parseStructMember(fileLines, start + i);
             if (member != null) {
                 children.push(member);
@@ -510,18 +521,37 @@ function convertTyp2Struct(fileName, swig) {
 
     //sort the structs according to their dependencies
     if (structs.length > 1) {
-        for (i = 0; i < structs.length; i++) {
-            let maxindex = -1;
-            for (let depend of structs[i].depends) {
-                for (j = 0; j < structs.length; j++) {
-                    if (structs[j].name == depend) {
-                        if (j > maxindex) maxindex = j;
+        let recheck = 1;
+        let loopIdx = 0;
+        while(recheck == 1){
+            recheck = 0
+            for (i = 0; i < structs.length; i++) {
+                let maxindex = -1;
+                // loop through the depend to find the one with the largest index in the struct list
+                // we need to put our self below all the depends for it to compile
+                for (let depend of structs[i].depends) {
+                    for (j = i+1; j < structs.length; j++) { // start from own position
+                        if (structs[j].name == depend) {
+                            if (j > maxindex) {
+                                maxindex = j;
+                            }
+                        }
                     }
                 }
+                if (maxindex != -1) {
+                    let tmpstructs = structs.splice(i, 1)[0];
+                    structs.splice(maxindex, 0, tmpstructs); // we just removed our self, so maxindex is already +1 in the spliced structs
+                    recheck = 1;
+                    break; // restart
+                }
             }
-            if (maxindex != -1) {
-                let tmpstructs = structs.splice(i, 1)[0];
-                structs.splice(maxindex + 1, 0, tmpstructs);
+            // cyclic declaration of structs are handled in parseStructMember and parseTyp
+            // this is just to be sure
+            loopIdx++;
+            if(loopIdx > SORT_STRUCT_MAX)
+            {
+                window.showWarningMessage(`Sorting the structs from '${path.basename(fileName)}' has looped more than ${SORT_STRUCT_MAX} times. You might experience problems when compiling`);
+                break;
             }
         }
     }
@@ -681,6 +711,7 @@ function generateStructRegister(typName, children) {
 function generateHeader(fileName, typName, SG4Includes) {
 
     nestingDepth = 0;
+    structNestingDepth = 0;
     infoId = 0;
 
     types = parseTypFile(fileName, typName);
