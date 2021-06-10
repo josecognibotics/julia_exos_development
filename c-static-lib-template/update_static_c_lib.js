@@ -1,4 +1,5 @@
 const fs = require('fs');
+const header = require('../exos_header');
 var parse = require('../node_modules/xml-parser');
 const path = require('path');
 const template_lib = require('./c_static_lib_template');
@@ -36,7 +37,8 @@ function updateLibrary(fileName, swig_type) {
                     if(build.attributes["FileName"]!= null && build.attributes["TypeName"]!=null) {
                         typFile = `${path.dirname(fileName)}/${build.attributes["FileName"]}`;
                         structName = build.attributes["TypeName"];
-                        
+                        libName = structName.substring(0, 10);
+                        outPath = path.dirname(path.dirname(fileName));
                         for(let output of build.children) {
                             if(output.name == "Output" && output.attributes["Path"]!=null) {
                                 if(output.attributes["Path"] == "Linux") {
@@ -73,6 +75,13 @@ function updateLibrary(fileName, swig_type) {
 
     //ok were good to go, regenerate
     let out = "";
+
+    //headers
+    out = header.generateHeader(typFile, structName, [`${libName}.h`]);
+    //AS header
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.h`, out);
+    //Linux header
+    fs.writeFileSync(`${outPath}/${structName}/Linux/exos_${structName.toLowerCase()}.h`, out);
 
     out = template_lib.genenerateLibHeader(typFile, structName, false);
     fs.writeFileSync(`${libAR}.h`, out);
