@@ -180,7 +180,7 @@ function generateSwigInclude(fileName, typName, PubSubSwap) {
     let idx = headerStructs.indexOf("<sai>")
     if (idx > 0) {
         do {
-            tmpOut = headerStructs.substring(0, idx); // TODO: not really important, but more struct could be in this substring and SwigArrayInfoPre could thereby be further away from its true struct than necessary
+            let tmpOut = headerStructs.substring(0, idx); // TODO: not really important, but more struct could be in this substring and SwigArrayInfoPre could thereby be further away from its true struct than necessary
             headerStructs = headerStructs.substring(idx + 5); // skip <sai>
             let endIdx = headerStructs.indexOf("</sai>");
             let arrayInfoStr = headerStructs.substring(0, endIdx);

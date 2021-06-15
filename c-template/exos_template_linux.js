@@ -273,7 +273,7 @@ function generateExosCallbacks(template) {
     out += `static void datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE event_type, void *info)\n{\n`;
     out += `    switch (event_type)\n    {\n`;
     out += `    case EXOS_DATASET_EVENT_UPDATED:\n`;
-    out += `        VERBOSE("dataset %s updated! latency (us):%i", dataset->name, (exos_datamodel_get_nettime(dataset->datamodel,NULL) - dataset->nettime));\n`;
+    out += `        VERBOSE("dataset %s updated! latency (us):%i", dataset->name, (exos_datamodel_get_nettime(dataset->datamodel) - dataset->nettime));\n`;
     out += `        //handle each subscription dataset separately\n`;
     var atleastone = false;
     for (let dataset of template.datasets) {
@@ -373,7 +373,11 @@ function generateExosCallbacks(template) {
     out += `            ERROR("application error %d (%s) occured", datamodel->error, exos_get_error_string(datamodel->error));\n`;
     out += `            break;\n`;
     out += `        }\n`;
-    out += `        break;\n    }\n`;
+    out += `        break;\n`;
+    out += `    case EXOS_DATAMODEL_EVENT_SYNC_STATE_CHANGED:\n`;
+    out += `        break;\n\n`;
+    out += `    default:\n`;
+    out += `        break;\n\n`;
     out += `}\n\n`;
 
     return out;

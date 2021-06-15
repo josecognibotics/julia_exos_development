@@ -167,16 +167,16 @@ function generateTermination() {
     out += `}\n`;
     out += `\n`;
     out += `static void handle_segfault(int sig) {\n`;
-    out += `	void *array[10];\n`;
-    out += `	size_t size;\n`;
-    out += `	\n`;
-    out += `	// get void*'s for all entries on the stack\n`;
-    out += `	size = backtrace(array, 10);\n`;
+    out += `    void *array[10];\n`;
+    out += `    size_t size;\n`;
+    out += `    \n`;
+    out += `    // get void*'s for all entries on the stack\n`;
+    out += `    size = backtrace(array, 10);\n`;
     out += `\n`;
-    out += `	// print out all the frames to stderr\n`;
-    out += `	fprintf(stderr, "Error: segfault\\n");\n`;
-    out += `	backtrace_symbols_fd(array, size, STDERR_FILENO);\n`;
-    out += `	exit(1);\n`;
+    out += `    // print out all the frames to stderr\n`;
+    out += `    fprintf(stderr, "Error: segfault\\n");\n`;
+    out += `    backtrace_symbols_fd(array, size, STDERR_FILENO);\n`;
+    out += `    exit(1);\n`;
     out += `}\n`;
     out += `\n`;
     out += `static void handle_term_signal(int signum)\n`;
@@ -213,7 +213,7 @@ function generateTermination() {
     out += `    sigaction(SIGQUIT, &new_action, NULL);\n`;
     out += `\n`;
     out += `    // Print backtrace to stderr and exit() on segfault\n`;
-    out += `	signal(SIGSEGV, handle_segfault); \n`;
+    out += `    signal(SIGSEGV, handle_segfault); \n`;
     out += `}\n`;
 
     return out;

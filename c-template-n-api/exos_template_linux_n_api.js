@@ -294,7 +294,7 @@ function generateExosCallbacks(template) {
     out += `static void datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE event_type, void *info)\n{\n`;
     out += `    switch (event_type)\n    {\n`;
     out += `    case EXOS_DATASET_EVENT_UPDATED:\n`;
-    out += `        VERBOSE("dataset %s updated! latency (us):%i", dataset->name, (exos_datamodel_get_nettime(dataset->datamodel,NULL) - dataset->nettime));\n`;
+    out += `        VERBOSE("dataset %s updated! latency (us):%i", dataset->name, (exos_datamodel_get_nettime(dataset->datamodel) - dataset->nettime));\n`;
     var atleastone = false;
     for (let dataset of template.datasets) {
         if (dataset.isPub) {
@@ -374,6 +374,8 @@ function generateExosCallbacks(template) {
     out += `            break;\n`;
     out += `        }\n`;
     out += `        break;\n`;
+    out += `    default:\n`;
+    out += `        break;\n\n`;
     out += `    }\n`;
     out += `}\n\n`;
 
@@ -400,6 +402,10 @@ function generateExosCallbacks(template) {
     out += `            break;\n`;
     out += `        }\n`;
     out += `        break;\n`;
+    out += `    case EXOS_DATAMODEL_EVENT_SYNC_STATE_CHANGED:\n`;
+    out += `        break;\n\n`;
+    out += `    default:\n`;
+    out += `        break;\n\n`;
     out += `    }\n`;
     out += `}\n\n`;
 
@@ -736,7 +742,7 @@ function generateValueCallbacks(fileName, template) {
 
             out += out2;
 
-            out += `        int32_t _latency = exos_datamodel_get_nettime(&${template.datamodel.varName}_datamodel, NULL) - *(int32_t *)netTime_exos;\n`;
+            out += `        int32_t _latency = exos_datamodel_get_nettime(&${template.datamodel.varName}_datamodel) - *(int32_t *)netTime_exos;\n`;
             out += `        napi_create_int32(env, *(int32_t *)netTime_exos, &netTime);\n`;
             out += `        napi_create_int32(env, _latency, &latency);\n`;
             out += `        napi_set_named_property(env, ${dataset.structName}.object_value, "nettime", netTime);\n`;
@@ -1125,7 +1131,7 @@ function generateLogCleanUpHookCyclic(template) {
     out += `static napi_value get_net_time(napi_env env, napi_callback_info info)\n`;
     out += `{\n`;
     out += `    napi_value netTime;\n\n`;
-    out += `    if (napi_ok == napi_create_int32(env, exos_datamodel_get_nettime(&${template.datamodel.varName}_datamodel, NULL), &netTime))\n`;
+    out += `    if (napi_ok == napi_create_int32(env, exos_datamodel_get_nettime(&${template.datamodel.varName}_datamodel), &netTime))\n`;
     out += `    {\n`;
     out += `        return netTime;\n`;
     out += `    }\n`;

@@ -686,7 +686,7 @@ function generateHeader(fileName, typName, SG4Includes) {
     types = parseTypFile(fileName, typName);
 
     types.attributes.info = "<infoId" + infoId + ">"; // top level
-    info = infoChildren(types.children, "", ""); // needs to be called before JSON.stringify to generate infoId
+    let info = infoChildren(types.children, "", ""); // needs to be called before JSON.stringify to generate infoId
 
     let out = "";
     out = `/*Automatically generated header file from ${path.basename(fileName)}*/\n\n`;
@@ -694,7 +694,7 @@ function generateHeader(fileName, typName, SG4Includes) {
     out += `#ifndef _EXOS_COMP_${typName.toUpperCase()}_H_\n`;
     out += `#define _EXOS_COMP_${typName.toUpperCase()}_H_\n\n`;
     out += `#ifndef EXOS_INCLUDE_ONLY_DATATYPE\n`;
-    out += `#include "exos_api_internal.h"\n`;
+    out += `#include "exos_api.h"\n`;
     out += `#endif\n\n`;
 
     if (Array.isArray(SG4Includes)) {
@@ -736,9 +736,9 @@ function generateHeader(fileName, typName, SG4Includes) {
     out += `    };\n\n`;
 
 
-    out += `    _exos_internal_calc_offsets(datasets,sizeof(datasets));\n\n`;
+    out += `    exos_datamodel_calc_dataset_info(datasets,sizeof(datasets));\n\n`;
 
-    out += `    return _exos_internal_datamodel_connect(datamodel, config_${typName.toLowerCase()}, datasets, sizeof(datasets), datamodel_event_callback);\n`;
+    out += `    return exos_datamodel_connect(datamodel, config_${typName.toLowerCase()}, datasets, sizeof(datasets), datamodel_event_callback);\n`;
     out += `}\n\n`;
 
     //register function with INFO for each type: out += generateStructRegister(typName, types.children);

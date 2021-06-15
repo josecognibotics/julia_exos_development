@@ -39,7 +39,7 @@ function generateTemplate(fileName, typName, PubSubSwap, userAlias, dynamic) {
     out += `static void ${template.datamodel.libStructName}_datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE event_type, void *info)\n{\n`;
     out += `    switch (event_type)\n    {\n`;
     out += `    case EXOS_DATASET_EVENT_UPDATED:\n`;
-    out += `        VERBOSE("dataset %s updated! latency (us):%i", dataset->name, (exos_datamodel_get_nettime(dataset->datamodel,NULL) - dataset->nettime));\n`;
+    out += `        VERBOSE("dataset %s updated! latency (us):%i", dataset->name, (exos_datamodel_get_nettime(dataset->datamodel) - dataset->nettime));\n`;
     out += `        //handle each subscription dataset separately\n`;
     var atleastone = false;
     for (let dataset of template.datasets) {
@@ -108,7 +108,12 @@ function generateTemplate(fileName, typName, PubSubSwap, userAlias, dynamic) {
     out += `            ERROR("application error %d (%s) occured", datamodel->error, exos_get_error_string(datamodel->error));\n`;
     out += `            break;\n`;
     out += `        }\n`;
-    out += `        break;\n    }\n`;
+    out += `        break;\n`;
+    out += `    case EXOS_DATAMODEL_EVENT_SYNC_STATE_CHANGED:\n`;
+    out += `        break;\n\n`;
+    out += `    default:\n`;
+    out += `        break;\n\n`;
+    out += `    }\n`;
     out += `}\n\n`;
 
 
@@ -174,7 +179,7 @@ function generateTemplate(fileName, typName, PubSubSwap, userAlias, dynamic) {
 
     out += `static int32_t ${template.datamodel.libStructName}_get_nettime(void)\n`;
     out += `{\n`;
-    out += `    return exos_datamodel_get_nettime(&(${template.datamodel.handleName}.${template.datamodel.varName}), NULL);\n`;
+    out += `    return exos_datamodel_get_nettime(&(${template.datamodel.handleName}.${template.datamodel.varName}));\n`;
     out += `}\n\n`;
 
     out += `static void ${template.datamodel.libStructName}_log_error(char* log_entry)\n`;
