@@ -31,6 +31,10 @@
 				"title": "exOS: Update Instantiatable N-API NodeJS Template"
 			},
 			{
+				"command": "exos-component-extension.binExportNapiNodeJSTemplate",
+				"title": "exOS: Binary export Instantiatable N-API NodeJS Template"
+			},
+			{
 				"command": "exos-component-extension.generateCLibTemplate",
 				"title": "exOS: Generate Singleton C Template"
 			},
@@ -109,6 +113,11 @@
 				{
 					"when": "filesExplorerFocus && resourceExtname == .exospkg",
 					"command": "exos-component-extension.updateNapiNodeJSTemplate",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .exospkg",
+					"command": "exos-component-extension.binExportNapiNodeJSTemplate",
 					"group": "2_workspace"
 				}
 			]

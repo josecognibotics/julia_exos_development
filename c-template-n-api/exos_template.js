@@ -169,6 +169,20 @@ function updateTemplate(fileName) {
     return structName;
 }
 
+function binExport(fileName, workingDir, exportPath) {
+
+    if (workingDir.trim() === exportPath.trim()) {
+        throw (`can't export to source folder, choose another export folder`);
+    }
+    if (fs.existsSync(`${exportPath}/${workingDir}`)) {
+        throw (`folder ${exportPath}/${workingDir} already exists, choose another export folder`);
+    }
+
+    //get hold of AS-project root
+
+
+}
+
 //used during dev. for simple testing in VS Code..
 if (require.main === module) {
     if (process.argv.length > 3) {
@@ -188,7 +202,12 @@ if (require.main === module) {
             } catch (error) {
                 process.stderr.write(error);
             }
-        } else {
+        }
+        else if (process.argv[2] === "-e") {
+
+
+        }
+        else {
             let fileName = process.argv[3];
             // structName not defined here? 
             // why use argv[3] when argv[2] is unused, and normally points to a file??
@@ -207,5 +226,6 @@ if (require.main === module) {
 
 module.exports = {
     generateTemplate,
-    updateTemplate
+    updateTemplate,
+    binExport
 }

@@ -120,7 +120,6 @@ function activate(context) {
 
 	let generateNapiNodeJSTemplate = vscode.commands.registerCommand('exos-component-extension.generateNapiNodeJSTemplate', function (uri) {
 		vscode.window.showInputBox({prompt:"Name of the DataType:"}).then(selection => {
-			
 			try {
 				napitemplate.generateTemplate(uri.fsPath, selection, path.dirname(uri.fsPath));
 				vscode.window.showInformationMessage(`Generated Node-API Template for ${selection}`);
@@ -147,6 +146,19 @@ function activate(context) {
 		}
 	});
 	context.subscriptions.push(updateNapiNodeJSTemplate);
+
+	let binExportNapiNodeJSTemplate = vscode.commands.registerCommand('exos-component-extension.binExportNapiNodeJSTemplate', function (uri) {
+		vscode.window.showInputBox({value: path.dirname(uri.fsPath), prompt:"Export path:"}).then(exportPath => {
+			try {
+				let selection = napitemplate.binExport(uri.fsPath, path.dirname(uri.fsPath), exportPath);
+				vscode.window.showInformationMessage(`Binary export Node-API template for ${selection}`);
+
+			} catch (error) {
+				vscode.window.showErrorMessage(error);
+			}
+		});
+	});
+	context.subscriptions.push(binExportNapiNodeJSTemplate);
 
 
 	let generateCppTemplate = vscode.commands.registerCommand('exos-component-extension.generateCppTemplate', function (uri) {

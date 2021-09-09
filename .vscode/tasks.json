@@ -7,6 +7,11 @@
             "label": "Remove exox package",
             "type": "shell",
             "command": "Remove-Item -Recurse -Force ${workspaceFolder}\\c-template-n-api\\WaterTank",
+        },
+        {
+            "label": "Remove exOS exports",
+            "type": "shell",
+            "command": "Remove-Item -Recurse -Force C:\\Temp\\exOS\\*",
         }
     ]
 }

@@ -60,6 +60,19 @@
 				"-u",
 				"${workspaceFolder}/c-template-n-api/WaterTank/WaterTank.exospkg"
 			]
+		},
+		{
+			"name": "Debug binExport N-Api",
+			"type": "node",
+			"request": "launch",
+			"cwd": "${workspaceFolder}/c-template-n-api/",
+			"program": "${workspaceFolder}/c-template-n-api/exos_template.js",
+			"args": [
+				"-e",
+				"c:\\Projects\\_vsc_compExtTests\\DeepNest\\DeepNest.exospkg",
+				"c:\\Projects\\_vsc_compExtTests\\DeepNest\\",
+				"c:\\Temp\\exOS\\"
+			]
 		}
 	]
 }
