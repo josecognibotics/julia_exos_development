@@ -10,6 +10,7 @@
 				"--extensionDevelopmentPath=${workspaceFolder}"
 			],
 			"name": "Launch Extension",
+			"preLaunchTask": "Remove exOS exports",
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"
 			],
@@ -65,7 +66,7 @@
 			"name": "Debug binExport N-Api",
 			"type": "node",
 			"request": "launch",
-			"cwd": "${workspaceFolder}/c-template-n-api/",
+			"cwd": "${workspaceFolder}/",
 			"program": "${workspaceFolder}/c-template-n-api/exos_template.js",
 			"args": [
 				"-e",

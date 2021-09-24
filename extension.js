@@ -148,14 +148,18 @@ function activate(context) {
 	context.subscriptions.push(updateNapiNodeJSTemplate);
 
 	let binExportNapiNodeJSTemplate = vscode.commands.registerCommand('exos-component-extension.binExportNapiNodeJSTemplate', function (uri) {
-		vscode.window.showInputBox({value: path.dirname(uri.fsPath), prompt:"Export path:"}).then(exportPath => {
-			try {
-				let selection = napitemplate.binExport(uri.fsPath, path.dirname(uri.fsPath), exportPath);
-				vscode.window.showInformationMessage(`Binary export Node-API template for ${selection}`);
-
-			} catch (error) {
+		vscode.window.showInputBox({ value: "C:\\Temp\\exOS\\" /*path.dirname(uri.fsPath)*/, prompt: "Export path:" })
+			.then(exportPath => {
+				napitemplate.binExport(uri.fsPath, path.dirname(uri.fsPath), exportPath)
+					.then((result) => {
+						vscode.window.showInformationMessage(`Binary export of Node-API exOS component ${result.component} with binaries from Automation Studio configuration ${result.binaries_config} done at ${exportPath}`);
+					})
+					.catch((error) => {
 				vscode.window.showErrorMessage(error);
-			}
+					});
+			})
+			.catch(error => {
+				vscode.window.showErrorMessage(error);
 		});
 	});
 	context.subscriptions.push(binExportNapiNodeJSTemplate);

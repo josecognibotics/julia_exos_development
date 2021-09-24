@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-const fs = require('fs')
+const vscode = require('vscode');
+const fs = require('fs-extra');
 const header = require('../exos_header');
 const ar = require('../template/ar');
 const template_ar = require('../c-template/exos_template_ar');
@@ -98,13 +99,13 @@ function generateTemplate(fileName, structName, outPath) {
 function updateTemplate(fileName) {
     try {
         var xml = fs.readFileSync(fileName).toString();
-    } catch {
+    } catch (e) {
         throw ('Error: could not read .exospkg file')
     }
 
     try {
         var obj = XMLparse(xml);
-    } catch {
+    } catch (e) {
         throw ('Error: could not parse .exospkg file');
     }
 
@@ -169,33 +170,307 @@ function updateTemplate(fileName) {
     return structName;
 }
 
+function searchASroot(inBranch) {
+    let currPath = inBranch;
+
+    try {
+        currPath = path.dirname(currPath)
+
+        while (true) {
+            let contents = fs.readdirSync(currPath);
+
+            let apjFound = false;
+            let binariesFound = false;
+            let logicalFound = false;
+            let physicalFound = false;
+            let tempFound = false;
+            let apjFile = ""
+
+            for (let item of contents) {
+                if (item.includes(".apj")) {
+                    let stats = fs.statSync(path.join(currPath, item));
+                    //is it a file?
+                    if (stats.isFile()) {
+                        apjFound = true;
+                        apjFile = item;
+                    }
+                }
+                else if (item === "Logical") {
+                    let stats = fs.statSync(path.join(currPath, item));
+                    //is it a directory?
+                    if (!stats.isFile()) { logicalFound = true; }
+                }
+                else if (item === "Physical") {
+                    let stats = fs.statSync(path.join(currPath, item));
+                    //is it a directory?
+                    if (!stats.isFile()) { physicalFound = true; }
+                }
+                else if (item === "Binaries") {
+                    let stats = fs.statSync(path.join(currPath, item));
+                    //is it a directory?
+                    if (!stats.isFile()) { binariesFound = true; }
+                }
+                else if (item === "Temp") {
+                    let stats = fs.statSync(path.join(currPath, item));
+                    //is it a directory?
+                    if (!stats.isFile()) { tempFound = true; }
+                }
+            }
+
+            if (apjFound && binariesFound && logicalFound && physicalFound && tempFound) {
+                return path.join(currPath, apjFile);
+            }
+            currPath = path.dirname(currPath)
+        }
+    } catch (e) {
+        throw ("Can't find project root directory or project is not built")
+    }
+}
+
+function exportBinLib(sourceDir, destDir, library) {
+    let apjPath = searchASroot(sourceDir);
+    let configsPath = path.join(path.dirname(apjPath), "Physical");
+
+    return new Promise((resolve, reject) => {
+        async function _exportBinLib() {
+            let pkg = "";
+
+            try {
+                pkg = fs.readFileSync(path.join(configsPath, "Physical.pkg")).toString().split("\n");
+            } catch (e) {
+                reject(e);
+            }
+
+            let configs = [];
+            let config = null;
+
+            for (let item of pkg) {
+                if (item.includes("<Object Type=\"Configuration\"")) {
+                    //shitty programming since .pkg files cannot be parsed with XMLparse
+                    configs.push(item.trim().split("<")[1].split(">")[1]);
+                }
+            }
+
+            if (configs.length === 0) { reject("No configuration avaialble to export"); }
+            else if (configs.length > 1) {
+                //select config to export library from
+
+                let items = [];
+                for (config of configs) {
+                    items.push({
+                        label: config
+                    });
+                }
+
+                let qpOpt = {
+                    matchOnDescription: false,
+                    matchOnDetail: false,
+                    placeHolder: items[0].label,
+                    ignoreFocusOut: true,
+                    canPickMany: false,
+                }
+
+                config = await vscode.window.showQuickPick(items, qpOpt).catch(e => { reject(e) });
+                config = config.label;
+            } else {
+                config = configs[0];
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+            resolve(config);
+        }
+        _exportBinLib();
+    });
+}
+
+function exportBinLinux(appFiles, sourceDir, destDir) {
+    //Create target directory
+    try {
+        fs.mkdirSync(path.join(destDir, "Linux",));
+    }
+    catch (e) {
+        throw (`can't create Linux directory`);
+    }
+
+    //copy files from defined in .exospkg
+    for (let file of appFiles) {
+        try {
+            fs.copyFile(path.join(sourceDir, file), path.join(destDir, file));
+        }
+        catch (e) {
+            throw (`can't copy file: ${file}`);
+        }
+    }
+
+    //create a shortened Package.pkg file for destination
+    let xml = fs.readFileSync(path.join(sourceDir, "Linux", "Package.pkg"), 'utf8').toString();
+    xml = xml.split("\n");
+
+    let pkgfile = "";
+    let fileListFound = false;
+
+    for (let line of xml) {
+        if (line.includes("<Objects>")) {
+            fileListFound = true;
+            pkgfile += line + "\n"
+        }
+        else if (line.includes("</Objects>")) {
+            pkgfile += line + "\n"
+            fileListFound = false;
+        }
+        else {
+            if (!fileListFound) { pkgfile += line + "\n" }
+            else {
+                for (let file of appFiles) {
+                    //skip not needed files
+                    if (line.includes(path.basename(file))) { pkgfile += line + "\n" }
+                }
+            }
+        }
+    }
+
+    try {
+        fs.writeFileSync(path.join(destDir, "Linux", "Package.pkg"), pkgfile)
+    }
+    catch (e) {
+        throw (`can't write file: ${destDir}\\Linux\\Package.pkg`);
+    }
+}
+
 function binExport(fileName, workingDir, exportPath) {
+    return new Promise((resolve, reject) => {
+        if (workingDir.trim() === exportPath.trim()) {
+            reject(`can't export to source folder, choose another export folder`);
+        }
 
-    if (workingDir.trim() === exportPath.trim()) {
-        throw (`can't export to source folder, choose another export folder`);
-    }
-    if (fs.existsSync(`${exportPath}/${workingDir}`)) {
-        throw (`folder ${exportPath}/${workingDir} already exists, choose another export folder`);
-    }
+        //get foldername containing the .exospkg file
+        let componentFolder = workingDir.replaceAll("\\", "/");
+        componentFolder = (componentFolder.split("/"));
+        componentFolder = componentFolder[componentFolder.length - 1];
 
-    //get hold of AS-project root
+        if (!fs.existsSync(exportPath)) {
+            reject(`folder ${exportPath} does not exist, choose another export folder`);
+        }
 
+        //build complete export path
+        exportPath += componentFolder;
+        if (fs.existsSync(exportPath)) {
+            reject(`folder ${exportPath} already exist, choose another export folder`);
+        }
 
+        let workingDirFolders = fs.readdirSync(workingDir);
+        let pkgFound = false;
+        let pkg = {};
+        let exospkgFound = false;
+        let exospkg = {};
+
+        for (let fileFolder of workingDirFolders) {
+            let stats = fs.statSync(`${workingDir}\\${fileFolder}`);
+
+            //is it a file
+            if (stats.isFile()) {
+                let content = "";
+
+                if (fileFolder.endsWith(".pkg")) {
+                    try {
+                        pkg = fs.readFileSync(path.join(workingDir, fileFolder)).toString().split("\n");
+                        pkgFound = true;
+                    } catch (e) {
+                        reject("Error reading .pkg file: " + e.message)
+                    }
+                }
+                else if (fileFolder.endsWith(".exospkg")) {
+                    try {
+                        content = fs.readFileSync(path.join(workingDir, fileFolder)).toString();
+                        exospkg = XMLparse(content);
+                        exospkgFound = true;
+                    } catch (e) {
+                        reject("Error reading .exospkg file: " + e.message)
+                    }
+                }
+            }
+        }
+
+        //check that files clould be read and parsed to {}
+        if ((!pkgFound) || (!exospkgFound)) reject("Not an exOS package");
+
+        //crate export folder
+        try {
+            fs.mkdirSync(exportPath);
+        } catch (e) {
+            reject(`folder ${exportPath} can't be created`);
+        }
+
+        //Copy needed Linux Contents
+        let LinuxAppFiles = [];
+
+        if ((exospkg.root !== undefined) && (exospkg.root.children !== undefined) && (Array.isArray(exospkg.root.children))) {
+            for (let child of exospkg.root.children) {
+                if (child.attributes.hasOwnProperty("FileName")) {
+                    LinuxAppFiles.push(child.attributes.FileName);
+                }
+            }
+        }
+
+        if (LinuxAppFiles.length === 0) {
+            reject(`.exospkg file ${fileName} doesn't contain any files to export`);
+        } else {
+            exportBinLinux(LinuxAppFiles, workingDir, exportPath);
+        }
+
+        let foundPLCprg = false;
+        let libName = null;
+
+        //check package contents
+        for (let line of pkg) {
+            if (line.includes("Program")) {
+                //shitty programming, but .pkg files are not parsed with XMLparse for some reason
+                let prgName = line.trim().split("<")[1].split(">")[1];
+                try {
+                    fs.copySync(path.join(workingDir, prgName), path.join(exportPath, prgName));
+                } catch (e) {
+                    reject(`Program ${prgName} can't be copied/exported`)
+                }
+                foundPLCprg = true;
+            }
+            else if (line.includes("Library")) {
+                libName = line.trim().split("<")[1].split(">")[1];
+            }
+        }
+
+        if (!foundPLCprg || (libName == null)) reject('export could not complete, library or program missing')
+
+        exportBinLib(workingDir, exportPath, libName)
+            .then((config) => {
+                let result = { component: path.basename(fileName), binaries_config: config };
+                resolve(result);
+            })
+            .catch((e) => {
+                reject(`Can't export Library ${libName} as binary. Error: ${e.message}`);
+            });
+    });
 }
 
 //used during dev. for simple testing in VS Code..
 if (require.main === module) {
     if (process.argv.length > 3) {
         if (process.argv[2] != "-u") {
-            outPath = process.argv[4];
-
+            let outPath = process.argv[4];
             if (outPath == "" || outPath == undefined) {
                 outPath = ".";
             }
-
             let fileName = process.argv[2];
             let structName = process.argv[3];
-
             try {
                 generateTemplate(fileName, structName, outPath);
                 process.stdout.write(`exos_template ${structName} generated at ${outPath}`);
@@ -203,17 +478,12 @@ if (require.main === module) {
                 process.stderr.write(error);
             }
         }
-        else if (process.argv[2] === "-e") {
 
-
-        }
         else {
-            let fileName = process.argv[3];
-            // structName not defined here? 
-            // why use argv[3] when argv[2] is unused, and normally points to a file??
+            let fileName = process.argv[2];
             try {
                 updateTemplate(fileName);
-                process.stdout.write(`exos_template ${structName} generated at ${outPath}`);
+                process.stdout.write(`exOS component for ${fileName}updated`);
             } catch (error) {
                 process.stderr.write(error);
             }
