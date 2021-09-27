@@ -152,7 +152,7 @@ function activate(context) {
 			.then(exportPath => {
 				napitemplate.binExport(uri.fsPath, path.dirname(uri.fsPath), exportPath)
 					.then((result) => {
-						vscode.window.showInformationMessage(`Binary export of Node-API exOS component ${result.component} with binaries from Automation Studio configuration ${result.binaries_config} done at ${exportPath}`);
+						vscode.window.showInformationMessage(`Binary export of Node-API exOS component "${result.component}" with binaries from Automation Studio configuration "${result.binaries_config}" done at ${exportPath}`);
 					})
 					.catch((error) => {
 				vscode.window.showErrorMessage(error);

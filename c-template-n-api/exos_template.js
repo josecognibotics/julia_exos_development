@@ -228,17 +228,17 @@ function searchASroot(inBranch) {
 }
 
 function exportBinLib(sourceDir, destDir, library) {
-    let apjPath = searchASroot(sourceDir);
-    let configsPath = path.join(path.dirname(apjPath), "Physical");
-
     return new Promise((resolve, reject) => {
         async function _exportBinLib() {
+            let apjPath = searchASroot(sourceDir);
+            let configsPath = path.join(path.dirname(apjPath), "Physical");
+
             let pkg = "";
 
             try {
                 pkg = fs.readFileSync(path.join(configsPath, "Physical.pkg")).toString().split("\n");
             } catch (e) {
-                reject(e);
+                reject(`Cannot read configurations (Physical.pkg): ${e.message}`);
             }
 
             let configs = [];
@@ -270,22 +270,92 @@ function exportBinLib(sourceDir, destDir, library) {
                     canPickMany: false,
                 }
 
-                config = await vscode.window.showQuickPick(items, qpOpt).catch(e => { reject(e) });
+                config = await vscode.window.showQuickPick(items, qpOpt).catch(e => { reject(`No configuration picked: ${e.nessage}`) });
                 config = config.label;
             } else {
                 config = configs[0];
             }
 
+            //read HW name from package
+            let cpuName = "";
+            try {
+                let hwConfig = fs.readFileSync(path.join(configsPath, config, "Config.pkg")).toString().split("\n");
+                for (let item of hwConfig) {
+                    if (item.includes("<Object Type=\"Cpu\">")) {
+                        cpuName = item.split(">")[1].split("<")[0];
+                    }
+                }
+                if (cpuName === "") { reject("No CPU defined in configuration"); }
+            } catch (e) {
+                reject(`Can't read file "Config.pkg" in selected configuration: ${e.message}`);
+            }
+
+            let libDir = [];
+            let lby = [];
+            let lbyFileName = "";
+            let lbyFiles = [];
+            let binLby = "";
+            let expPath = ""
+
+            //get and copy files from 
+            try {
+                //get lby file name
+                libDir = fs.readdirSync(path.join(sourceDir, library));
+                for (let l of libDir) {
+                    if (l.endsWith(".lby")) {
+                        lbyFileName = l;
+                        break;
+                    }
+                }
+                //read and decode contents of lby file and copy to Binary.lby
+                lby = fs.readFileSync(path.join(sourceDir, library, lbyFileName)).toString().split("\n");
 
 
+                for (let line of lby) {
+                    if (line.includes("<Library") && line.includes("SubType=")) {
+                        if (line.includes("SubType=\"ANSIC\"")) {
+                            line = line.replace("SubType=\"ANSIC\"", "SubType=\"Binary\"");
+                        }
 
+                        binLby += line;
+                        binLby += "\n";
+                    }
+                    else if (line.includes("<File ")) {
+                        if (line.includes(".typ") || line.includes(".fun")) {
+                            lbyFiles.push(line.trim().split("<")[1].split(">")[1]);
+                            binLby += line;
+                            binLby += "\n";
+                        }
+                    }
+                    else {
+                        binLby += line;
+                        binLby += "\n";
+                    }
+                    /// MISSING - Dependecies. AS incluedes additional dependencies (presumably form #include statements).
+                }
 
+                expPath = path.join(destDir, library);
+                fs.mkdirSync(expPath);
+                fs.writeFileSync(path.join(expPath, "Binary.lby"), binLby);
 
+                let _sourceDir = path.join(sourceDir, library);
+                for (let file of lbyFiles) { fs.copyFileSync(path.join(_sourceDir, file), path.join(expPath, file)) }
+            } catch (e) {
+                reject(`Could not copy files from Logical: ${e.message}`);
+            }
 
+            try {
+                //create the binaries and h file folder
+                let _expPath = path.join(expPath, "SG4");
+                fs.mkdirSync(_expPath);
 
-
-
-
+                //copy files
+                fs.copyFileSync(path.join(path.dirname(apjPath), "Temp", "Includes", `${library}.h`), path.join(_expPath, `${library}.h`));
+                fs.copyFileSync(path.join(path.dirname(apjPath), "Temp", "Archives", config, cpuName, `lib${library}.a`), path.join(_expPath, `lib${library}.a`));
+                fs.copyFileSync(path.join(path.dirname(apjPath), "Binaries", config, cpuName, `${library}.br`), path.join(_expPath, `${library}.br`));
+            } catch (e) {
+                reject(`Error copying binary file(s): ${e.message}`);
+            }
 
             resolve(config);
         }
@@ -369,9 +439,9 @@ function binExport(fileName, workingDir, exportPath) {
         }
 
         let workingDirFolders = fs.readdirSync(workingDir);
-        let pkgFound = false;
+        let pkgFile = "";
         let pkg = {};
-        let exospkgFound = false;
+        let exospkgFile = "";
         let exospkg = {};
 
         for (let fileFolder of workingDirFolders) {
@@ -383,8 +453,9 @@ function binExport(fileName, workingDir, exportPath) {
 
                 if (fileFolder.endsWith(".pkg")) {
                     try {
+
                         pkg = fs.readFileSync(path.join(workingDir, fileFolder)).toString().split("\n");
-                        pkgFound = true;
+                        pkgFile = fileFolder;
                     } catch (e) {
                         reject("Error reading .pkg file: " + e.message)
                     }
@@ -393,7 +464,7 @@ function binExport(fileName, workingDir, exportPath) {
                     try {
                         content = fs.readFileSync(path.join(workingDir, fileFolder)).toString();
                         exospkg = XMLparse(content);
-                        exospkgFound = true;
+                        exospkgFile = fileFolder;
                     } catch (e) {
                         reject("Error reading .exospkg file: " + e.message)
                     }
@@ -401,10 +472,10 @@ function binExport(fileName, workingDir, exportPath) {
             }
         }
 
-        //check that files clould be read and parsed to {}
-        if ((!pkgFound) || (!exospkgFound)) reject("Not an exOS package");
+        //check that files could be read and parsed to {}
+        if ((pkgFile === "") || (exospkgFile === "")) { reject("Not an exOS package"); }
 
-        //crate export folder
+        //create export folder
         try {
             fs.mkdirSync(exportPath);
         } catch (e) {
@@ -452,6 +523,21 @@ function binExport(fileName, workingDir, exportPath) {
 
         exportBinLib(workingDir, exportPath, libName)
             .then((config) => {
+                //Finally copy root folder files
+                try {
+                    fs.copyFileSync(path.join(workingDir, pkgFile), path.join(exportPath, pkgFile));
+                    let exosPkg = fs.readFileSync(path.join(workingDir, exospkgFile)).toString().split("\n");
+                    let exp_exosPkg = "";
+                    let inBuild = false;
+                    for (let row of exosPkg) {
+                        if (row.includes("<Build>")) { inBuild = true; }
+                        if (!inBuild) { exp_exosPkg += `${row}\n`; }
+                        if (row.includes("</Build>")) { inBuild = false; }
+                    }
+                    fs.writeFileSync(path.join(exportPath, exospkgFile), exp_exosPkg);
+                } catch (e) {
+                    reject(`Can't export .pkg/.exospkg file: ${e.message}`);
+                }
                 let result = { component: path.basename(fileName), binaries_config: config };
                 resolve(result);
             })
