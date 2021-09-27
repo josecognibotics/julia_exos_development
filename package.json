@@ -1,137 +1,137 @@
 {
-    "name": "exos-component-extension",
-    "publisher": "exOS-ComponentExtension",
-    "repository": "https://github.com/br-automation-com/exOS-ComponentExtension",
-    "displayName": "exOS Component Generator",
-    "description": "Code Generator for exOS Hybrid Components",
-    "icon": "exOS.png",
-    "version": "1.2.1",
-    "engines": {
-        "vscode": "^1.50.0"
-    },
-    "categories": [
-        "Other"
-    ],
-    "activationEvents": [
-        "onStartupFinished"
-    ],
-    "main": "./extension.js",
-    "contributes": {
-        "commands": [
-            {
-                "command": "exos-component-extension.generateTemplate",
-                "title": "exOS: Generate Instantiatable C Template"
-            },
-            {
-                "command": "exos-component-extension.generateNapiNodeJSTemplate",
-                "title": "exOS: Generate Instantiatable N-API NodeJS Template"
-            },
-            {
-                "command": "exos-component-extension.updateNapiNodeJSTemplate",
-                "title": "exOS: Update Instantiatable N-API NodeJS Template"
-            },
-            {
-                "command": "exos-component-extension.generateCLibTemplate",
-                "title": "exOS: Generate Singleton C Template"
-            },
-            {
-                "command": "exos-component-extension.updateCLib",
-                "title": "exOS: Update Singleton C Template"
-            },
-            {
-                "command": "exos-component-extension.updateCLib_py",
-                "title": "exOS: Update Singleton SWIG Python Template"
-            },
-            {
-                "command": "exos-component-extension.generateCppTemplate",
-                "title": "exOS: Generate Instantiatable C++ Template"
-            },
-            {
-                "command": "exos-component-extension.updateCppTemplate",
-                "title": "exOS: Update Instantiatable C++ Template"
-            },
-            {
-                "command": "exos-component-extension.generateSwigPythonTemplate",
-                "title": "exOS: Generate Singleton SWIG Python Template"
-            },
-            {
-                "command": "exos-component-extension.generateEverythingDebug",
-                "title": "exOS: >DEBUG> Generate everything <DEBUG<"
-            }
-        ],
-        "menus": {
-            "explorer/context": [
-                {
-                    "when": "filesExplorerFocus && resourceExtname == .typ",
-                    "command": "exos-component-extension.generateTemplate",
-                    "group": "2_workspace"
-                },
-                {
-                    "when": "filesExplorerFocus && resourceExtname == .typ",
-                    "command": "exos-component-extension.generateCLibTemplate",
-                    "group": "2_workspace"
-                },
-                {
-                    "when": "filesExplorerFocus && resourceExtname == .typ",
-                    "command": "exos-component-extension.generateSwigPythonTemplate",
-                    "group": "2_workspace"
-                },
-                {
-                    "when": "filesExplorerFocus && resourceExtname == .typ",
-                    "command": "exos-component-extension.generateNapiNodeJSTemplate",
-                    "group": "2_workspace"
-                },
-                {
-                    "when": "filesExplorerFocus && resourceExtname == .typ",
-                    "command": "exos-component-extension.generateCppTemplate",
-                    "group": "2_workspace"
-                },
-                {
-                    "when": "filesExplorerFocus && resourceExtname == .typ && exos-component-extension.isDebugMode",
-                    "command": "exos-component-extension.generateEverythingDebug",
-                    "group": "2_workspace"
-                },
-                {
-                    "when": "filesExplorerFocus && resourceExtname == .exospkg",
-                    "command": "exos-component-extension.updateCLib",
-                    "group": "2_workspace"
-                },
-                {
-                    "when": "filesExplorerFocus && resourceExtname == .exospkg",
-                    "command": "exos-component-extension.updateCLib_py",
-                    "group": "2_workspace"
-                },
-                {
-                    "when": "filesExplorerFocus && resourceExtname == .exospkg",
-                    "command": "exos-component-extension.updateCppTemplate",
-                    "group": "2_workspace"
-                },
-                {
-                    "when": "filesExplorerFocus && resourceExtname == .exospkg",
-                    "command": "exos-component-extension.updateNapiNodeJSTemplate",
-                    "group": "2_workspace"
-                }
-            ]
-        }
-    },
-    "scripts": {
-        "lint": "eslint .",
-        "pretest": "npm run lint",
-        "test": "node ./test/runTest.js"
-    },
-    "devDependencies": {
-        "@types/vscode": "^1.50.0",
-        "@types/glob": "^7.1.3",
-        "@types/mocha": "^8.0.0",
-        "@types/node": "^12.11.7",
-        "eslint": "^7.9.0",
-        "glob": "^7.1.6",
-        "mocha": "^8.1.3",
-        "typescript": "^4.0.2",
-        "vscode-test": "^1.4.0"
-    },
-    "dependencies": {
-        "fs-extra": "^9.1.0",
-        "xml-parser": "^1.2.1"
-    }
+	"name": "exos-component-extension",
+	"publisher": "exOS-ComponentExtension",
+	"repository": "https://github.com/br-automation-com/exOS-ComponentExtension",
+	"displayName": "exOS Component Generator",
+	"description": "Code Generator for exOS Hybrid Components",
+	"icon": "exOS.png",
+	"version": "1.2.1",
+	"engines": {
+		"vscode": "^1.50.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"main": "./extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "exos-component-extension.generateTemplate",
+				"title": "exOS: Generate Instantiatable C Template"
+			},
+			{
+				"command": "exos-component-extension.generateNapiNodeJSTemplate",
+				"title": "exOS: Generate Instantiatable N-API NodeJS Template"
+			},
+			{
+				"command": "exos-component-extension.updateNapiNodeJSTemplate",
+				"title": "exOS: Update Instantiatable N-API NodeJS Template"
+			},
+			{
+				"command": "exos-component-extension.generateCLibTemplate",
+				"title": "exOS: Generate Singleton C Template"
+			},
+			{
+				"command": "exos-component-extension.updateCLib",
+				"title": "exOS: Update Singleton C Template"
+			},
+			{
+				"command": "exos-component-extension.updateCLib_py",
+				"title": "exOS: Update Singleton SWIG Python Template"
+			},
+			{
+				"command": "exos-component-extension.generateCppTemplate",
+				"title": "exOS: Generate Instantiatable C++ Template"
+			},
+			{
+				"command": "exos-component-extension.updateCppTemplate",
+				"title": "exOS: Update Instantiatable C++ Template"
+			},
+			{
+				"command": "exos-component-extension.generateSwigPythonTemplate",
+				"title": "exOS: Generate Singleton SWIG Python Template"
+			},
+			{
+				"command": "exos-component-extension.generateEverythingDebug",
+				"title": "exOS: >DEBUG> Generate everything <DEBUG<"
+			}
+		],
+		"menus": {
+			"explorer/context": [
+				{
+					"when": "filesExplorerFocus && resourceExtname == .typ",
+					"command": "exos-component-extension.generateTemplate",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .typ",
+					"command": "exos-component-extension.generateCLibTemplate",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .typ",
+					"command": "exos-component-extension.generateSwigPythonTemplate",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .typ",
+					"command": "exos-component-extension.generateNapiNodeJSTemplate",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .typ",
+					"command": "exos-component-extension.generateCppTemplate",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .typ && exos-component-extension.isDebugMode",
+					"command": "exos-component-extension.generateEverythingDebug",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .exospkg",
+					"command": "exos-component-extension.updateCLib",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .exospkg",
+					"command": "exos-component-extension.updateCLib_py",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .exospkg",
+					"command": "exos-component-extension.updateCppTemplate",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .exospkg",
+					"command": "exos-component-extension.updateNapiNodeJSTemplate",
+					"group": "2_workspace"
+				}
+			]
+		}
+	},
+	"scripts": {
+		"lint": "eslint .",
+		"pretest": "npm run lint",
+		"test": "node ./test/runTest.js"
+	},
+	"devDependencies": {
+		"@types/vscode": "^1.50.0",
+		"@types/glob": "^7.1.3",
+		"@types/mocha": "^8.0.0",
+		"@types/node": "^12.11.7",
+		"eslint": "^7.9.0",
+		"glob": "^7.1.6",
+		"mocha": "^8.1.3",
+		"typescript": "^4.0.2",
+		"vscode-test": "^1.4.0"
+	},
+	"dependencies": {
+		"fs-extra": "^9.1.0",
+		"xml-parser": "^1.2.1"
+	}
 }
