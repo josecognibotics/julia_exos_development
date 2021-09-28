@@ -20,7 +20,7 @@ function generateCLibrary(fileName, typName, libName) {
     out += `    <File>${typName}Logger.h</File>\n`;
    out += `  </Files>\n`;
     out += `  <Dependencies>\n`;
-    out += `    <Dependency ObjectName="ExApi" />\n`;
+    out += `    <Dependency ObjectName="ExData" />\n`;
     out += `  </Dependencies>\n`;
     out += `</Library>\n`;
 

@@ -131,7 +131,7 @@ function generateCLibrary(fileName, typName) {
     out += `    <File Description="Enable dynamic heap">dynamic_heap.cpp</File>\n`;
     out += `  </Files>\n`;
     out += `  <Dependencies>\n`;
-    out += `    <Dependency ObjectName="ExApi" />\n`;
+    out += `    <Dependency ObjectName="ExData" />\n`;
     out += `  </Dependencies>\n`;
     out += `</Library>\n`;
 
