@@ -148,7 +148,7 @@ function activate(context) {
 	context.subscriptions.push(updateNapiNodeJSTemplate);
 
 	let binExportNapiNodeJSTemplate = vscode.commands.registerCommand('exos-component-extension.binExportNapiNodeJSTemplate', function (uri) {
-		vscode.window.showInputBox({ value: "C:\\Temp\\exOS\\" /*path.dirname(uri.fsPath)*/, prompt: "Export path:" })
+		vscode.window.showInputBox({ value: path.dirname(uri.fsPath), prompt: "Export path:" })
 			.then(exportPath => {
 				napitemplate.binExport(uri.fsPath, path.dirname(uri.fsPath), exportPath)
 					.then((result) => {
