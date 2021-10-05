@@ -5,7 +5,7 @@ function generateCLibrary(fileName, typName, libName) {
     let out = "";
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
-    out += `<?AutomationStudio Version=4.6.3.55 SP?>\n`;
+    out += `<?AutomationStudio FileVersion="4.9"?>\n`;
     out += `<Library SubType="ANSIC" xmlns="http://br-automation.co.at/AS/Library">\n`;
     out += `  <Files>\n`;
     out += `    <File Description="Implementation">main.cpp</File>\n`;
@@ -641,7 +641,7 @@ function generateIECProgram(typName) {
     let out = "";
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
-    out += `<?AutomationStudio Version=4.9.1.69?>\n`;
+    out += `<?AutomationStudio FileVersion="4.9"?>\n`;
     out += `<Program SubType="IEC" xmlns="http://br-automation.co.at/AS/Program">\n`;
     out += `  <Files>\n`;
     out += `    <File Description="Init, cyclic, exit code">${typName}.st</File>\n`;

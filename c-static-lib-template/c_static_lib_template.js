@@ -51,7 +51,7 @@ function generateTemplate(fileName, typName, PubSubSwap, userAlias, dynamic) {
                 out += `        `;
                 atleastone = true;
             }
-            out += `if (0 == strcmp(dataset->name,"${dataset.structName}"))\n`;
+            out += `if (0 == strcmp(dataset->name, "${dataset.structName}"))\n`;
             out += `        {\n`;
             out += `            //update the nettime\n`;
             out += `            ${template.datamodel.handleName}.ext_${template.datamodel.varName}.${dataset.structName}.nettime = dataset->nettime;\n\n`;
@@ -66,7 +66,7 @@ function generateTemplate(fileName, typName, PubSubSwap, userAlias, dynamic) {
     }
     out += `        break;\n\n`;
     out += `    default:\n`;
-    out += `        break;\n\n`;
+    out += `        break;\n`;
     out += `    }\n`;
     out += `}\n\n`;
 
@@ -215,7 +215,7 @@ function generateTemplate(fileName, typName, PubSubSwap, userAlias, dynamic) {
     out += `${template.datamodel.libStructName}_t *${template.datamodel.libStructName}_init(void)\n`;
     out += `{\n`;
 
-    out += `    memset(&${template.datamodel.handleName},0,sizeof(${template.datamodel.handleName}));\n\n`;
+    out += `    memset(&${template.datamodel.handleName}, 0, sizeof(${template.datamodel.handleName}));\n\n`;
 
     for (let dataset of template.datasets) {
         if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
@@ -255,7 +255,7 @@ function generateTemplate(fileName, typName, PubSubSwap, userAlias, dynamic) {
         }
     }
     out += `    return &(${template.datamodel.handleName}.ext_${template.datamodel.varName});\n`;
-    out += `}\n\n`;
+    out += `}\n`;
 
 
 

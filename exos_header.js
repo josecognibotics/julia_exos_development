@@ -1,4 +1,4 @@
-﻿
+
 const version = "0.7.1";
 
 //limit constants - generates error of exceeded
@@ -745,7 +745,16 @@ function generateHeader(fileName, typName, SG4Includes) {
         out += `#endif // _SG4 && !EXOS_STATIC_INCLUDE\n\n`;
     }
 
-    let jsonConfig = JSON.stringify(types).split('"').join('\\"');
+    // Replacer function to clean out unecessary thing when stringifying
+    function replacer(key, value) {
+        if ((key == 'arraySize' && value == 0)
+            || (key == 'nodeId' && value == '')
+            || (key == 'comment' && value == '')) {
+          return undefined; // return undefined so JSON.stringify will omitt it
+        }
+        return value; // otherwise return the value as it is
+      }
+    let jsonConfig = JSON.stringify(types, replacer).split('"').join('\\"');
     if (jsonConfig.length > MAX_CONFIG_LENGTH) throw (`JSON config (${jsonConfig.length} chars) is longer than maximum (${MAX_CONFIG_LENGTH}).`);
 
     out += `#ifndef EXOS_INCLUDE_ONLY_DATATYPE\n`;

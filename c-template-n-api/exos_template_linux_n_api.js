@@ -126,7 +126,7 @@ function generateLinuxPackage(typName) {
     let out = "";
 
     out += `<?xml version="1.0" encoding="utf-8"?>\n`;
-    out += `<?AutomationStudio Version=4.9.1.69?>\n`;
+    out += `<?AutomationStudio FileVersion="4.9"?>\n`;
     out += `<Package SubType="exosLinuxPackage" PackageType="exosLinuxPackage" xmlns="http://br-automation.co.at/AS/Package">\n`;
     out += `  <Objects>\n`;
     out += `    <Object Type="File">build.sh</Object>\n`;
