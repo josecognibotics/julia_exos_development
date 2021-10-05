@@ -156,6 +156,7 @@ function generateCLibrary(fileName, typName) {
     out += `    <File Description="Data Model Definition">${fileName}</File>\n`;
     out += `    <File Description="Exported functions and function blocks">${typName.substring(0, 10)}.fun</File>\n`;
     out += `    <File Description="Generated exos headerfile">exos_${typName.toLowerCase()}.h</File>\n`;
+    out += `    <File Description="Generated exos c file">exos_${typName.toLowerCase()}.c</File>\n`;
     out += `    <File Description="Implementation">${typName.toLowerCase()}.c</File>\n`;
     out += `    <File Description="Enable dynamic heap">dynamic_heap.cpp</File>\n`;
     out += `  </Files>\n`;

@@ -12,6 +12,7 @@ function generateCLibrary(fileName, typName, libName) {
     out += `    <File Description="Data Model Definition">${fileName}</File>\n`;
     out += `    <File Description="Exported functions and function blocks">${libName}.fun</File>\n`;
     out += `    <File Description="Generated exos headerfile">exos_${typName.toLowerCase()}.h</File>\n`;
+    out += `    <File Description="Generated exos c file">exos_${typName.toLowerCase()}.c</File>\n`;
     out += `    <File Description="Enable dynamic heap">dynamic_heap.cpp</File>\n`;
     out += `    <File>${typName}DataModel.cpp</File>\n`;
     out += `    <File>${typName}DataModel.h</File>\n`;
@@ -369,7 +370,6 @@ function generateExosDataModelCpp(fileName, typName, moduleName, PubSubSwap) {
 
     let out = "";
 
-    out += `#define EXOS_STATIC_INCLUDE\n`;
     out += `#include "${typName}DataModel.h"\n`;
     out += `\n`;
     out += `${typName}DataModel::${typName}DataModel()\n`;

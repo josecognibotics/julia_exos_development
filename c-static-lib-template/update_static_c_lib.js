@@ -20,20 +20,20 @@ function updateLibrary(fileName, swig_type) {
     <ComponentPackage .. >
     <File  .. />
     <Service .. />
-    <DataModelInstance .. />
+    <DatamodelInstance .. />
     <Build>
-        <GenerateHeader (FileName="Threads\Threads.typ" => typFile) (TypeName="Threads" => structName) >
+        <GenerateDatamodel (FileName="Threads\Threads.typ" => typFile) (TypeName="Threads" => structName) >
             <SG4  .. />
             (<Output Path="Linux"/>       => libLinux)
             (<Output Path="libThreads"/>  => libAR)
-        </GenerateHeader>
+        </GenerateDatamodel>
     
     */
 
     for(let child of obj.root.children) {
         if(child.name == "Build") {
             for(let build of child.children) {
-                if(build.name == "GenerateHeader") {
+                if(build.name == "GenerateDatamodel") {
                     if(build.attributes["FileName"]!= null && build.attributes["TypeName"]!=null) {
                         typFile = `${path.dirname(fileName)}/${build.attributes["FileName"]}`;
                         structName = build.attributes["TypeName"];
@@ -77,11 +77,13 @@ function updateLibrary(fileName, swig_type) {
     let out = "";
 
     //headers
-    out = header.generateHeader(typFile, structName, [`${libName}.h`]);
-    //AS header
-    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.h`, out);
-    //Linux header
-    fs.writeFileSync(`${outPath}/${structName}/Linux/exos_${structName.toLowerCase()}.h`, out);
+    out = header.generateDatamodel(typFile, structName, [`${libName}.h`]);
+    //AS header and c file
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.h`, out[0]);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.c`, out[1]);
+    //Linux header and c file
+    fs.writeFileSync(`${outPath}/${structName}/Linux/exos_${structName.toLowerCase()}.h`, out[0]);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/exos_${structName.toLowerCase()}.c`, out[1]);
 
     out = template_lib.genenerateLibHeader(typFile, structName, false);
     fs.writeFileSync(`${libAR}.h`, out);
@@ -92,7 +94,7 @@ function updateLibrary(fileName, swig_type) {
     out = template_lib.genenerateLibHeader(typFile, structName, true);
     fs.writeFileSync(`${libLinux}.h`, out);
 
-    out = template_lib.generateTemplate(typFile, structName, true, `${structName}_Linux`, (swig_type !== undefined && swig_type == "python"));
+    out = template_lib.generateTemplate(typFile, structName, true, `${structName}_Linux`);
     fs.writeFileSync(`${libLinux}.c`, out);
 
     if(swig_type !== undefined && swig_type == "python") {

@@ -26,11 +26,13 @@ function generatePythonTemplate(fileName, structName, outPath) {
     fs.mkdirSync(`${outPath}/${structName}/Linux`);
     
     //headers
-    let out = header.generateHeader(fileName, structName, [`${libName}.h`]);
-    //AS header
-    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.h`, out);
-    //Linux header
-    fs.writeFileSync(`${outPath}/${structName}/Linux/exos_${structName.toLowerCase()}.h`, out);
+    let out = header.generateDatamodel(fileName, structName, [`${libName}.h`]);
+    //AS header and c file
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.h`, out[0]);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.c`, out[1]);
+    //Linux header and c file
+    fs.writeFileSync(`${outPath}/${structName}/Linux/exos_${structName.toLowerCase()}.h`, out[0]);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/exos_${structName.toLowerCase()}.c`, out[1]);
 
     // //AS files
     out = template_ar.generatePackage(structName,libName);
@@ -77,7 +79,7 @@ function generatePythonTemplate(fileName, structName, outPath) {
     out = template_lib.genenerateLibHeader(fileName, structName, true);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.h`, out);
     
-    out = template_lib.generateTemplate(fileName, structName, true, `${structName}_Linux`, true);
+    out = template_lib.generateTemplate(fileName, structName, true, `${structName}_Linux`);
     fs.writeFileSync(`${outPath}/${structName}/Linux/lib${structName.toLowerCase()}.c`, out);
 
 

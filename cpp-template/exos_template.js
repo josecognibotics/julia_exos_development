@@ -26,11 +26,13 @@ function generateTemplate(fileName, structName, outPath) {
     fs.mkdirSync(`${outPath}/${structName}/Linux`);
     
     //headers
-    let out = header.generateHeader(fileName, structName, [`${libName}.h`]);
-    //AS header
-    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.h`, out);
-    //Linux header
-    fs.writeFileSync(`${outPath}/${structName}/Linux/exos_${structName.toLowerCase()}.h`, out);
+    let out = header.generateDatamodel(fileName, structName, [`${libName}.h`]);
+    //AS header and c file
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.h`, out[0]);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.c`, out[1]);
+    //Linux header and c file
+    fs.writeFileSync(`${outPath}/${structName}/Linux/exos_${structName.toLowerCase()}.h`, out[0]);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/exos_${structName.toLowerCase()}.c`, out[1]);
 
     //AS files
     out = template_ar.generatePackage(structName, libName);
@@ -134,7 +136,7 @@ function updateTemplate(fileName) {
     for(let child of obj.root.children) {
         if(child.name == "Build") {
             for(let build of child.children) {
-                if(build.name == "GenerateHeader") {
+                if(build.name == "GenerateDatamodel") {
                     if(build.attributes["FileName"]!= null && build.attributes["TypeName"]!=null) {
                         typFile = path.join(path.dirname(fileName), build.attributes["FileName"].replace(/\\/g, '/'));
                         structName = build.attributes["TypeName"];
@@ -150,7 +152,7 @@ function updateTemplate(fileName) {
     }
 
     //check that we have all we need
-    if(libName == "") throw(`GenerateHeader section not found in .exospkg file!`);
+    if(libName == "") throw(`GenerateDatamodel section not found in .exospkg file!`);
 
     if(!fs.existsSync(typFile)) throw(`Typ source file ${typFile} not found`);
 
@@ -171,11 +173,13 @@ function updateTemplate(fileName) {
     let out = "";
 
     //headers
-    out = header.generateHeader(typFile, structName, [`${libName}.h`]);
-    //AS header
-    fs.writeFileSync(path.join(outPath, structName, libName, `exos_${structName.toLowerCase()}.h`), out);
-    //Linux header
-    fs.writeFileSync(path.join(outPath, structName, 'Linux', `exos_${structName.toLowerCase()}.h`), out);
+    out = header.generateDatamodel(typFile, structName, [`${libName}.h`]);
+    //AS header and c file
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.h`, out[0]);
+    fs.writeFileSync(`${outPath}/${structName}/${libName}/exos_${structName.toLowerCase()}.c`, out[1]);
+    //Linux header and c file
+    fs.writeFileSync(`${outPath}/${structName}/Linux/exos_${structName.toLowerCase()}.h`, out[0]);
+    fs.writeFileSync(`${outPath}/${structName}/Linux/exos_${structName.toLowerCase()}.c`, out[1]);
 
     out = template_cpp.generateFun(typFile, structName);
     fs.writeFileSync(`${outPath}/${structName}/${libName}/${libName}.fun`, out);

@@ -14,6 +14,7 @@ function generateLinuxPackage(typName) {
     out += `    <Object Type="File">CMakeLists.txt</Object>\n`;
     out += `    <Object Type="File">main.c</Object>\n`;
     out += `    <Object Type="File">exos_${typName.toLowerCase()}.h</Object>\n`;
+    out += `    <Object Type="File">exos_${typName.toLowerCase()}.c</Object>\n`;
     out += `    <Object Type="File">lib${typName.toLowerCase()}.h</Object>\n`;
     out += `    <Object Type="File">lib${typName.toLowerCase()}.c</Object>\n`;
     out += `    <Object Type="File">termination.c</Object>\n`;
@@ -111,16 +112,17 @@ function generateExosPkg(typName,libName,fileName) {
     out += `<ComponentPackage Version="1.0.0" ErrorHandling="Ignore" StartupTimeout="0">\n`;
     out += `    <File Name="exos-comp-${typName.toLowerCase()}" FileName="Linux\\exos-comp-${typName.toLowerCase()}-1.0.0.deb" Type="Project"/>\n`;
     out += `    <Service Name="${typName} Runtime Service" Executable="/home/user/${typName.toLowerCase()}" Arguments=""/>\n`;
-    out += `    <DataModelInstance Name="${typName}"/>\n`;
+    out += `    <DatamodelInstance Name="${typName}"/>\n`;
     out += `    <Build>\n`;
-    out += `        <GenerateHeader FileName="${libName}\\${fileName}" TypeName="${typName}">\n`;
+    out += `        <GenerateDatamodel FileName="${libName}\\${fileName}" TypeName="${typName}">\n`;
     out += `            <SG4 Include="${libName}.h"/>\n`;
     out += `            <Output Path="Linux"/>\n`;
     out += `            <Output Path="${libName}"/>\n`;
-    out += `        </GenerateHeader>\n`;
+    out += `        </GenerateDatamodel>\n`;
     out += `        <BuildCommand Command="C:\\Windows\\Sysnative\\wsl.exe" WorkingDirectory="Linux" Arguments="-d Debian -e sh build.sh">\n`;
     out += `            <Dependency FileName="Linux\\CMakeLists.txt"/>\n`;
     out += `            <Dependency FileName="Linux\\exos_${typName.toLowerCase()}.h"/>\n`;
+    out += `            <Dependency FileName="Linux\\exos_${typName.toLowerCase()}.c"/>\n`;
     out += `            <Dependency FileName="Linux\\main.c"/>\n`;
     out += `            <Dependency FileName="Linux\\lib${typName.toLowerCase()}.h"/>\n`;
     out += `            <Dependency FileName="Linux\\lib${typName.toLowerCase()}.c"/>\n`;
