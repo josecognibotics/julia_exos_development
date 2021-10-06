@@ -725,9 +725,8 @@ function generateDatamodel(fileName, typName, SG4Includes) {
 
     out += `#ifndef _EXOS_COMP_${typName.toUpperCase()}_H_\n`;
     out += `#define _EXOS_COMP_${typName.toUpperCase()}_H_\n\n`;
-    out += `#ifndef EXOS_INCLUDE_ONLY_DATATYPE\n`;
     out += `#include "exos_api.h"\n`;
-    out += `#endif\n\n`;
+
 
     if (Array.isArray(SG4Includes)) {
         out += `#if defined(_SG4)\n`;
@@ -758,9 +757,7 @@ function generateDatamodel(fileName, typName, SG4Includes) {
     let jsonConfig = JSON.stringify(types, replacer).split('"').join('\\"');
     if (jsonConfig.length > MAX_CONFIG_LENGTH) throw (`JSON config (${jsonConfig.length} chars) is longer than maximum (${MAX_CONFIG_LENGTH}).`);
 
-    out += `#ifndef EXOS_INCLUDE_ONLY_DATATYPE\n`;
-    out += `EXOS_ERROR_CODE exos_datamodel_connect_${typName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback);\n`;
-    out += `#endif // EXOS_INCLUDE_ONLY_DATATYPE\n`;
+    out += `EXOS_ERROR_CODE exos_datamodel_connect_${typName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback);\n\n`;
     out += `#endif // _EXOS_COMP_${typName.toUpperCase()}_H_\n`
 
     // Generate the c file
