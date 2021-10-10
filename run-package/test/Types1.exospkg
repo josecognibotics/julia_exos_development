@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ComponentPackage Version="1.0.0" ErrorHandling="Ignore" StartupTimeout="0">
+    <File Name="exos-comp-types1" FileName="Linux\exos-comp-types1-1.0.0.deb" Type="Project"/>
+    <Service Name="Types1 Runtime Service" Executable="/home/user/types1" Arguments=""/>
+    <DatamodelInstance Name="Types1"/>
+    <Build>
+        <GenerateDatamodel FileName="Types1\Types1.typ" TypeName="Types1">
+            <SG4 Include="Types1.h"/>
+            <Output Path="Linux"/>
+            <Output Path="Types1"/>
+        </GenerateDatamodel>
+        <BuildCommand Command="C:\Windows\Sysnative\wsl.exe" WorkingDirectory="Linux" Arguments="-d Debian -e sh build.sh">
+            <Dependency FileName="Linux\exos_types1.h"/>
+            <Dependency FileName="Linux\exos_types1.c"/>
+            <Dependency FileName="Linux\types1.c"/>
+            <Dependency FileName="Linux\termination.h"/>
+            <Dependency FileName="Linux\termination.c"/>
+        </BuildCommand>
+    </Build>
+</ComponentPackage>
