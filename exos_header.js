@@ -15,7 +15,7 @@ const version = "1.1.0";
 const fs = require('fs');
 const path = require('path');
 
-class HeaderGenerator
+class Datamodel
 {
     //limit constants - generates error of exceeded
     static MAX_ARRAY_NEST = 10;
@@ -108,7 +108,7 @@ class HeaderGenerator
             return value; // otherwise return the value as it is
         }
         let jsonConfig = JSON.stringify(this._types, replacer).split('"').join('\\"');
-        if (jsonConfig.length > HeaderGenerator.MAX_CONFIG_LENGTH) throw (`JSON config (${jsonConfig.length} chars) is longer than maximum (${HeaderGenerator.MAX_CONFIG_LENGTH}).`);
+        if (jsonConfig.length > Datamodel.MAX_CONFIG_LENGTH) throw (`JSON config (${jsonConfig.length} chars) is longer than maximum (${Datamodel.MAX_CONFIG_LENGTH}).`);
     
         out += `#ifndef EXOS_INCLUDE_ONLY_DATATYPE\n`;
         out += `#ifdef EXOS_STATIC_INCLUDE\n`;
@@ -259,8 +259,8 @@ class HeaderGenerator
                                     out += this._outputMember("char", name, [arraySize, stringSize], comment);
                                 }
                             }
-                            else if (HeaderGenerator.isScalarType(type)) {
-                                let stdtype = HeaderGenerator.getTypeFromIEC(type);
+                            else if (Datamodel.isScalarType(type)) {
+                                let stdtype = Datamodel.getTypeFromIEC(type);
                                 typeForSwig = stdtype;
                                 out += this._outputMember(stdtype, name, [arraySize], comment);
                             }
@@ -313,9 +313,9 @@ class HeaderGenerator
                 // cyclic declaration of structs are handled in _parseStructMember and _parseTyp
                 // this is just to be sure
                 loopIdx++;
-                if(loopIdx > HeaderGenerator.SORT_STRUCT_MAX)
+                if(loopIdx > Datamodel.SORT_STRUCT_MAX)
                 {
-                    throw(`Sorting the structs from '${path.basename(this.fileName)}' has looped more than ${HeaderGenerator.SORT_STRUCT_MAX} times. You might experience problems when compiling`);
+                    throw(`Sorting the structs from '${path.basename(this.fileName)}' has looped more than ${Datamodel.SORT_STRUCT_MAX} times. You might experience problems when compiling`);
                 }
             }
         }
@@ -432,7 +432,7 @@ class HeaderGenerator
     
                 this._infoId++; // start by increasing to reserve 0 for top level structure
     
-                if (this._infoId > HeaderGenerator.MAX_IDS) throw (`Too many infoId indexes needed. Max ${HeaderGenerator.MAX_IDS} can be used.`);
+                if (this._infoId > Datamodel.MAX_IDS) throw (`Too many infoId indexes needed. Max ${Datamodel.MAX_IDS} can be used.`);
     
                 child.attributes.info = "<infoId" + this._infoId + ">";
     
@@ -451,7 +451,7 @@ class HeaderGenerator
     
                 function checkExosInfoCallParam(call) {
                     let area = call.split("(")[1].split(")")[0].trim();
-                    if (area.length > HeaderGenerator.MAX_AREA_NAME_LENGTH) throw (`Area name "${area}" longer than max (${HeaderGenerator.MAX_AREA_NAME_LENGTH})`);
+                    if (area.length > Datamodel.MAX_AREA_NAME_LENGTH) throw (`Area name "${area}" longer than max (${Datamodel.MAX_AREA_NAME_LENGTH})`);
                     return call;
                 }
     
@@ -548,9 +548,9 @@ class HeaderGenerator
         if (start != -1) {
             let i = 1;
             while (!this._fileLines[start + i].includes("END_STRUCT")) {
-                if (this._structNestingDepth > HeaderGenerator.MAX_STRUCT_NEST)
+                if (this._structNestingDepth > Datamodel.MAX_STRUCT_NEST)
                 {
-                    throw (`Member "${name} : ${type}" has struct nesting depth of ${this._structNestingDepth} which exceeds the maximum of ${HeaderGenerator.MAX_STRUCT_NEST} nests (possible recursion)`);
+                    throw (`Member "${name} : ${type}" has struct nesting depth of ${this._structNestingDepth} which exceeds the maximum of ${Datamodel.MAX_STRUCT_NEST} nests (possible recursion)`);
                 }
                 let member = this._parseStructMember(start + i);
                 if (member != null) {
@@ -628,7 +628,7 @@ class HeaderGenerator
                     let to = parseInt(ranges.split("..")[1].trim());
                     arraySize = to - from + 1;
                     this._nestingDepth += dimensions.length; //add a nesting depth for each dimention in multi-dim arrays
-                    if (this._nestingDepth > HeaderGenerator.MAX_ARRAY_NEST) throw (`Member "${name}" has array nesting depth of ${this._nestingDepth} deeper than ${HeaderGenerator.MAX_ARRAY_NEST} nests`);
+                    if (this._nestingDepth > Datamodel.MAX_ARRAY_NEST) throw (`Member "${name}" has array nesting depth of ${this._nestingDepth} deeper than ${Datamodel.MAX_ARRAY_NEST} nests`);
                 }
             }
     
@@ -665,7 +665,7 @@ class HeaderGenerator
                     }
                 }
             }
-            else if (HeaderGenerator.isScalarType(type)) {
+            else if (Datamodel.isScalarType(type)) {
                 if (arraySize > 0) this._nestingDepth -= dimensions.length;
                 return {
                     name: "variable",
@@ -803,7 +803,7 @@ if (require.main === module) {
         if (fs.existsSync(fileName)) {
 
             try {
-                let generator = new HeaderGenerator(fileName, structName);
+                let generator = new Datamodel(fileName, structName);
                 let out = generator.getHeaderFile();
 
                 fs.writeFileSync(`${outPath}/exos_${structName.toLowerCase()}.h`, out);
@@ -823,4 +823,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = {HeaderGenerator}
+module.exports = {HeaderGenerator: Datamodel}
