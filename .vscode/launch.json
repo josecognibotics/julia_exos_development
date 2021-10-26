@@ -24,7 +24,6 @@
 			"name": "Run Extension",
 			"type": "extensionHost",
 			"request": "launch",
-			""
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}"
 			]
@@ -73,6 +72,18 @@
 				"c:\\Projects\\_vsc_compExtTests\\DeepNest\\DeepNest.exospkg",
 				"c:\\Projects\\_vsc_compExtTests\\DeepNest\\",
 				"c:\\Temp\\exOS\\"
+			]
+		},
+		{
+			"name": "Debug Header Generator",
+			"type": "node",
+			"request": "launch",
+			"cwd": "c:\\_sandbox\\extensions\\tryme",
+			"program": "${workspaceFolder}/exos_header.js",
+			"args": [
+				"WaterTank.typ",
+				"WaterTank",
+				"."
 			]
 		}
 	]

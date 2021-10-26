@@ -1,10 +1,11 @@
 {
+	"parser": "babel-eslint",
 	"env": {
 		"browser": false,
-		"commonjs": true,
-		"es6": true,
+		"commonjs": false,
+		"es6": false,
 		"node": true,
-		"mocha": true
+		"mocha": false
 	},
 	"parserOptions": {
 		"ecmaVersion": 2018,
