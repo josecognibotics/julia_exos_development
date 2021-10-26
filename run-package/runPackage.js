@@ -125,16 +125,14 @@ It uses the xml-parser to parse this xml, which results in the following json ob
 */
 const fs = require('fs');
 const parser = require('xml-parser');
-const util = require('util')
+//const util = require('util')
 const {spawn} = require('child_process');
 const path = require('path');
-
-function colorize(color, output) {
-    return ['\033[', color, 'm', output, '\033[0m'].join('');
-}
+const os = require('os');
 
 class runPackage
 {
+    //trows exceptions
     constructor(exosPkgFile) {
         this.exosPkgDir = path.dirname(exosPkgFile);
         this.exosPkgFileContents = fs.readFileSync(exosPkgFile).toString();
@@ -169,6 +167,7 @@ class runPackage
         }
     }
 
+    //throws exceptions
     build()
     {
 
@@ -188,6 +187,10 @@ class runPackage
                 throw("Build command is not using wsl");
             }
             
+            if('win32' != os.platform()) {
+                throw('platform not supported');
+            }
+
             let cmds = ['wsl'];
             let args = [];
             let exec = false;
