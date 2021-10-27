@@ -15,8 +15,8 @@ const version = "1.1.0";
 const fs = require('fs');
 const path = require('path');
 
-class Datamodel
-{
+class Datamodel {
+
     #_types;
     #_infoId;
     #_nestingDepth;
@@ -43,8 +43,7 @@ class Datamodel
      * 
      * PREVIOUSLY generateHeader
      */
-    constructor(fileName, typeName, SG4Includes)
-    {
+    constructor(fileName, typeName, SG4Includes) {
         
         this.fileName = fileName;
         this.typeName = typeName;
@@ -858,11 +857,7 @@ if (require.main === module) {
 
     process.stdout.write(`exos_header version ${version}\n`);
 
-    if (process.argv.length > 3) {
-        let outPath = process.argv[4];
-        if (outPath == "" || outPath === undefined) {
-            outPath = ".";
-        }
+    if (process.argv.length >= 3) {
 
         let fileName = process.argv[2];
         let structName = process.argv[3];
@@ -870,11 +865,15 @@ if (require.main === module) {
         if (fs.existsSync(fileName)) {
 
             try {
-                let datamodel = new Datamodel(fileName, structName, ["header.h"]);
+                let datamodel = new Datamodel(fileName, structName, [`${structName}.h`]);
             
-                fs.writeFileSync(`${outPath}/exos_${structName.toLowerCase()}.h`, datamodel.headerCode);
-                fs.writeFileSync(`${outPath}/exos_${structName.toLowerCase()}.c`, datamodel.sourceCode);
-                process.stdout.write(`${outPath}/exos_${structName.toLowerCase()}.h generated`);
+                let outDir = path.join(__dirname,path.dirname(fileName));
+
+                process.stdout.write(`Writing ${structName} to folder: ${outDir}\n`);
+
+                fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.h`),datamodel.headerCode);
+                fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.c`),datamodel.sourceCode);
+                fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.json`),JSON.stringify(datamodel.typeJsonObject,null,4));
 
             } catch (error) {
                 process.stderr.write(error);
@@ -886,7 +885,7 @@ if (require.main === module) {
 
     }
     else {
-        process.stderr.write("usage: ./exos_header.js <filename.typ> <structname> <header output path>\n");
+        process.stderr.write("usage: ./exos_header.js <filename.typ> <structname>\n");
     }
 }
 
