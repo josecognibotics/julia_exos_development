@@ -73,7 +73,7 @@ class Datamodel {
     }
 
     /**
-     * @returns the children of the datatype (typName) as JSON array.
+     * @returns {object} the structure of the datatype `typeName` as JSON object.
      * 
      * PREVIOUSLY parseTypFile
      */
@@ -82,7 +82,7 @@ class Datamodel {
     }
 
     /**
-     * @returns the exos_{typname}.h headerfile as ASCII string
+     * @returns {string} the exos_{typname}.h headerfile as ASCII string
      *  
      * PREVIOUSLY generateHeader
      */
@@ -91,7 +91,7 @@ class Datamodel {
     }
 
     /**
-     * @returns the exos_{typname}.c source code as ASCII string
+     * @returns {string} the exos_{typname}.c source code as ASCII string
      *  
      * PREVIOUSLY generateHeader
      */
@@ -101,8 +101,7 @@ class Datamodel {
 
 
     /**
-     * @returns an ASCII string with C-datatype definitions of the datatype (typName)
-     * @param {*} swig optional
+     * @returns {string} an ASCII string with C-datatype definitions of the datatype `typeName`
      * 
      * PREVIOUSLY convertTyp2Struct
      */
@@ -111,8 +110,7 @@ class Datamodel {
     }
 
     /**
-     * @returns an ASCII string with C-datatype definitions of the datatype (typName) adjusted to SWIG
-     * @param {*} swig optional
+     * @returns {string} an ASCII string with C-datatype definitions of the datatype `typeName` adjusted to SWIG
      * 
      * PREVIOUSLY convertTyp2Struct(swig)
      */
@@ -121,7 +119,7 @@ class Datamodel {
     }
 
     /**
-     * @returns datatype (BOOL, UDINT) as stdint.h/stdbool.h datatype (bool, uint32_t) or struct (unchanged)
+     * @returns {string} datatype (BOOL, UDINT) as stdint.h/stdbool.h datatype (bool, uint32_t) or struct (unchanged)
      * @param {string} type IEC type, like BOOL or UDINT 
      * 
      * PREVIOUSLY convertPlcType
@@ -145,7 +143,7 @@ class Datamodel {
     }
 
     /**
-     * @returns true if the type is scalar (BOOL, UDINT..) or false if it is a structure
+     * @returns {boolean} true if the type is scalar (BOOL, UDINT..) or false if it is a structure
      * @param {string} type IEC type, like BOOL or UDINT 
      * @param {boolean} includeString 
      */
@@ -174,7 +172,7 @@ class Datamodel {
     }
 
     /**
-     * @returns the printf format string for the given IEC type, like %u for UDINT or %s for STRING
+     * @returns {string} the printf format string for the given IEC type, like %u for UDINT or %s for STRING
      * 
      * @param {string} type IEC type, like BOOL or UDINT  
      * 
@@ -198,7 +196,10 @@ class Datamodel {
         }
     }
 
-
+    /** 
+     * internal function to generate the c-source file that can be accessed via the `Datamodel.sourceCode` property. `_makeJsonTypes()` must have been called prior to this method 
+     * @returns {string}
+    */
     _makeSource() {
         
         /** adds the .info attributes to all children, containing the <infoId{infoId}> tag and returns the EXOS_DATASET_BROWSE_NAME list for these infoIds*/
@@ -338,6 +339,10 @@ class Datamodel {
         return out;
     }
 
+    /**
+     * Internal function to generate the headerfile accessible via the `Datamodel.headerCode`. The `_makeDataTypes()` method must have been called prior to this method. 
+     * @returns {string}
+     */
     _makeHeader() {
     
         let out = "";
@@ -371,7 +376,12 @@ class Datamodel {
         return out;
     }
     
-    
+    /**
+     * Internal function to generate the C-declaration of the IEC datatype `typeName`, that can be accessible via `Datamodel.dataTypeCode` or `Datamodel.dataTypeCodeSWIG` properties.
+     * 
+     * @param {boolean} swig create additional swig datatype information
+     * @returns {string}
+     */
     _makeDataTypes(swig) {
     
         /**return the code for a datatype member with the given properties */
@@ -603,7 +613,10 @@ class Datamodel {
         return out;
     }
 
-
+    /**
+     * Internal function which parses the IEC datatype `typeName` and generates a JSON structure for further usage.
+     * @returns {object} JSON object representation of the datatype `typeName` structure
+     */
     _makeJsonTypes() {
  
         /**

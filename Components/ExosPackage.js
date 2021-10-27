@@ -9,7 +9,7 @@ if (!Array.prototype.last){
 };
 
 /**
- * Base class for Packages, not used directly
+ * Base class for Packages, used for inheritance
  */
 class Package {
 
@@ -27,14 +27,15 @@ class Package {
      * Create a new file in this package and return a object for populating its contents
      * 
      * For example:
-     * package = new ExosPackage("mypackage");
-     * packageFile = package.getNewFile("myfile.txt", "test file");
-     * packageFile.contents = "hello world!\n";
-     * package.makePackage("C:\\Temp");
+     * 
+     *      let myPackage = new ExosPackage("MyPackage");
+     *      let packageFile = myPackage.getNewFile("myfile.txt", "test file");
+     *      packageFile.contents = "hello world!\n";
+     *      myPackage.makePackage("C:\\Temp");
      * 
      * @param {string} fileName filename within this package
-     * @param {string} description description that will appear in AS
-     * @returns JSON object with a .content property that can be populated with the file contents
+     * @param {string} description (optional) description that will appear in AS
+     * @returns {object} JSON object with a .content property that can be populated with the file contents
      */
     getNewFile(fileName, description) {
         if(description === undefined) {
@@ -51,9 +52,13 @@ class Package {
      * is already there, or gets created by some other means, like the GenerateDatamodel
      * 
      * @param {string} fileName filename within this package
-     * @param {string} description description that will appear in AS
+     * @param {string} description (optional) description that will appear in AS
      */
     addExistingFile(fileName, description) {
+        if(description === undefined) {
+            description = "";
+        }
+
         //add it as a "ExistingFile", that we dont consider to write the contents at _createPackage as we do with "Files"
         this._objects.push({type:"ExistingFile", name:fileName, attributes:"", description:description, contents:""});
     }
@@ -86,9 +91,9 @@ class Package {
  * 
  * For example:
  * 
- *      package = new ExosPackage("mypackage");
- *      package.getExosPkg().addService("Runtime","/home/user/myexecutable");
- *      package.makePackage("C:\\Temp");
+ *      let myPackage = new ExosPackage("MyPackage");
+ *      myPackage.getExosPkg().addService("Runtime","/home/user/myexecutable");
+ *      myPackage.makePackage("C:\\Temp");
  */
 class ExosPkg {
 
@@ -105,7 +110,7 @@ class ExosPkg {
      * Add a file to be transferred to the target system
      * 
      * @param {string} fileName name and relative location of the file, like "Linux/myFile.txt"
-     * @param {string} changeEvent `Ignore` | `Restart` | `Reinstall`
+     * @param {string} changeEvent `Ignore` | `Restart` | `Reinstall` - behaviour of the target component when file is added, removed or changed. 
      */
     addFile(fileName, changeEvent) {
         this._files.push({fileName:fileName, changeEvent:changeEvent});
@@ -138,16 +143,16 @@ class ExosPkg {
      * The GenerateDatamodel functionality creates two files, `exos_{typeName}.c` and `exos_{typeName}.c`
      * These files need to be added as addExistingFile() to the packages defined as OutputPaths
      *      
-     *      mypackage = new ExosPackage("mypackage");
-     *      linux = mypackage.getNewLinuxPackage("Linux")    
+     *      let myPackage = new ExosPackage("MyPackage");
+     *      let linux = myPackage.getNewLinuxPackage("Linux")    
      *      linux.addExistingFile("exos_types.h"); //created by GenerateDatamodel
      *      linux.addExistingFile("exos_types.c"); //created by GenerateDatamodel
-     *      generator = mypackage.getExosPkg().getNewGenerateDatamodel("Types.typ","Types");
-     *      mypackage.getExosPkg().addOutputPath(generator,"Linux"); //generate files in the "Linux" package
+     *      let generator = myPackage.getExosPkg().getNewGenerateDatamodel("Types.typ","Types");
+     *      myPackage.getExosPkg().addOutputPath(generator,"Linux"); //generate files in the "Linux" package
      * 
      * @param {string} fileName Name of the IEC .typ file that contains the datatype
      * @param {string} typeName Name of the datatype withing the .typ file
-     * @returns object that should be populated with output paths and can be further populated with _SG4 include directives
+     * @returns {object} object that should be populated with output paths and can be further populated with _SG4 include directives
      */
     getNewGenerateDatamodel(fileName, typeName) {
         this._generateDatamodels.push({fileName:fileName,typeName:typeName,SG4Includes:[],OutputPaths:[]});
@@ -163,9 +168,9 @@ class ExosPkg {
      * 
      * For example:
      * 
-     *      mypackage = new ExosPackage("mypackage");
-     *      generator = mypackage.getExosPkg().getNewGenerateDatamodel("Types.typ","Types");
-     *      mypackage.getExosPkg().addSG4Include(generator,"Types.h"); //include the Types Library in AS
+     *      let myPackage = new ExosPackage("MyPackage");
+     *      let generator = myPackage.getExosPkg().getNewGenerateDatamodel("Types.typ","Types");
+     *      myPackage.getExosPkg().addSG4Include(generator,"Types.h"); //include the Types Library in AS
      * 
      * @param {object} generateDataModel object returned from `getNewGenerateDatamodel()`
      * @param {string} SG4Include Name for the headerfile that should be used specifically for _SG4, e.g. "myheader.h"
@@ -181,16 +186,16 @@ class ExosPkg {
      * 
      * For example:
      *      
-     *      mypackage = new ExosPackage("mypackage");
-     *      library = mypackage.getNewCLibrary("Types", "My First library");
+     *      let myPackage = new ExosPackage("MyPackage");
+     *      let library = myPackage.getNewCLibrary("Types", "My First library");
      *      library.addExistingFile("exos_types.h"); //created by GenerateDatamodel
      *      library.addExistingFile("exos_types.c"); //created by GenerateDatamodel
-     *      linux = mypackage.getNewLinuxPackage("Linux")    
+     *      let linux = myPackage.getNewLinuxPackage("Linux")    
      *      linux.addExistingFile("exos_types.h"); //created by GenerateDatamodel
      *      linux.addExistingFile("exos_types.c"); //created by GenerateDatamodel
-     *      generator = mypackage.getExosPkg().getNewGenerateDatamodel("Types.typ","Types");
-     *      mypackage.getExosPkg().addOutputPath(generator,"Types"); //generate files in the "Types" library
-     *      mypackage.getExosPkg().addOutputPath(generator,"Linux"); //generate files in the "Linux" package
+     *      let generator = myPackage.getExosPkg().getNewGenerateDatamodel("Types.typ","Types");
+     *      myPackage.getExosPkg().addOutputPath(generator,"Types"); //generate files in the "Types" library
+     *      myPackage.getExosPkg().addOutputPath(generator,"Linux"); //generate files in the "Linux" package
      * 
      * 
      * @param {object} generateDataModel object returned from `getNewGenerateDatamodel()`
@@ -212,7 +217,7 @@ class ExosPkg {
      * @param {string} command Command to be executed on the local computer
      * @param {string} workingDirectory Working directory of the build command on the local computer
      * @param {string} args Arguments passed to the build command
-     * @returns object that can be further populated with file dependencies using `addBuildDependency()`
+     * @returns {object} object that can be further populated with file dependencies using `addBuildDependency()`
      */
     getNewBuildCommand(command, workingDirectory, args) {
         this._buildCommands.push({command:command, workingDirectory:workingDirectory, args:args, Dependencies:[]});
@@ -220,14 +225,39 @@ class ExosPkg {
     }
 
     /**
+     * Call a predefined wsl build command that runs a script on the local Debian WSL distribution 
      * 
-     * @returns 
+     * For example:
+     * 
+     *      let myPackage = new ExosPackage("MyPackage");
+     *      let linux = myPackage.getNewLinuxPackage("Linux")    
+     *      let buildFile = linux.getNewFile("build.sh", "Build Script");
+     *      buildFile.contents = "echo 'this is a test'\n";
+     *      let build = myPackage.getExosPkg().getNewWSLBuildCommand("Linux","build.sh");
+     * 
+     * @param {string} buildScript name of the scriptfile that is being executed in the `linuxPackage`, e.g. `build.sh`
+     * @param {string} linuxPackage name of the Linux package where the `buildScript` is located
+     * @returns {object} object that can be further populated with file dependencies using `addBuildDependency()`
      */
-    getNewWSLBuildCommand() {
-        return this.getNewBuildCommand("C:\\Windows\\Sysnative\\wsl.exe","Linux","-d Debian -e sh build.sh");
+    getNewWSLBuildCommand(linuxPackage, buildScript) {
+        return this.getNewBuildCommand("C:\\Windows\\Sysnative\\wsl.exe",linuxPackage,`-d Debian -e sh ${buildScript}`);
     }
 
     /**
+     * Add a dependency for the exOS TP build process, that a file can be monitored for changes that will trigger the build command to run.
+     * The LinuxPackage has a shortcut to add files including adding them as build dependencies with `getNewBuildFile()`
+     * 
+     * For example:
+     * 
+     *      let myPackage = new ExosPackage("MyPackage");
+     *      let linux = myPackage.getNewLinuxPackage("Linux")    
+     *      let buildFile = linux.getNewFile("build.sh");
+     *      buildFile.contents = "echo 'this is a test'\n";
+     *      let sourceFile = linux.getNewFile("source.c", "Source Code");
+     *      sourceFile.contents = ..*      
+     *      let build = myPackage.getExosPkg().getNewWSLBuildCommand("Linux","build.sh");
+     *      myPackage.getExosPkg().addBuildDependency(build,"Linux/source.c"); //monitor source.c for changes
+     * 
      * 
      * @param {object} buildCommand object returned from `getNewBuildCommand()` or `getNewWSLBuildCommand()`
      * @param {string} fileName filename including the path relative to the .exospkg that should be added as build dependency
@@ -236,6 +266,19 @@ class ExosPkg {
         buildCommand.Dependencies.push(fileName);
     }
 
+    /**
+     * When all files, services, datamodels etc. have been added, the .exospkg file can be created using `getContents()`.
+     * This function is called implicitly by `makePackage()` in the `ExosPackage` class, which contains an internal ExosPkg object.
+     * It can be used for custom `ExosPkg` objects, or just to get the contents of the file
+     * 
+     * For example:
+     * 
+     *      let myPackage = new ExosPackage("MyPackage");
+     *      myPackage.getExosPkg().addService("Runtime","/home/user/myexecutable");
+     *      console.log(myPackage.getExosPkg().getContents()); //display the output of the .exospkg file
+     * 
+     * @returns {string} the XML file contents of the .exospkg file
+     */
     getContents()
     {
         let out = ``;
@@ -289,8 +332,29 @@ class ExosPkg {
     }
 }
 
+
+/**
+ * Class for the Linux package, that contain specific shortcut commands to populate the 
+ * `ExosPkg` object within the `ExosPackage` that the `LinuxPackage` is created.
+ * An `ExosPackage` can only contain one `ExosPkg` but several `LinuxPackage`'s.
+ * 
+ * A new `LinuxPackage` class is created from the `ExosPackage` via `getNewLinuxPackage()`,
+ * whereas it could also be used standalone
+ * 
+ * Example:
+ * 
+ *      let myPackage = new ExosPackage("MyPackage");
+ *      let linux = myPackage.getNewLinuxPackage("Linux", "Linux Package");   
+ * 
+ * Standalone usage:
+ * 
+ *      let exosPkg = new ExosPkg();
+ *      let linux = new LinuxPackage(exosPkg, "Linux");
+ *      
+ */
 class LinuxPackage extends Package {
-    constructor(name, exosPkg) {
+
+    constructor(exosPkg, name) {
 
         super(name);
 
@@ -308,6 +372,21 @@ class LinuxPackage extends Package {
         this._exosPkg = exosPkg;
     }
 
+    /**
+     * Create the `LinuxPackage` in the file system with all its current files.
+     * This method is impliclitly called by `ExosPackage.makePackage()`, so it
+     * is only in specific cases that this method is used.
+     * 
+     * Standalone usage:
+     * 
+     *      let exosPkg = new ExosPkg();
+     *      let linux = new LinuxPackage(exosPkg, "Linux");
+     *      let buildFile = linux.getNewFile("build.sh");
+     *      buildFile.contents = "echo 'this is a test'\n";
+     *      linux.makePackage("C:\\Temp");
+     * 
+     * @param {string} location path where this package (folder + files) should be created
+     */
     makePackage(location) {
         //fill the package specific contents
         this._pkgFile.contents = this._header;
@@ -320,7 +399,17 @@ class LinuxPackage extends Package {
         this._createPackage(location);
     }
 
-
+    /**
+     * Shortcut method (also populating the `ExosPkg`) for adding an existing file that should be transferred to the target system
+     * 
+     * The method doesnt return a file object to be populated, because we expect that the file
+     * is already there, or gets created by some other means, like the GenerateDatamodel
+     * 
+     * 
+     * @param {string} fileName name of the file (within the Linux package) that should be transferred to the target system
+     * @param {string} changeEvent `Ignore` | `Restart` | `Reinstall` - behaviour of the target component when file is added, removed or changed. 
+     * @param {string} description (optional) description that will appear in AS
+     */
     addExistingTransferFile(fileName, changeEvent, description) {
         //add this file to the exosPackage with a relative path to this package
         this._exosPkg.addFile(path.join(this._folderName,fileName),changeEvent);
@@ -328,6 +417,22 @@ class LinuxPackage extends Package {
         this._objects.push({type:"ExistingFile", name:fileName, attributes:"", description:description, contents:""});
     }
     
+    /**
+     * Shortcut method (also populating the `ExosPkg`) for adding a file that can be populated and should be transferred to the target system
+     * 
+     * Example:
+     * 
+     *      let myPackage = new ExosPackage("MyPackage");
+     *      let linux = myPackage.getNewLinuxPackage("Linux");   
+     *      let script = linux.getNewTransferFile("index.js", "Restart", "Main JS script");
+     *      script.contents = ..
+     *      myPackage.makePackage();
+     * 
+     * @param {string} fileName name of the file (within the Linux package) that should be transferred to the target system
+     * @param {string} changeEvent `Ignore` | `Restart` | `Reinstall` - behaviour of the target component when file is added, removed or changed. 
+     * @param {string} description (optional) description that will appear in AS
+     * @returns {object} JSON object with a .content property that can be populated with the file contents
+     */
     getNewTransferFile(fileName, changeEvent, description) {
         //add this file to the exosPackage with a relative path to this package
         this._exosPkg.addFile(path.join(this._folderName,fileName),changeEvent);
@@ -335,6 +440,22 @@ class LinuxPackage extends Package {
         return super.getNewFile(fileName,description);
     }
 
+    /**
+     * Shortcut method (also populating the `ExosPkg`) for adding an existing .deb file that should be transferred to the target system, and triggers a component reinstallation when changed
+     * In the `ExosPkg`, it creates a file for transfer, as well as an `Install` and `Remove` service, that calls the `dpkg` command.
+     * The .deb file certainly is assumed to be created externally, and therefore the method doesnt return a file object to be populated.
+     * 
+     * Example:
+     *  
+     *      let myPackage = new ExosPackage("MyPackage");
+     *      let linux = myPackage.getNewLinuxPackage("Linux");   
+     *      linux.addExistingTransferDebFile("exos-comp-mouse_1.0.0.deb", "exos-comp-mouse", "Debian Package");
+     *      myPackage.makePackage();
+     * 
+     * @param {string} fileName name of the Debian package file within the Linux Package, e.g. `exos-comp-mouse_1.0.0.deb`
+     * @param {string} packageName name of the Debian package once installed on the system, e.g. `exos-comp-mouse`
+     * @param {string} description (optional) description that will appear in AS
+     */
     addExistingTransferDebFile(fileName, packageName, description) {
         //add this file to the exosPackage with a relative path to this package with the Reinstall attribute
         this._exosPkg.addFile(path.join(this._folderName,name),"Reinstall");
@@ -344,14 +465,46 @@ class LinuxPackage extends Package {
         this._objects.push({type:"ExistingFile", name:name, attributes:"", description:description, contents:""});
     }
 
-    getNewBuildFile(buildCommand, name, description) {
+    /**
+     * Shortcut method(also populating the `ExosPkg`) to create a file that can be populated and is added as a build dependency. The file is not (automatically) transferred to the target.
+     * 
+     * Example:
+     *  
+     *      let myPackage = new ExosPackage("MyPackage");
+     *      let linux = myPackage.getNewLinuxPackage("Linux");   
+     *      let buildFile = linux.getNewFile("build.sh");
+     *      let build = myPackage.getExosPkg().getNewWSLBuildCommand("Linux","build.sh");
+     *      buildFile.contents = "echo 'this is a test'\n";
+     *      let sourceFile = linux.getNewBuildFile(build, "source.c", "Source Code");
+     *      sourceFile.contents = .. 
+     *      myPackage.makePackage();
+     * 
+     * @param {object} buildCommand object returned from `ExosPkg.getNewBuildCommand()` or `ExosPkg.getNewWSLBuildCommand()`
+     * @param {string} fileName name of the file within the Linux package
+     * @param {string} description (optional) description that will appear in AS
+     * @returns {object} JSON object with a .content property that can be populated with the file contents
+     */
+    getNewBuildFile(buildCommand, fileName, description) {
         //add a build dependency to this file
-        this._exosPkg.addBuildDependency(buildCommand,path.join(this._folderName,name));
+        this._exosPkg.addBuildDependency(buildCommand,path.join(this._folderName,fileName));
         //return a new standard file where the contents can be populated
-        return super.getNewFile(name,description);
+        return super.getNewFile(fileName,description);
     }
 }
 
+/**
+ * Class for IEC Programs that inherits `Package.getNewFile()` and `Package.addExistingFile()`
+ * Implicitly generated from the `ExosPackage.getNewIECProgram()`
+ * 
+ * Example:
+ * 
+ *      let myPackage = new ExosPackage("MyPackage");
+ *      let program = myPackage.getNewIECProgram("Program", "Sample Program");   
+ * 
+ * Standalone usage:
+ * 
+ *      let program = new IECProgram("Program");
+ */
 class IECProgram extends Package {
     constructor(name) {
 
@@ -368,6 +521,20 @@ class IECProgram extends Package {
         this._pkgFile = {type:"File", name:"IEC.prg", contents:""};
     }
 
+    /**
+     * Create the `IECProgram` in the file system with all its current files.
+     * This method is impliclitly called by `ExosPackage.makePackage()`, so it
+     * is only in specific cases that this method is used.
+     * 
+     * Standalone usage:
+     * 
+     *      let program = new IECProgram("Program");
+     *      let programVar = program.getNewFile("Program.var", "Local Variables");
+     *      programVar.contents = "VAR\n\nEND_VAR\n";
+     *      program.makePackage("C:\\Temp")
+     * 
+     * @param {string} location path where this package (folder + files) should be created
+     */
     makePackage(location) {
         this._pkgFile.contents = this._header;
         for (const obj of this._objects) {
@@ -379,7 +546,19 @@ class IECProgram extends Package {
     }
 }
 
-
+/**
+ * Class for C/C++ Libraries that inherits `Package.getNewFile()` and `Package.addExistingFile()`
+ * Implicitly generated from the `ExosPackage.getNewCLibrary()`
+ * 
+ * Example:
+ * 
+ *      let myPackage = new ExosPackage("MyPackage");
+ *      let library = myPackage.getNewCLibrary("Library", "Sample Library");   
+ * 
+ * Standalone usage:
+ * 
+ *      let library = new CLibrary("Library");
+ */
 class CLibrary extends Package {
     constructor(name) {
 
@@ -399,6 +578,20 @@ class CLibrary extends Package {
         this._pkgFile = {type:"File", name:"ANSIC.lby", contents:""};
     }
 
+    /**
+     * Create the `CLibrary` in the file system with all its current files.
+     * This method is impliclitly called by `ExosPackage.makePackage()`, so it
+     * is only in specific cases that this method is used.
+     * 
+     * Standalone usage:
+     * 
+     *      let library = new CLibrary("Library");
+     *      let libraryFun = program.getNewFile("Library.fun", "Function blocks and functions");
+     *      libraryFun.contents = ..;
+     *      library.makePackage("C:\\Temp")
+     * 
+     * @param {string} location path where this package (folder + files) should be created
+     */
     makePackage(location) {
         this._pkgFile.contents = this._header;
         for (const obj of this._objects) {
@@ -411,7 +604,19 @@ class CLibrary extends Package {
 }
 
 
-
+/**
+ * Main class for exOS Packages
+ * 
+ * This is the first goto when creating packages for exOS. The class has a built-in `ExosPkg` and contains generators for `CLibrary` `IECProgram` and `LinuxPackage`,
+ * and generates all created objects with one single `makePackage()`. The `ExosPackage` is created with a name, which is the name of the folder 
+ * in the filesystem and the implicitly created .exospkg file
+ * 
+ *      let myPackage = new ExosPackage("MyPackage");
+ *      let sampleFile = myPackage.getNewFile("sample.txt", "Sample File");
+ *      sampleFile.contents = "hello world!\n";
+ *      ..
+ *      myPackage.makePackage("C:\\Temp");
+ */
 class ExosPackage extends Package {
 
     constructor(name) {
@@ -433,6 +638,36 @@ class ExosPackage extends Package {
         this._pkgFile = {type:"File", name:"Package.pkg", contents:""};
     }
 
+    /**
+     * Create the `ExosPackage` in the file system with all its current files and packages.
+     * 
+     * The `ExosPackage` can contain files (inherited from `Package`) as well as further packages, like `CLibrary` `IECProgram` and `LinuxPackage`,
+     * and has a built-in `ExosPkg`. When calling this method, all of the contained files and packes are created by calling their respective `makePackage()`.
+     * 
+     * Example:
+     *      
+     *      let myPackage = new ExosPackage("MyPackage");
+     *        
+     *      let sampleFile = myPackage.getNewFile("sample.txt", "Sample File");
+     *      sampleFile.contents = "hello world!\n";
+     *
+     *      let library = myPackage.getNewCLibrary("Library", "Sample Library");
+     *      let libraryFile = library.getNewFile("header.h", "Sample Header");
+     *      libraryFile.contents = "#ifndef _HEADER_H_\n#define _HEADER_H_\n\n#endif //_HEADER_H_\n";
+     *      
+     *      let program = myPackage.getNewIECProgram("Program", "Sample Program");
+     *      let programVar = program.getNewFile("Program.var", "Local Variables");
+     *      programVar.contents = "VAR\n\nEND_VAR\n";
+     *      programSt = program.getNewFile("Program.st", "Local Variables");
+     *      programSt.contents = "PROGRAM _CYCLIC\n\nEND_PROGRAM\n";
+     *
+     *      //create the "MyPackage" with "sample.txt", 
+     *      //the "Library" - with "header.h",
+     *      //the "Program" with "Program.var" and "Program.st"
+     *      myPackage.makePackage();
+     * 
+     * @param {string} location path where this package and all its sub packages (folders + files) should be created
+     */
     makePackage(location) {
         
         this._pkgFile.contents = this._header;
@@ -453,19 +688,63 @@ class ExosPackage extends Package {
         }
     }
 
+    /**
+     * The `ExosPackage` contains a built-in `ExosPkg` which is passed on to all `LinuxPackage`'s that are created.
+     * This method accesses the builtin `ExosPkg` object
+     * 
+     * Example:
+     *
+     *      let myPackage = new ExosPackage("MyPackage");
+     *      let generator = myPackage.getExosPkg().getNewGenerateDatamodel("Types.typ","Types"); //add a command to the built-in ExosPkg
+     *      let linux = myPackage.getNewLinuxPackage("Linux");   
+     *      let script = linux.getNewTransferFile("index.js", "Restart", "Main JS script"); //this also accesses the built-in ExosPkg
+     *   
+     * @returns {ExosPkg} object
+     */
     getExosPkg() {
         return this._exosPkg;
     }
 
+    /**
+     * Create a new `LinuxPackage` object within the `ExosPackage`.
+     *
+     * Example:
+     *  
+     *      let myPackage = new ExosPackage("MyPackage");
+     *      let linux = myPackage.getNewLinuxPackage("Linux"); 
+     *      linux.addExistingTransferDebFile("exos-comp-mouse_1.0.0.deb", "exos-comp-mouse", "Debian Package");
+     *      myPackage.makePackage();
+     * 
+     * @param {string} name Name of the Linux package (and the folder in the file system)
+     * @param {string} description (optional) description that will appear in AS
+     * @returns {LinuxPackage} 
+     */
     getNewLinuxPackage(name, description) {
         if(description === undefined) {
             description = "";
         }
 
-        this._objects.push({type:"Package", name:name, attributes:"", description:description, _object:new LinuxPackage(name, this._exosPkg)});
+        this._objects.push({type:"Package", name:name, attributes:"", description:description, _object:new LinuxPackage(this._exosPkg, name)});
         return this._objects.last()._object;
     }
 
+    /**
+     * Create a new `CLibrary` object within the `ExosPackage`.
+     *
+     * Example:
+     * 
+     *      let myPackage = new ExosPackage("MyPackage");
+     *        
+     *      let library = myPackage.getNewCLibrary("Library", "Sample Library");
+     *      let libraryFile = library.getNewFile("header.h", "Sample Header");
+     *      libraryFile.contents = "#ifndef _HEADER_H_\n#define _HEADER_H_\n\n#endif //_HEADER_H_\n";
+     *      
+     *      myPackage.makePackage();     
+     *  
+     * @param {string} name Name of the C/C++ Library (and the folder in the file system)
+     * @param {string} description (optional) description that will appear in AS
+     * @returns {CLibrary}
+     */
     getNewCLibrary(name, description) {
         if(description === undefined) {
             description = "";
@@ -476,6 +755,25 @@ class ExosPackage extends Package {
         return this._objects.last()._object;
     }
 
+    /**
+     * Create a new `IECProgram` object within the `ExosPackage`.
+     * 
+     * Example:
+     * 
+     *      let myPackage = new ExosPackage("MyPackage");
+     *        
+     *      let program = myPackage.getNewIECProgram("Program", "Sample Program");
+     *      let programVar = program.getNewFile("Program.var", "Local Variables");
+     *      programVar.contents = "VAR\n\nEND_VAR\n";
+     *      programSt = program.getNewFile("Program.st", "Local Variables");
+     *      programSt.contents = "PROGRAM _CYCLIC\n\nEND_PROGRAM\n";
+     *
+     *      myPackage.makePackage();
+     * 
+     * @param {string} name Name of the IEC Program (and the folder in the file system) 
+     * @param {string} description (optional) description that will appear in AS
+     * @returns {IECProgram}
+     */
     getNewIECProgram(name, description) {
         if(description === undefined) {
             description = "";
@@ -496,25 +794,25 @@ if (require.main === module) {
         let folder = process.argv[2];
         let packageName = process.argv[3];
 
-        exospkg = new ExosPackage(packageName);
-        wslBuild = exospkg.getExosPkg().getNewWSLBuildCommand();
+        let exospkg = new ExosPackage(packageName);
         
-        sampleFile = exospkg.getNewFile("sample.txt", "Sample File");
+        let sampleFile = exospkg.getNewFile("sample.txt", "Sample File");
         sampleFile.contents = "hello world!\n";
 
-        library = exospkg.getNewCLibrary("Library", "Sample Library");
-        libraryFile = library.getNewFile("header.h", "Sample Header");
+        let library = exospkg.getNewCLibrary("Library", "Sample Library");
+        let libraryFile = library.getNewFile("header.h", "Sample Header");
         libraryFile.contents = "#ifndef _HEADER_H_\n#define _HEADER_H_\n\n#endif //_HEADER_H_\n";
         
-        program = exospkg.getNewIECProgram("Program", "Sample Program");
-        programVar = program.getNewFile("Program.var", "Local Variables");
+        let program = exospkg.getNewIECProgram("Program", "Sample Program");
+        let programVar = program.getNewFile("Program.var", "Local Variables");
         programVar.contents = "VAR\n\nEND_VAR\n";
         programSt = program.getNewFile("Program.st", "Local Variables");
         programSt.contents = "PROGRAM _CYCLIC\n\nEND_PROGRAM\n";
         
         linux = exospkg.getNewLinuxPackage("Linux", "");
 
-        linuxHeader = linux.getNewBuildFile(wslBuild,"header.h", "Sample Header");
+        let wslBuild = exospkg.getExosPkg().getNewWSLBuildCommand();
+        linuxHeader = linux.getNewBuildFile(wslBuild, "header.h", "Sample Header");
         linuxHeader.contents = "#ifndef _HEADER_H_\n#define _HEADER_H_\n\n#endif //_HEADER_H_\n";
 
         exospkg.makePackage(path.join(__dirname, folder));
