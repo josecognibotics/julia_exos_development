@@ -857,7 +857,7 @@ if (require.main === module) {
 
     process.stdout.write(`exos_header version ${version}\n`);
 
-    if (process.argv.length >= 3) {
+    if (process.argv.length > 3) {
 
         let fileName = process.argv[2];
         let structName = process.argv[3];
@@ -885,7 +885,7 @@ if (require.main === module) {
 
     }
     else {
-        process.stderr.write("usage: ./exos_header.js <filename.typ> <structname>\n");
+        process.stderr.write("usage: ./Datamodel.js <filename.typ> <structname>\n");
     }
 }
 
