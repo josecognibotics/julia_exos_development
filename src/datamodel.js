@@ -11,11 +11,29 @@ const version = "1.1.0";
  * - what happens if one of the types arent found??
  *  */
 
-
 const fs = require('fs');
 const path = require('path');
 
-export class Datamodel {
+/**
+ * Class to generate a `Datamodel` json object from a .typ file and create C-source code for the application
+ * 
+ * @typedef {Object} DatasetAttribute
+ * @property {string} name Name of the structure or structure member. The top structure does not have a "name", and is therefore tagged with `<NAME>`
+ * @property {string} nodeId (currently not used)
+ * @property {string} dataType name of the structure or enum, like `MyStruct`, or the PLC scalar type, like `BOOL`, `UDINT` and so on
+ * @property {string} comment comment that is maked in the .typ file for this member. `PUB` and `SUB` are used for code generation
+ * @property {number} arraySize size of the array, otherwise `0`, e.g. if the member is declared as `BOOL[5]` the `arraySize` is `5`, and the dataType is `BOOL`
+ * @property {number} stringLength for `STRING` datatypes, that are treated specifically this is the allocated size for a string. e.g. `81` for a `STRING[80]`
+ * @property {string} info tag that is used for mapping the datastructure with the json string in the code
+ * @property {string} info2 tag that is used for arrays (arraySize > 0) to map the datastructure with the json string in the code
+ * 
+ * @typedef {Object} Dataset data type information structure 
+ * @property {string} name `struct` | `variable` | `enum` | `value` type of dataset, whereas enums contains only values
+ * @property {DatasetAttribute} attributes properties of this `struct` / `variable` / `enum`, like `dataType` etc.
+ * @property {Dataset[]} children array of `Dataset` members for nested types, like `struct` or `enum`
+ * 
+ */
+class Datamodel {
 
     #_types;
     #_infoId;
@@ -38,7 +56,7 @@ export class Datamodel {
     /**
      * 
      * @param {string} fileName name of the file to parse, e.g. ./SomeFolder/WaterTank.typ
-     * @param {string} typName name of the structure, e.g. WaterTank
+     * @param {string} typName name of the data structure, e.g. WaterTank
      * @param {string[]} SG4Includes (optional) list of include directives within the #ifdef _SG4 part. If left out, theres no #ifdef _SG4
      * 
      * PREVIOUSLY generateHeader
@@ -73,11 +91,43 @@ export class Datamodel {
     }
 
     /**
-     * @returns {object} the structure of the datatype `typeName` as JSON object.
+     * The JSON `Dataset` object represents the datamodel information of the given datatype `typeName`
+     * 
+     * This structure is based on the syntax of the `xml-parser` npm module, and thus it is equivalent to parsing an XML file of the following format:
+     * 
+     *      <struct name="<NAME>" dataType="MyApplication" comment="" >
+     *          <variable name="Enable" dataType="BOOL" comment="PUB" />
+     *          <variable name="Counter" dataType="INT" comment="SUB" />
+     *          <variable name="Temperature" dataType="REAL" comment="PUB" />
+     *          <variable name="Buffer" dataType="USINT" arraySize=10 />      
+     *          <struct name="Config" dataType="MyConfig" comment="PUB SUB">
+     *              <variable name="MaxPressure" dataType="LREAL" comment="" />
+     *              <variable name="SleepTime" dataType="LREAL" comment="" />
+     *          </struct>
+     *      </struct>
+     * 
+     * This is equivalent to the IEC declaration:
+     *      
+     *      TYPE
+     *         MyApplication : 	STRUCT 
+     *              Enable : BOOL; (*PUB*)
+     *              Counter : INT; (*SUB*)
+     *              Temperature : REAL; (*PUB*)
+     *              Buffer : ARRAY[0..9]OF USINT;
+     *              Config : MyConfig; (*PUB SUB*)
+     *         END_STRUCT;
+     *         MyConfig : 	STRUCT 
+     *              MaxPressure : LREAL;
+     *              SleepTime : LREAL;
+     *         END_STRUCT;
+     *      END_TYPE
+     * 
+     * 
+     * @returns {Dataset} the structure of the datatype `typeName` as JSON object.
      * 
      * PREVIOUSLY parseTypFile
      */
-    get typeJsonObject() {
+    get dataset() {
         return this.#_types;
     }
 
@@ -879,14 +929,13 @@ if (require.main === module) {
 
             try {
                 let datamodel = new Datamodel(fileName, structName, [`${structName}.h`]);
-            
                 let outDir = path.join(__dirname,path.dirname(fileName));
 
                 process.stdout.write(`Writing ${structName} to folder: ${outDir}\n`);
 
                 fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.h`),datamodel.headerCode);
                 fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.c`),datamodel.sourceCode);
-                fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.json`),JSON.stringify(datamodel.typeJsonObject,null,4));
+                fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.json`),JSON.stringify(datamodel.Dataset,null,4));
 
             } catch (error) {
                 process.stderr.write(error);
@@ -901,3 +950,5 @@ if (require.main === module) {
         process.stderr.write("usage: ./Datamodel.js <filename.typ> <structname>\n");
     }
 }
+
+module.exports = {Datamodel};

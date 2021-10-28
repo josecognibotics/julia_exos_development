@@ -1,5 +1,5 @@
-import * as path from 'path';
-import * as fs from 'fs';
+const fs = require('fs');
+const path = require('path');
 
 //shortcut to get an arrays last (pushed) element
 if (!Array.prototype.last){
@@ -10,8 +10,15 @@ if (!Array.prototype.last){
 
 /**
  * Base class for Packages, used for inheritance
+ * It defines the `FileObj` object that is used for populating files
+ * 
+ * @typedef {Object} FileObj file object that can be manipulated before calling `makePackage()`
+ * @property {string} contents contents of the file that is to be stored on disk e.g. "hello world!\n"
+ * @property {string} name name of the file stored on disk, eg. "myfile.txt"
+ * @property {string} description description of the file inside the AS project
+ * 
  */
-export class Package {
+class Package {
 
     constructor(name) {
 
@@ -35,7 +42,7 @@ export class Package {
      * 
      * @param {string} fileName filename within this package
      * @param {string} description (optional) description that will appear in AS
-     * @returns {object} JSON object with a .content property that can be populated with the file contents
+     * @returns {FileObj} JSON object with a .content property that can be populated with the file contents
      */
     getNewFile(fileName, description) {
         if(description === undefined) {
@@ -95,7 +102,7 @@ export class Package {
  *      myPackage.getExosPkg().addService("Runtime","/home/user/myexecutable");
  *      myPackage.makePackage("C:\\Temp");
  */
-export class ExosPkg {
+class ExosPkg {
 
     //all items in the exospkg are added as json objects, which are parsed out in the getContents()
     constructor() {
@@ -352,7 +359,7 @@ export class ExosPkg {
  *      let linux = new LinuxPackage(exosPkg, "Linux");
  *      
  */
-export class LinuxPackage extends Package {
+class LinuxPackage extends Package {
 
     constructor(exosPkg, name) {
 
@@ -431,7 +438,7 @@ export class LinuxPackage extends Package {
      * @param {string} fileName name of the file (within the Linux package) that should be transferred to the target system
      * @param {string} changeEvent `Ignore` | `Restart` | `Reinstall` - behaviour of the target component when file is added, removed or changed. 
      * @param {string} description (optional) description that will appear in AS
-     * @returns {object} JSON object with a .content property that can be populated with the file contents
+     * @returns {FileObj} JSON object with a .content property that can be populated with the file contents
      */
     getNewTransferFile(fileName, changeEvent, description) {
         //add this file to the exosPackage with a relative path to this package
@@ -482,7 +489,7 @@ export class LinuxPackage extends Package {
      * @param {object} buildCommand object returned from `ExosPkg.getNewBuildCommand()` or `ExosPkg.getNewWSLBuildCommand()`
      * @param {string} fileName name of the file within the Linux package
      * @param {string} description (optional) description that will appear in AS
-     * @returns {object} JSON object with a .content property that can be populated with the file contents
+     * @returns {FileObj} JSON object with a .content property that can be populated with the file contents
      */
     getNewBuildFile(buildCommand, fileName, description) {
         //add a build dependency to this file
@@ -505,7 +512,7 @@ export class LinuxPackage extends Package {
  * 
  *      let program = new IECProgram("Program");
  */
-export class IECProgram extends Package {
+class IECProgram extends Package {
     constructor(name) {
 
         super(name);
@@ -559,7 +566,7 @@ export class IECProgram extends Package {
  * 
  *      let library = new CLibrary("Library");
  */
-export class CLibrary extends Package {
+class CLibrary extends Package {
     constructor(name) {
 
         super(name);
@@ -617,7 +624,7 @@ export class CLibrary extends Package {
  *      ..
  *      myPackage.makePackage("C:\\Temp");
  */
-export class ExosPackage extends Package {
+class ExosPackage extends Package {
 
     constructor(name) {
 
@@ -821,3 +828,5 @@ if (require.main === module) {
         process.stderr.write("usage: ./ExosPackage.js <folder> <packagename>\n");
     }
 }
+
+module.exports = {ExosPackage};
