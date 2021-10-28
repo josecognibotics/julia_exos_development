@@ -15,7 +15,7 @@ const version = "1.1.0";
 const fs = require('fs');
 const path = require('path');
 
-class Datamodel {
+export class Datamodel {
 
     #_types;
     #_infoId;
@@ -901,5 +901,3 @@ if (require.main === module) {
         process.stderr.write("usage: ./Datamodel.js <filename.typ> <structname>\n");
     }
 }
-
-module.exports = {Datamodel}

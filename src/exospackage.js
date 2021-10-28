@@ -1,5 +1,5 @@
-const path = require('path');
-const fs = require('fs');
+import * as path from 'path';
+import * as fs from 'fs';
 
 //shortcut to get an arrays last (pushed) element
 if (!Array.prototype.last){
@@ -11,7 +11,7 @@ if (!Array.prototype.last){
 /**
  * Base class for Packages, used for inheritance
  */
-class Package {
+export class Package {
 
     constructor(name) {
 
@@ -95,7 +95,7 @@ class Package {
  *      myPackage.getExosPkg().addService("Runtime","/home/user/myexecutable");
  *      myPackage.makePackage("C:\\Temp");
  */
-class ExosPkg {
+export class ExosPkg {
 
     //all items in the exospkg are added as json objects, which are parsed out in the getContents()
     constructor() {
@@ -352,7 +352,7 @@ class ExosPkg {
  *      let linux = new LinuxPackage(exosPkg, "Linux");
  *      
  */
-class LinuxPackage extends Package {
+export class LinuxPackage extends Package {
 
     constructor(exosPkg, name) {
 
@@ -505,7 +505,7 @@ class LinuxPackage extends Package {
  * 
  *      let program = new IECProgram("Program");
  */
-class IECProgram extends Package {
+export class IECProgram extends Package {
     constructor(name) {
 
         super(name);
@@ -559,7 +559,7 @@ class IECProgram extends Package {
  * 
  *      let library = new CLibrary("Library");
  */
-class CLibrary extends Package {
+export class CLibrary extends Package {
     constructor(name) {
 
         super(name);
@@ -617,7 +617,7 @@ class CLibrary extends Package {
  *      ..
  *      myPackage.makePackage("C:\\Temp");
  */
-class ExosPackage extends Package {
+export class ExosPackage extends Package {
 
     constructor(name) {
 
@@ -821,5 +821,3 @@ if (require.main === module) {
         process.stderr.write("usage: ./ExosPackage.js <folder> <packagename>\n");
     }
 }
-
-module.exports = {Package};
