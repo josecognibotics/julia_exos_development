@@ -199,3 +199,5 @@ class Template
         return this.#_templateLinux;
     }
 }
+
+module.exports = {Template};

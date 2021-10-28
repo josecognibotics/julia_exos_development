@@ -10,12 +10,6 @@ if (!Array.prototype.last){
 
 /**
  * Base class for Packages, used for inheritance
- * It defines the `FileObj` object that is used for populating files
- * 
- * @typedef {Object} FileObj file object that can be manipulated before calling `makePackage()`
- * @property {string} contents contents of the file that is to be stored on disk e.g. "hello world!\n"
- * @property {string} name name of the file stored on disk, eg. "myfile.txt"
- * @property {string} description description of the file inside the AS project
  * 
  */
 class Package {
@@ -92,14 +86,14 @@ class Package {
 }
 
 /**
- * Class for the .exospkg file, created within an ExosPackage and accessed via `getExosPkg()`
+ * Class for the .exospkg file, created within an ExosPackage and accessed via `exospkg`
  * It contains metods to populate the contents of an .exospkg, and returns the XML contents
  * via `getContents()` - whereas this function is called implicitly by the ExosPackage `makePackage()`
  * 
  * For example:
  * 
  *      let myPackage = new ExosPackage("MyPackage");
- *      myPackage.getExosPkg().addService("Runtime","/home/user/myexecutable");
+ *      myPackage.exospkg.addService("Runtime","/home/user/myexecutable");
  *      myPackage.makePackage("C:\\Temp");
  */
 class ExosPkg {
@@ -145,72 +139,47 @@ class ExosPkg {
 
     /**
      * Add a compiler command to generate datamodel header/source files for datacommunication in the exOS TP.
-     * See `addOutputPath()` and `addSG4Include()`
      * 
-     * The GenerateDatamodel functionality creates two files, `exos_{typeName}.c` and `exos_{typeName}.c`
-     * These files need to be added as addExistingFile() to the packages defined as OutputPaths
-     *      
-     *      let myPackage = new ExosPackage("MyPackage");
-     *      let linux = myPackage.getNewLinuxPackage("Linux")    
-     *      linux.addExistingFile("exos_types.h"); //created by GenerateDatamodel
-     *      linux.addExistingFile("exos_types.c"); //created by GenerateDatamodel
-     *      let generator = myPackage.getExosPkg().getNewGenerateDatamodel("Types.typ","Types");
-     *      myPackage.getExosPkg().addOutputPath(generator,"Linux"); //generate files in the "Linux" package
+     * **Regarding `SG4Includes`:**
      * 
-     * @param {string} fileName Name of the IEC .typ file that contains the datatype
-     * @param {string} typeName Name of the datatype withing the .typ file
-     * @returns {object} object that should be populated with output paths and can be further populated with _SG4 include directives
-     */
-    getNewGenerateDatamodel(fileName, typeName) {
-        this._generateDatamodels.push({fileName:fileName,typeName:typeName,SG4Includes:[],OutputPaths:[]});
-        return this._generateDatamodels.last();
-    }
-
-    /**
-     * Add a specific SG4 include to include the datatype generated from the IEC .typ file in AS
      * In most cases, exos components are created from IEC .typ files which also exist in AS and that generate a C-declaration
-     * of this type which can be included in C-programs. For example, if the .typ file is within "Types", then "Types.h"
+     * of this type which can be included in C-programs. For example, if the .typ file is within "TypeLib", then "TypeLib.h"
      * should be added as SG4 include, that the C-Program can utilize the library functions without clashing with the generated
-     * C-datatypes in the generated c/h datamodel files.
+     * C-datatypes in the generated c/h datamodel files in AR.
      * 
-     * For example:
+     * **Regarding `outputPaths`:**
+     * 
+     * The GenerateDatamodel needs an output directory for the generated files, like the name of a library or a linux folder.
+     * The in each of these directories, the functionality creates two files, `exos_{typeName}.c` and `exos_{typeName}.c`.
+     * These files need to be added as addExistingFile() within the packages defined as `OutputPaths`
+     *
+     * For example
      * 
      *      let myPackage = new ExosPackage("MyPackage");
-     *      let generator = myPackage.getExosPkg().getNewGenerateDatamodel("Types.typ","Types");
-     *      myPackage.getExosPkg().addSG4Include(generator,"Types.h"); //include the Types Library in AS
-     * 
-     * @param {object} generateDataModel object returned from `getNewGenerateDatamodel()`
-     * @param {string} SG4Include Name for the headerfile that should be used specifically for _SG4, e.g. "myheader.h"
-     */
-    addSG4Include(generateDataModel, SG4Include)
-    {
-        generateDataModel.SG4Includes.push(SG4Include);
-    }
-
-    /**
-     * The GenerateDatamodel function needs an outputPath to know where genereate the datamodel files.
-     * the addOutputPath can be used to provide several output paths
-     * 
-     * For example:
-     *      
-     *      let myPackage = new ExosPackage("MyPackage");
-     *      let library = myPackage.getNewCLibrary("Types", "My First library");
-     *      library.addExistingFile("exos_types.h"); //created by GenerateDatamodel
-     *      library.addExistingFile("exos_types.c"); //created by GenerateDatamodel
-     *      let linux = myPackage.getNewLinuxPackage("Linux")    
+     *      let linux = myPackage.getNewLinuxPackage("Linux");
+     *      let lib = myPackage.getNewCLibrary("TypeLib");
      *      linux.addExistingFile("exos_types.h"); //created by GenerateDatamodel
      *      linux.addExistingFile("exos_types.c"); //created by GenerateDatamodel
-     *      let generator = myPackage.getExosPkg().getNewGenerateDatamodel("Types.typ","Types");
-     *      myPackage.getExosPkg().addOutputPath(generator,"Types"); //generate files in the "Types" library
-     *      myPackage.getExosPkg().addOutputPath(generator,"Linux"); //generate files in the "Linux" package
+     *      lib.addExistingFile("exos_types.h"); //created by GenerateDatamodel
+     *      lib.addExistingFile("exos_types.c"); //created by GenerateDatamodel
+     *      //generate files in the "TypeLib" and "Linux" directories, include the "TypeLib" library in AR
+     *      myPackage.exospkg.addGenerateDatamodel("TypeLib/Types.typ", "Types", ["TypeLib.h"], ["TypeLib","Linux"]);
      * 
+     *
      * 
-     * @param {object} generateDataModel object returned from `getNewGenerateDatamodel()`
-     * @param {string} outputPath Destination path of the generated c/h datamodel files, relative to the .exospkg file
+     * @param {string} fileName Name of the IEC .typ file that contains the datatype, relative to the exospkg location
+     * @param {string} typeName Name of the datatype withing the .typ file
+     * @param {string[]} SG4Includes list of specific `_SG4` include directives to include the datatype generated from the IEC `typeName` file in Automation Studio
+     * @param {string[]} outputPaths list of directories relative to the .exospkg where the c/h files are generated to
      */
-    addOutputPath(generateDataModel, outputPath)
-    {
-        generateDataModel.OutputPaths.push(outputPath);
+    addGenerateDatamodel(fileName, typeName, SG4Includes, outputPaths) {
+        if(!Array.isArray(SG4Includes)) {
+            SG4Includes = [];
+        }
+        if(!Array.isArray(outputPaths)) {
+            outputPaths = [];
+        }
+        this._generateDatamodels.push({fileName:fileName,typeName:typeName,SG4Includes:SG4Includes,outputPaths:outputPaths});
     }
 
     /**
@@ -240,7 +209,7 @@ class ExosPkg {
      *      let linux = myPackage.getNewLinuxPackage("Linux")    
      *      let buildFile = linux.getNewFile("build.sh", "Build Script");
      *      buildFile.contents = "echo 'this is a test'\n";
-     *      let build = myPackage.getExosPkg().getNewWSLBuildCommand("Linux","build.sh");
+     *      let build = myPackage.exospkg.getNewWSLBuildCommand("Linux","build.sh");
      * 
      * @param {string} buildScript name of the scriptfile that is being executed in the `linuxPackage`, e.g. `build.sh`
      * @param {string} linuxPackage name of the Linux package where the `buildScript` is located
@@ -262,8 +231,8 @@ class ExosPkg {
      *      buildFile.contents = "echo 'this is a test'\n";
      *      let sourceFile = linux.getNewFile("source.c", "Source Code");
      *      sourceFile.contents = ..*      
-     *      let build = myPackage.getExosPkg().getNewWSLBuildCommand("Linux","build.sh");
-     *      myPackage.getExosPkg().addBuildDependency(build,"Linux/source.c"); //monitor source.c for changes
+     *      let build = myPackage.exospkg.getNewWSLBuildCommand("Linux","build.sh");
+     *      myPackage.exospkg.addBuildDependency(build,"Linux/source.c"); //monitor source.c for changes
      * 
      * 
      * @param {object} buildCommand object returned from `getNewBuildCommand()` or `getNewWSLBuildCommand()`
@@ -281,8 +250,8 @@ class ExosPkg {
      * For example:
      * 
      *      let myPackage = new ExosPackage("MyPackage");
-     *      myPackage.getExosPkg().addService("Runtime","/home/user/myexecutable");
-     *      console.log(myPackage.getExosPkg().getContents()); //display the output of the .exospkg file
+     *      myPackage.exospkg.addService("Runtime","/home/user/myexecutable");
+     *      console.log(myPackage.exospkg.getContents()); //display the output of the .exospkg file
      * 
      * @returns {string} the XML file contents of the .exospkg file
      */
@@ -480,7 +449,7 @@ class LinuxPackage extends Package {
      *      let myPackage = new ExosPackage("MyPackage");
      *      let linux = myPackage.getNewLinuxPackage("Linux");   
      *      let buildFile = linux.getNewFile("build.sh");
-     *      let build = myPackage.getExosPkg().getNewWSLBuildCommand("Linux","build.sh");
+     *      let build = myPackage.exospkg.getNewWSLBuildCommand("Linux","build.sh");
      *      buildFile.contents = "echo 'this is a test'\n";
      *      let sourceFile = linux.getNewBuildFile(build, "source.c", "Source Code");
      *      sourceFile.contents = .. 
@@ -618,11 +587,19 @@ class CLibrary extends Package {
  * and generates all created objects with one single `makePackage()`. The `ExosPackage` is created with a name, which is the name of the folder 
  * in the filesystem and the implicitly created .exospkg file
  * 
+ * It defines the `FileObj` object that is used for populating files
+ * 
+ * @typedef {Object} FileObj file object that can be manipulated before calling `makePackage()`
+ * @property {string} contents contents of the file that is to be stored on disk e.g. "hello world!\n"
+ * @property {string} name name of the file stored on disk, eg. "myfile.txt"
+ * @property {string} description description of the file inside the AS project
+ * 
  *      let myPackage = new ExosPackage("MyPackage");
  *      let sampleFile = myPackage.getNewFile("sample.txt", "Sample File");
  *      sampleFile.contents = "hello world!\n";
  *      ..
  *      myPackage.makePackage("C:\\Temp");
+ *
  */
 class ExosPackage extends Package {
 
@@ -697,18 +674,18 @@ class ExosPackage extends Package {
 
     /**
      * The `ExosPackage` contains a built-in `ExosPkg` which is passed on to all `LinuxPackage`'s that are created.
-     * This method accesses the builtin `ExosPkg` object
+     * This property accesses the builtin `ExosPkg` object
      * 
      * Example:
      *
      *      let myPackage = new ExosPackage("MyPackage");
-     *      let generator = myPackage.getExosPkg().getNewGenerateDatamodel("Types.typ","Types"); //add a command to the built-in ExosPkg
+     *      myPackage.exospkg.addGenerateDatamodel("Types.typ","Types",[],[]); //add a command to the built-in ExosPkg
      *      let linux = myPackage.getNewLinuxPackage("Linux");   
      *      let script = linux.getNewTransferFile("index.js", "Restart", "Main JS script"); //this also accesses the built-in ExosPkg
      *   
      * @returns {ExosPkg} object
      */
-    getExosPkg() {
+    get exospkg() {
         return this._exosPkg;
     }
 
@@ -801,28 +778,28 @@ if (require.main === module) {
         let folder = process.argv[2];
         let packageName = process.argv[3];
 
-        let exospkg = new ExosPackage(packageName);
+        let mypackage = new ExosPackage(packageName);
         
-        let sampleFile = exospkg.getNewFile("sample.txt", "Sample File");
+        let sampleFile = mypackage.getNewFile("sample.txt", "Sample File");
         sampleFile.contents = "hello world!\n";
 
-        let library = exospkg.getNewCLibrary("Library", "Sample Library");
+        let library = mypackage.getNewCLibrary("Library", "Sample Library");
         let libraryFile = library.getNewFile("header.h", "Sample Header");
         libraryFile.contents = "#ifndef _HEADER_H_\n#define _HEADER_H_\n\n#endif //_HEADER_H_\n";
         
-        let program = exospkg.getNewIECProgram("Program", "Sample Program");
+        let program = mypackage.getNewIECProgram("Program", "Sample Program");
         let programVar = program.getNewFile("Program.var", "Local Variables");
         programVar.contents = "VAR\n\nEND_VAR\n";
         programSt = program.getNewFile("Program.st", "Local Variables");
         programSt.contents = "PROGRAM _CYCLIC\n\nEND_PROGRAM\n";
         
-        linux = exospkg.getNewLinuxPackage("Linux", "");
+        linux = mypackage.getNewLinuxPackage("Linux", "");
 
-        let wslBuild = exospkg.getExosPkg().getNewWSLBuildCommand();
+        let wslBuild = mypackage.exospkg.getNewWSLBuildCommand("Linux", "build.sh");
         linuxHeader = linux.getNewBuildFile(wslBuild, "header.h", "Sample Header");
         linuxHeader.contents = "#ifndef _HEADER_H_\n#define _HEADER_H_\n\n#endif //_HEADER_H_\n";
 
-        exospkg.makePackage(path.join(__dirname, folder));
+        mypackage.makePackage(path.join(__dirname, folder));
     }
     else {
         process.stderr.write("usage: ./ExosPackage.js <folder> <packagename>\n");
