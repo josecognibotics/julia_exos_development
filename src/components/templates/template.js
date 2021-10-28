@@ -1,4 +1,4 @@
-const {Datamodel} = require('./datamodel');
+const {Datamodel} = require('../../datamodel');
 
 /**
  * Class used to generate a template object for code-generators

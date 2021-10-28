@@ -1,5 +1,5 @@
-const { TemplateARDynamic } = require('./template_ar_dynamic');
-const { TemplateLinuxC } = require('./template_linux_c');
+const { TemplateARDynamic } = require('./templates/ar/template_ar_dynamic');
+const { TemplateLinuxC } = require('./templates/linux/template_linux_c');
 const { ExosComponent } = require('./exoscomponent');
 const path = require('path');
 

@@ -1,5 +1,5 @@
-const { Template } = require('./template')
-const { Datamodel } = require('./datamodel');
+const { Template } = require('../template')
+const { Datamodel } = require('../../../datamodel');
 
 class TemplateLinuxC extends Template {
     constructor(fileName, typeName, installDir) {

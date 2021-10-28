@@ -1,5 +1,5 @@
-const { Datamodel } = require('./datamodel');
-const { Template } = require('./template')
+const { Datamodel } = require('../../../datamodel');
+const { Template } = require('../template')
 
 class TemplateARDynamic extends Template {
 

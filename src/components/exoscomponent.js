@@ -1,4 +1,4 @@
-const { ExosPackage } = require('./exospackage');
+const { ExosPackage } = require('../exospackage');
 const path = require('path')
 
 class Component {
