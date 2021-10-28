@@ -1,5 +1,6 @@
 const { TemplateARDynamic } = require('./templates/ar/template_ar_dynamic');
 const { TemplateLinuxC } = require('./templates/linux/template_linux_c');
+const { TemplateLinuxBuild } = require('./templates/linux/template_linux_build');
 const { ExosComponent } = require('./exoscomponent');
 const path = require('path');
 
@@ -14,7 +15,12 @@ class ExosComponentCTemplate extends ExosComponent {
         super(typeName, "build.sh");
 
         let templateAR = new TemplateARDynamic(fileName, typeName);
-        let templateLinux = new TemplateLinuxC(fileName, typeName, "/home/user");
+        let templateLinux = new TemplateLinuxC(fileName, typeName);
+        let templateBuild = new TemplateLinuxBuild(typeName);
+
+        templateBuild.options.executable.enable = true;
+        templateBuild.options.executable.sourceFiles = ["termination.c", `${typeName.toLowerCase()}.c`]
+        templateBuild.options.debPackage.enable = true;
 
         this.cLibrary.addNewFile(`${typeName}.fun`, templateAR.generateFun());
         this.cLibrary.addNewFile(`${typeName.toLowerCase()}.c`, templateAR.generateSource());
@@ -22,13 +28,13 @@ class ExosComponentCTemplate extends ExosComponent {
         this.iecProgram.addNewFile(`${typeName}.var`,templateAR.generateIECProgramVar());
         this.iecProgram.addNewFile(`${typeName}.st`, templateAR.generateIECProgramST());
         
-        this.linuxPackage.addNewBuildFile(this.linuxBuild,"CMakeLists.txt",templateLinux.generateCMakeLists());
-        this.linuxPackage.addNewBuildFile(this.linuxBuild,"build.sh",templateLinux.generateShBuild());
+        this.linuxPackage.addNewBuildFile(this.linuxBuild,"CMakeLists.txt",templateBuild.generateCMakeLists());
+        this.linuxPackage.addNewBuildFile(this.linuxBuild,"build.sh",templateBuild.generateShBuild());
         this.linuxPackage.addNewBuildFile(this.linuxBuild,`${typeName.toLowerCase()}.c`,templateLinux.generateSource());
         this.linuxPackage.addNewBuildFile(this.linuxBuild,"termination.h",templateLinux.generateTerminationHeader());
         this.linuxPackage.addNewBuildFile(this.linuxBuild,"termination.c",templateLinux.generateTerminationSource());
-        this.linuxPackage.addExistingTransferDebFile(templateLinux.getDebPackageFileName(),templateLinux.getDebPackageName());
-        this.exospackage.exospkg.addService("Runtime", templateLinux.getExecutable(), "/home/user");
+        this.linuxPackage.addExistingTransferDebFile(templateBuild.options.debPackage.fileName,templateBuild.options.debPackage.packageName);
+        this.exospackage.exospkg.addService("Runtime", `./${templateBuild.options.executable.executableName}`, templateBuild.options.debPackage.destination);
     }
 
 }

@@ -2,9 +2,8 @@ const { Template } = require('../template')
 const { Datamodel } = require('../../../datamodel');
 
 class TemplateLinuxC extends Template {
-    constructor(fileName, typeName, installDir) {
+    constructor(fileName, typeName) {
         super(fileName,typeName,true,[`${typeName}.h`]);
-        this.installDir = installDir;
     }
 
     generateSource() {
@@ -249,41 +248,6 @@ class TemplateLinuxC extends Template {
 
     }
 
-    generateShBuild() {
-        function generateShBuild() {
-            let out = "";
-        
-            out += `#!/bin/sh\n\n`;
-            out += `finalize() {\n`;
-            out += `    cd ..\n`;
-            out += `    rm -rf build/*\n`;
-            out += `    rm -r build\n`;
-            out += `    sync\n`;
-            out += `    exit $1\n`;
-            out += `}\n\n`;
-            out += `mkdir build > /dev/null 2>&1\n`;
-            out += `rm -rf build/*\n\n`;
-            out += `cd build\n\n`;
-            out += `cmake ..\n`;
-            out += `if [ "$?" -ne 0 ] ; then\n`;
-            out += `    finalize 1\n`;
-            out += `fi\n\n`;
-            out += `make\n`;
-            out += `if [ "$?" -ne 0 ] ; then\n`;
-            out += `    finalize 2\n`;
-            out += `fi\n\n`;
-            out += `cpack\n`;
-            out += `if [ "$?" -ne 0 ] ; then\n`;
-            out += `    finalize 3\n`;
-            out += `fi\n\n`;
-            out += `cp -f exos-comp-*.deb ..\n\n`;
-            out += `finalize 0\n`;
-        
-            return out;
-        }
-        return generateShBuild();
-    }
-
     generateTerminationHeader() {
         function generateTerminationHeader() {
             let out = "";
@@ -375,59 +339,6 @@ class TemplateLinuxC extends Template {
         }
         return generateTerminationSource();
     }
-
-    getExecutable() {
-        return `${this.installDir}/${this.datamodel.typeName.toLowerCase()}`;
-    }
-
-    getDebPackageName() {
-        return `exos-comp-${this.datamodel.typeName.toLowerCase()}`;
-    }
-
-    getDebPackageFileName() {
-        return `exos-comp-${this.datamodel.typeName.toLowerCase()}-1.0.0.deb`;
-    }
-
-    generateCMakeLists() {
-        function generateCMakeLists(typName) {
-            let out = "";
-        
-            out += `cmake_minimum_required(VERSION 3.0)\n`;
-            out += `\n`;
-            out += `project(${typName.toLowerCase()} C)\n`;
-            out += `\n`;
-            out += `# set(CMAKE_BUILD_TYPE RelWithDebInfo)\n`;
-            out += `set(CMAKE_BUILD_TYPE Debug)\n`;
-            out += `\n`;
-            out += `add_executable(${typName.toLowerCase()} ${typName.toLowerCase()}.c termination.c)\n`;
-            out += `target_include_directories(${typName.toLowerCase()} PUBLIC ..)\n`;
-            out += `target_link_libraries(${typName.toLowerCase()} zmq exos-api)\n`;
-            out += `\n`;
-            out += `install(TARGETS ${typName.toLowerCase()} RUNTIME DESTINATION /home/user)\n`;
-            out += `\n`;
-            out += `set(CPACK_GENERATOR "DEB")\n`;
-            out += `set(CPACK_PACKAGE_NAME exos-comp-${typName.toLowerCase()})\n`;
-            out += `set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${typName.toLowerCase()} summary")\n`;
-            out += `set(CPACK_PACKAGE_DESCRIPTION "Some description")\n`;
-            out += `set(CPACK_PACKAGE_VENDOR "Your Organization")\n`;
-            out += `\n`;
-            out += `set(CPACK_PACKAGE_VERSION_MAJOR 1)\n`;
-            out += `set(CPACK_PACKAGE_VERSION_MINOR 0)\n`;
-            out += `set(CPACK_PACKAGE_VERSION_PATCH 0)\n`;
-        
-            out += `set(CPACK_PACKAGE_FILE_NAME exos-comp-${typName.toLowerCase()}-`;
-            out += '${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})\n';
-        
-            out += `set(CPACK_DEBIAN_PACKAGE_MAINTAINER "your name")\n`;
-            out += `\n`;
-            out += `set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)\n`;
-            out += `\n`;
-            out += `include(CPack)\n`;
-            out += `\n`;
-        
-            return out;
-        }
-        return generateCMakeLists(this.datamodel.typeName);
-    }
+    
 }
 module.exports = {TemplateLinuxC};
