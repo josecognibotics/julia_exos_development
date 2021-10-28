@@ -25,7 +25,34 @@ class Package {
     }
 
     /**
+     * Create a new file in this package and populate its contents
+     * Use this method if the complete file contents are already available, 
+     * otherwise use the `getNewFile()` which returns a mutable `FileObj` that can be populated with contents
+     * 
+     * For example:
+     * 
+     *      let myPackage = new ExosPackage("MyPackage");
+     *      myPackage.addNewFile("myfile.txt", "hello world!\n", "test file");
+     *      myPackage.makePackage("C:\\Temp");
+     * 
+     * @param {string} fileName filename within this package
+     * @param {string} contents contents of the file that is to be stored on disk e.g. "hello world!\n"
+     * @param {string} description (optional) description that will appear in AS
+     * 
+     */
+    addNewFile(fileName, contents, description) {
+        if(description === undefined) {
+            description = "";
+        }
+
+        this._objects.push({type:"File", name:fileName, attributes:"", description:description, contents:contents});
+        return this._objects.last();
+    }
+
+    /**
      * Create a new file in this package and return a object for populating its contents
+     * If the complete contents of the file are already available at this point in time, 
+     * use the simpler `addNewFile()` instead
      * 
      * For example:
      * 
@@ -269,7 +296,7 @@ class ExosPkg {
             out += `/>\n`;
         }
         for(const service of this._services) {
-            out += `    <Service Type="${service.type} Command="${service.command}"`;
+            out += `    <Service Type="${service.type}" Command="${service.command}"`;
             if(service.workingDirectory !== undefined) {
                 out += ` WorkingDirectory="${service.workingDirectory}"`;
             }
@@ -284,10 +311,10 @@ class ExosPkg {
             out += `    <Build>\n`;
             for(const generateDatamodel of this._generateDatamodels) {
                 out += `        <GenerateDatamodel FileName="${generateDatamodel.fileName}" TypeName="${generateDatamodel.typeName}">\n`;
-                for(const SG4Include of generateDataModel.SG4Includes) {
+                for(const SG4Include of generateDatamodel.SG4Includes) {
                     out += `            <SG4 Include="${SG4Include}"/>\n`;
                 }
-                for(const outputPath of generateDataModel.OutputPaths) {
+                for(const outputPath of generateDatamodel.outputPaths) {
                     out += `            <Output Path="${outputPath}"/>\n`;
                 }
                 out += `        </GenerateDatamodel>\n`;
@@ -299,7 +326,6 @@ class ExosPkg {
                 }
                 out += `        </BuildCommand>\n`;
             }
-
             
             out += `    </Build>\n`;
         }
@@ -367,6 +393,9 @@ class LinuxPackage extends Package {
         //fill the package specific contents
         this._pkgFile.contents = this._header;
         for (const obj of this._objects) {
+            if(obj.description === undefined) {
+                obj.description = "";
+            }
             //we only write "File" for the objects, because some _objects have special type properties (like "ExistingFile")
             this._pkgFile.contents += `    <Object Type="File" Description="${obj.description}">${obj.name}</Object>\n`;
         }
@@ -387,6 +416,9 @@ class LinuxPackage extends Package {
      * @param {string} description (optional) description that will appear in AS
      */
     addExistingTransferFile(fileName, changeEvent, description) {
+        if(description === undefined) {
+            description = "";
+        }
         //add this file to the exosPackage with a relative path to this package
         this._exosPkg.addFile(path.join(this._folderName,fileName),changeEvent);
         //add it as a "ExistingFile", that the super Package class doesnt consider to write the contents at _createPackage as it does with "Files"
@@ -410,6 +442,9 @@ class LinuxPackage extends Package {
      * @returns {FileObj} JSON object with a .content property that can be populated with the file contents
      */
     getNewTransferFile(fileName, changeEvent, description) {
+        if(description === undefined) {
+            description = "";
+        }
         //add this file to the exosPackage with a relative path to this package
         this._exosPkg.addFile(path.join(this._folderName,fileName),changeEvent);
         //return a new standard file where the contents can be populated
@@ -433,16 +468,50 @@ class LinuxPackage extends Package {
      * @param {string} description (optional) description that will appear in AS
      */
     addExistingTransferDebFile(fileName, packageName, description) {
+        if(description === undefined) {
+            description = "";
+        }
         //add this file to the exosPackage with a relative path to this package with the Reinstall attribute
-        this._exosPkg.addFile(path.join(this._folderName,name),"Reinstall");
+        this._exosPkg.addFile(path.join(this._folderName,fileName),"Reinstall");
         this._exosPkg.addService("Install",`dpkg -i ${fileName}`);
         this._exosPkg.addService("Remove",`dpkg --purge ${packageName}`);
         //add it as a "ExistingFile", that the super Package class doesnt consider to write the contents at _createPackage as it does with "Files"
-        this._objects.push({type:"ExistingFile", name:name, attributes:"", description:description, contents:""});
+        this._objects.push({type:"ExistingFile", name:fileName, attributes:"", description:description, contents:""});
     }
 
     /**
-     * Shortcut method(also populating the `ExosPkg`) to create a file that can be populated and is added as a build dependency. The file is not (automatically) transferred to the target.
+     * Shortcut method(also populating the `ExosPkg`) to create a file that is populated and is added as a build dependency. The file is not (automatically) transferred to the target.
+     * Use this function if the complete contents of the file are available, otherwise use the `getNewBuildFile()` that returns a mutable `FileObj`
+     * 
+     * Example:
+     *  
+     *      let myPackage = new ExosPackage("MyPackage");
+     *      let linux = myPackage.getNewLinuxPackage("Linux");   
+     *      linux.addNewFile("build.sh", "echo 'this is a test'\n");
+     *      let build = myPackage.exospkg.getNewWSLBuildCommand("Linux","build.sh");
+     *      
+     *      linux.addNewBuildFile(build, "source.c", getTheSourceCode(), "Source Code");
+     *      myPackage.makePackage();
+     * 
+     * @param {object} buildCommand object returned from `ExosPkg.getNewBuildCommand()` or `ExosPkg.getNewWSLBuildCommand()`
+     * @param {string} fileName name of the file within the Linux package
+     * @param {string} contents contents of the file that is to be stored on disk
+     * @param {string} description (optional) description that will appear in AS
+     * @returns {FileObj} JSON object with a .content property that can be populated with the file contents
+     */
+    addNewBuildFile(buildCommand, fileName, contents, description) {
+        if(description === undefined) {
+            description = "";
+        }
+        //add a build dependency to this file
+        this._exosPkg.addBuildDependency(buildCommand,path.join(this._folderName,fileName));
+        //return a new standard file where the contents can be populated
+        super.addNewFile(fileName, contents, description);
+    }
+
+    /**
+     * Shortcut method(also populating the `ExosPkg`) to create a `FileObj` that can be populated and is added as a build dependency. The file is not (automatically) transferred to the target.
+     * If the complete contents of the file are already available, use the simpler `addNewBuildFile()` instead.
      * 
      * Example:
      *  
@@ -461,6 +530,9 @@ class LinuxPackage extends Package {
      * @returns {FileObj} JSON object with a .content property that can be populated with the file contents
      */
     getNewBuildFile(buildCommand, fileName, description) {
+        if(description === undefined) {
+            description = "";
+        }
         //add a build dependency to this file
         this._exosPkg.addBuildDependency(buildCommand,path.join(this._folderName,fileName));
         //return a new standard file where the contents can be populated

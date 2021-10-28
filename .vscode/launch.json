@@ -75,13 +75,13 @@
 			]
 		},
 		{
-			"name": "Debug Header Generator",
+			"name": "Debug Classes",
 			"type": "node",
 			"request": "launch",
-			"cwd": "c:\\_sandbox\\extensions\\tryme",
-			"program": "${workspaceFolder}/exos_header.js",
+			"cwd": "${workspaceFolder}/src",
+			"program": "${workspaceFolder}/src/exoscomponent_c_template.js",
 			"args": [
-				"WaterTank.typ",
+				"test/WaterTank.typ",
 				"WaterTank",
 				"."
 			]

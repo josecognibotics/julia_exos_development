@@ -1,4 +1,4 @@
-const {Datamodel, Dataset} = require('./datamodel');
+const {Datamodel} = require('./datamodel');
 
 /**
  * Class used to generate a template object for code-generators
@@ -41,18 +41,18 @@ const {Datamodel, Dataset} = require('./datamodel');
  */
 class Template
 {
-    #_datamodel;
-    #_templateAR;
-    #_templateLinux;
     /**
-     * Create a `Datamodel` object from the given parameters and create `ApplicationTemplate` objects for Linux and AR
+     * Create a `Datamodel` object from the given parameters and create an `ApplicationTemplate` object for Linux or AR.
+     * The generated `ApplicationTemplate` is platform specific
+     * so that `datasets` that are published (via `isPub=true`) in Automation Runtime 
+     * are subscribed to  (via `isSub=true`) in Linux, and vice versa.
      * 
      * @param {string} fileName name of the file to parse, e.g. ./SomeFolder/WaterTank.typ
      * @param {string} typName name of the data structure, e.g. WaterTank
+     * @param {boolean} Linux generate structure for Linux (`true`), otherwise AR (`false`) when used in Linux, the `datasets[].isPub` and `datasets[].isSub` are reversed
      * @param {string[]} SG4Includes (optional) list of include directives within the #ifdef _SG4 part. If left out, theres no #ifdef _SG4 in the generated code
-     * 
      */
-    constructor(fileName, typeName, SG4Includes) {
+    constructor(fileName, typeName, Linux, SG4Includes) {
         
         /**
          * create the template structure form the Dataset structure
@@ -138,21 +138,18 @@ class Template
             return template;
         }
 
-        this.#_datamodel = new Datamodel(fileName, typeName, SG4Includes);
-        this.#_templateAR = configTemplate(this.#_datamodel.dataset, false);
-        this.#_templateLinux = configTemplate(this.#_datamodel.dataset, true);
+        this._datamodel = new Datamodel(fileName, typeName, SG4Includes);
+        this._template = configTemplate(this._datamodel.dataset, Linux);
     }
 
     /**
      * @returns {Datamodel} The `Datamodel` class that is created inside the Template, this can be used to access the `Dataset` structure
      */
     get datamodel() {
-        return this.#_datamodel;
+        return this._datamodel;
     }
 
     /**
-     * `ApplicationTemplate` structure for Automation Runtime applications. 
-     * This is specific to AR so that `datasets` that are published (via `isPub=true`) in Automation Runtime are subscribed to  (via `isSub=true`) in Linux, and vice versa.
      *  
      * The structure description is based on the following example:
      * 
@@ -170,33 +167,8 @@ class Template
      *      END_TYPE
      * @returns {ApplicationTemplate}
      */
-    get templateAR() {
-        return this.#_templateAR;
-    }
-
-    /**
-     * 
-     * `ApplicationTemplate` structure Linux applications. 
-     * This is specific to Linux so that `datasets` that are published (via `isPub=true`) in Automation Runtime are subscribed to  (via `isSub=true`) in Linux, and vice versa.
-     * The structure description is based on the following example:
-     * 
-     *       TYPE
-     *         MyApplication : 	STRUCT 
-     *              Enable : BOOL; (*PUB*)
-     *              Counter : INT; (*SUB*)
-     *              Buffer : ARRAY[0..9]OF USINT;
-     *              Config : MyConfig; (*PUB SUB*)
-     *         END_STRUCT;
-     *         MyConfig : 	STRUCT 
-     *              Message : STRING[80];
-     *              SleepTime : LREAL;
-     *         END_STRUCT;
-     *      END_TYPE
-     * 
-     * @returns {ApplicationTemplate}
-     */
-    get templateLinux() {
-        return this.#_templateLinux;
+    get template() {
+        return this._template;
     }
 }
 

@@ -1,11 +1,9 @@
-const { Template } = require('./template');
 const { ExosPackage } = require('./exospackage');
 const path = require('path')
 
-class BaseComponent {
+class Component {
 
-    constructor(fileName, typeName, SG4Includes) {
-        this.template = new Template(fileName, typeName, SG4Includes);
+    constructor(typeName) {
         this.exospackage = new ExosPackage(typeName);
     }
 
@@ -15,11 +13,16 @@ class BaseComponent {
     }
 }
 
-class ExosBaseComponent extends BaseComponent {
+class ExosComponent extends Component {
 
-    constructor(fileName, typeName, SG4Includes, buildScript) {
+    /**
+     * 
+     * @param {string} typeName 
+     * @param {string} buildScript 
+     */
+    constructor(typeName, buildScript) {
 
-        super(fileName, typeName, SG4Includes);
+        super(typeName, [`${typeName.toLowerCase()}.h`]);
 
         this.cLibrary = this.exospackage.getNewCLibrary(typeName, ``);
         this.cLibrary.addExistingFile(`exos_${typeName}.h`,``);
@@ -31,10 +34,10 @@ class ExosBaseComponent extends BaseComponent {
         this.linuxPackage.addExistingFile(`exos_${typeName}.h`,``);
         this.linuxPackage.addExistingFile(`exos_${typeName}.c`,``);
         
-        this.exospackage.exospkg.getNewGenerateDatamodel(`${typeName}/${path.basename(fileName)}`, typeName, SG4Includes, [typeName, "Linux"]);
+        this.exospackage.exospkg.addGenerateDatamodel(`${typeName}/${typeName}.typ`, typeName, [`${typeName}.h`], [typeName, "Linux"]);
         this.linuxBuild = this.exospackage.exospkg.getNewWSLBuildCommand("Linux", buildScript);
     }
 }
 
 
-module.exports = {ExosBaseComponent};
+module.exports = {ExosComponent};

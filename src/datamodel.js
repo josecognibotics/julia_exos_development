@@ -918,7 +918,7 @@ class Datamodel {
 
 if (require.main === module) {
 
-    process.stdout.write(`exos_header version ${version}\n`);
+    process.stdout.write(`exOS Datamodel version ${version}\n`);
 
     if (process.argv.length > 3) {
 
