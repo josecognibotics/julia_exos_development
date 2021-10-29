@@ -3,8 +3,8 @@ const {Datamodel} = require('../../datamodel');
 /**
  * Class used to generate a template object for code-generators
  * 
- * It has the same constructor as the `Datamodel` class, as this is the base for the `ApplicationTemplate` object
- * The `Datamodel` that is created can be accessed via the `Template.datamodel` property
+ * It uses `Datamodel` class as input for creating the `ApplicationTemplate` object
+ * The `Datamodel` that passed to the contructor can be accessed via the `.datamodel` property
  * 
  * Structure of the `ApplicationTemplate` object:
  * 
@@ -42,17 +42,15 @@ const {Datamodel} = require('../../datamodel');
 class Template
 {
     /**
-     * Create a `Datamodel` object from the given parameters and create an `ApplicationTemplate` object for Linux or AR.
+     * Create an `ApplicationTemplate` object from the given `Datamodel` for Linux or AR.
      * The generated `ApplicationTemplate` is platform specific
      * so that `datasets` that are published (via `isPub=true`) in Automation Runtime 
      * are subscribed to  (via `isSub=true`) in Linux, and vice versa.
-     * 
-     * @param {string} fileName name of the file to parse, e.g. ./SomeFolder/WaterTank.typ
-     * @param {string} typName name of the data structure, e.g. WaterTank
+     *
+     * @param {Datamodel} datamodel existing `Datamodel` class that should be used for this template 
      * @param {boolean} Linux generate structure for Linux (`true`), otherwise AR (`false`) when used in Linux, the `datasets[].isPub` and `datasets[].isSub` are reversed
-     * @param {string[]} SG4Includes (optional) list of include directives within the #ifdef _SG4 part. If left out, theres no #ifdef _SG4 in the generated code
      */
-    constructor(fileName, typeName, Linux, SG4Includes) {
+    constructor(datamodel, Linux) {
         
         /**
          * create the template structure form the Dataset structure
@@ -138,15 +136,8 @@ class Template
             return template;
         }
 
-        this._datamodel = new Datamodel(fileName, typeName, SG4Includes);
-        this._template = configTemplate(this._datamodel.dataset, Linux);
-    }
-
-    /**
-     * @returns {Datamodel} The `Datamodel` class that is created inside the Template, this can be used to access the `Dataset` structure
-     */
-    get datamodel() {
-        return this._datamodel;
+        this.datamodel = datamodel;
+        this._template = configTemplate(this.datamodel.dataset, Linux);
     }
 
     /**

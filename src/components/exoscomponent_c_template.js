@@ -4,6 +4,10 @@ const { TemplateLinuxBuild } = require('./templates/linux/template_linux_build')
 const { ExosComponent } = require('./exoscomponent');
 const path = require('path');
 
+/**
+ * @typedef {Object} ExosComponentCTemplateOptions
+ * @property {string} destinationDirectory destination 
+ */
 class ExosComponentCTemplate extends ExosComponent {
 
     /**
@@ -12,31 +16,35 @@ class ExosComponentCTemplate extends ExosComponent {
      * @param {string} typeName 
      */
     constructor(fileName, typeName) {
-        super(typeName, "build.sh");
+        super(fileName, typeName, "build.sh");
 
-        let templateAR = new TemplateARDynamic(fileName, typeName);
-        let templateLinux = new TemplateLinuxC(fileName, typeName);
-        let templateBuild = new TemplateLinuxBuild(typeName);
-
-        templateBuild.options.executable.enable = true;
-        templateBuild.options.executable.sourceFiles = ["termination.c", `${typeName.toLowerCase()}.c`]
-        templateBuild.options.debPackage.enable = true;
-
-        this.cLibrary.addNewFile(`${typeName}.fun`, templateAR.generateFun());
-        this.cLibrary.addNewFile(`${typeName.toLowerCase()}.c`, templateAR.generateSource());
-
-        this.iecProgram.addNewFile(`${typeName}.var`,templateAR.generateIECProgramVar());
-        this.iecProgram.addNewFile(`${typeName}.st`, templateAR.generateIECProgramST());
-        
-        this.linuxPackage.addNewBuildFile(this.linuxBuild,"CMakeLists.txt",templateBuild.generateCMakeLists());
-        this.linuxPackage.addNewBuildFile(this.linuxBuild,"build.sh",templateBuild.generateShBuild());
-        this.linuxPackage.addNewBuildFile(this.linuxBuild,`${typeName.toLowerCase()}.c`,templateLinux.generateSource());
-        this.linuxPackage.addNewBuildFile(this.linuxBuild,"termination.h",templateLinux.generateTerminationHeader());
-        this.linuxPackage.addNewBuildFile(this.linuxBuild,"termination.c",templateLinux.generateTerminationSource());
-        this.linuxPackage.addExistingTransferDebFile(templateBuild.options.debPackage.fileName,templateBuild.options.debPackage.packageName);
-        this.exospackage.exospkg.addService("Runtime", `./${templateBuild.options.executable.executableName}`, templateBuild.options.debPackage.destination);
+        this.templateAR = new TemplateARDynamic(this.datamodel);
+        this.templateLinux = new TemplateLinuxC(this.datamodel);
+        this.templateBuild = new TemplateLinuxBuild(typeName);
     }
 
+    makeComponent(location) {
+
+        this.templateBuild.options.executable.enable = true;
+        this.templateBuild.options.executable.sourceFiles = ["termination.c", `${this.typeName.toLowerCase()}.c`]
+        this.templateBuild.options.debPackage.enable = true;
+
+        this.cLibrary.addNewFile(`${this.typeName}.fun`, this.templateAR.generateFun());
+        this.cLibrary.addNewFile(`${this.typeName.toLowerCase()}.c`, this.templateAR.generateSource());
+
+        this.iecProgram.addNewFile(`${this.typeName}.var`,this.templateAR.generateIECProgramVar());
+        this.iecProgram.addNewFile(`${this.typeName}.st`, this.templateAR.generateIECProgramST());
+        
+        this.linuxPackage.addNewBuildFile(this.linuxBuild,"CMakeLists.txt",this.templateBuild.generateCMakeLists());
+        this.linuxPackage.addNewBuildFile(this.linuxBuild,"build.sh",this.templateBuild.generateShBuild());
+        this.linuxPackage.addNewBuildFile(this.linuxBuild,`${this.typeName.toLowerCase()}.c`,this.templateLinux.generateSource());
+        this.linuxPackage.addNewBuildFile(this.linuxBuild,"termination.h",this.templateLinux.generateTerminationHeader());
+        this.linuxPackage.addNewBuildFile(this.linuxBuild,"termination.c",this.templateLinux.generateTerminationSource());
+        this.linuxPackage.addExistingTransferDebFile(this.templateBuild.options.debPackage.fileName,this.templateBuild.options.debPackage.packageName);
+        this.exospackage.exospkg.addService("Runtime", `./${this.templateBuild.options.executable.executableName}`, this.templateBuild.options.debPackage.destination);
+
+        super.makeComponent(location);
+    }
 }
 
 if (require.main === module) {

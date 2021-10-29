@@ -2,8 +2,8 @@ const { Template } = require('../template')
 const { Datamodel } = require('../../../datamodel');
 
 class TemplateLinuxC extends Template {
-    constructor(fileName, typeName) {
-        super(fileName,typeName,true,[`${typeName}.h`]);
+    constructor(datamodel) {
+        super(datamodel,true);
     }
 
     generateSource() {

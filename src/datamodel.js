@@ -132,26 +132,26 @@ class Datamodel {
     }
 
     /**
-     * @returns {string} the exos_{typname}.h headerfile as ASCII string
+     * @returns {string} the generated source code of the datamodel headerfile as ASCII string
      *  
      * PREVIOUSLY generateHeader
      */
-    get headerCode() {
+    get headerFileCode() {
         return this.#_headerCode;
     }
 
     /**
-     * @returns {string} the exos_{typname}.c source code as ASCII string
+     * @returns {string} the source code for the datamodel connection as ASCII string
      *  
      * PREVIOUSLY generateHeader
      */
-     get sourceCode() {
+     get sourceFileCode() {
         return this.#_sourceCode;
     }
 
 
     /**
-     * @returns {string} an ASCII string with C-datatype definitions of the datatype `typeName`
+     * @returns {string} an ASCII string with C-datatype definitions of the datatype `typeName` - this is part of the `headerFileCode`
      * 
      * PREVIOUSLY convertTyp2Struct
      */
@@ -933,8 +933,8 @@ if (require.main === module) {
 
                 process.stdout.write(`Writing ${structName} to folder: ${outDir}\n`);
 
-                fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.h`),datamodel.headerCode);
-                fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.c`),datamodel.sourceCode);
+                fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.h`),datamodel.headerFileCode);
+                fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.c`),datamodel.sourceFileCode);
                 fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.json`),JSON.stringify(datamodel.Dataset,null,4));
 
             } catch (error) {

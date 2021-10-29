@@ -122,6 +122,7 @@ class Package {
  *      let myPackage = new ExosPackage("MyPackage");
  *      myPackage.exospkg.addService("Runtime","/home/user/myexecutable");
  *      myPackage.makePackage("C:\\Temp");
+ * 
  */
 class ExosPkg {
 
@@ -177,29 +178,43 @@ class ExosPkg {
      * **Regarding `outputPaths`:**
      * 
      * The GenerateDatamodel needs an output directory for the generated files, like the name of a library or a linux folder.
-     * The in each of these directories, the functionality creates two files, `exos_{typeName}.c` and `exos_{typeName}.c`.
+     * The in each of these directories, the functionality creates two files. The filenames are returned as a `GenerateDatamodel` object by the method.
      * These files need to be added as addExistingFile() within the packages defined as `OutputPaths`
      *
+     * **Note:**
+     * 
+     * This method does not actually *generate* the files, it only populates the .exospkg file with the instruction for the exOS TP.
+     * If the files should be created together with creating the `ExosPackage`, the `Datamodel` class should be used to create the datamodel file contents.
+     * 
      * For example
      * 
      *      let myPackage = new ExosPackage("MyPackage");
      *      let linux = myPackage.getNewLinuxPackage("Linux");
      *      let lib = myPackage.getNewCLibrary("TypeLib");
-     *      linux.addExistingFile("exos_types.h"); //created by GenerateDatamodel
-     *      linux.addExistingFile("exos_types.c"); //created by GenerateDatamodel
-     *      lib.addExistingFile("exos_types.h"); //created by GenerateDatamodel
-     *      lib.addExistingFile("exos_types.c"); //created by GenerateDatamodel
-     *      //generate files in the "TypeLib" and "Linux" directories, include the "TypeLib" library in AR
-     *      myPackage.exospkg.addGenerateDatamodel("TypeLib/Types.typ", "Types", ["TypeLib.h"], ["TypeLib","Linux"]);
+     *      //generate the datamodel file contents
+     *      let datamodel = new Datamodel("TypeLib/Types.typ", "Types", ["TypeLib.h"]);
+     *      //set exOS TP to generate files in the "TypeLib" and "Linux" directories, and include the "TypeLib" library in AR
+     *      let datamodelFiles = myPackage.exospkg.getNewGenerateDatamodel("TypeLib/Types.typ", "Types", ["TypeLib.h"], ["TypeLib", "Linux"]);
      * 
+     *      //add the generated files to the "TypeLib" and "Linux" packages, and populate the contents from the parsed datamodel
+     *      linux.addNewFile(datamodelFiles.headerFileName, datamodel.headerFileCode); 
+     *      linux.addNewFile(datamodelFiles.sourceFileName, datamodel.sourceFileCode);
+     *      lib.addExistingFile(datamodelFiles.headerFileName, datamodel.headerFileCode);
+     *      lib.addExistingFile(datamodelFiles.sourceFileName, datamodel.sourceFileCode);
+     *      
      *
+     * @typedef {Object} GenerateDatamodelFiles
+     * @property {string} headerFileName name of the generated headerfile. this file needs to be added to the packages defined in `outputPaths`
+     * @property {string} sourceFileName name of the generated sourcefile. this file needs to be added to the packages defined in `outputPaths`
      * 
      * @param {string} fileName Name of the IEC .typ file that contains the datatype, relative to the exospkg location
      * @param {string} typeName Name of the datatype withing the .typ file
      * @param {string[]} SG4Includes list of specific `_SG4` include directives to include the datatype generated from the IEC `typeName` file in Automation Studio
      * @param {string[]} outputPaths list of directories relative to the .exospkg where the c/h files are generated to
+     * 
+     * @returns {GenerateDatamodelFiles} filenames for the generated datamodel header/source files
      */
-    addGenerateDatamodel(fileName, typeName, SG4Includes, outputPaths) {
+    getNewGenerateDatamodel(fileName, typeName, SG4Includes, outputPaths) {
         if(!Array.isArray(SG4Includes)) {
             SG4Includes = [];
         }
@@ -207,6 +222,10 @@ class ExosPkg {
             outputPaths = [];
         }
         this._generateDatamodels.push({fileName:fileName,typeName:typeName,SG4Includes:SG4Includes,outputPaths:outputPaths});
+        return {
+            sourceFileName: `exos_${typeName.toLowerCase()}.c`, //this is the default name in exOS TP
+            headerFileName: `exos_${typeName.toLowerCase()}.h`  //this is the default name in exOS TP
+        }
     }
 
     /**
@@ -352,7 +371,7 @@ class ExosPkg {
  * 
  *      let exosPkg = new ExosPkg();
  *      let linux = new LinuxPackage(exosPkg, "Linux");
- *      
+ *  
  */
 class LinuxPackage extends Package {
 
@@ -751,7 +770,7 @@ class ExosPackage extends Package {
      * Example:
      *
      *      let myPackage = new ExosPackage("MyPackage");
-     *      myPackage.exospkg.addGenerateDatamodel("Types.typ","Types",[],[]); //add a command to the built-in ExosPkg
+     *      let datamodelFiles = myPackage.exospkg.getNewGenerateDatamodel("Types.typ","Types",[],[]); //add a command to the built-in ExosPkg
      *      let linux = myPackage.getNewLinuxPackage("Linux");   
      *      let script = linux.getNewTransferFile("index.js", "Restart", "Main JS script"); //this also accesses the built-in ExosPkg
      *   

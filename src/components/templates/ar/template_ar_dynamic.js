@@ -3,8 +3,8 @@ const { Template } = require('../template')
 
 class TemplateARDynamic extends Template {
 
-    constructor(fileName, typeName) {
-        super(fileName,typeName,false,[`${typeName}.h`]);
+    constructor(datamodel) {
+        super(datamodel,false);
     }
     
     generateSource() {
