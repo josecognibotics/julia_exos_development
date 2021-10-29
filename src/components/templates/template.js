@@ -41,6 +41,27 @@ const {Datamodel} = require('../../datamodel');
  */
 class Template
 {
+
+    /**
+     * Template structure for creating applications 
+     * The structure description is based on the following example:
+     * 
+     *       TYPE
+     *         MyApplication : 	STRUCT 
+     *              Enable : BOOL; (*PUB*)
+     *              Counter : INT; (*SUB*)
+     *              Buffer : ARRAY[0..9]OF USINT;
+     *              Config : MyConfig; (*PUB SUB*)
+     *         END_STRUCT;
+     *         MyConfig : 	STRUCT 
+     *              Message : STRING[80];
+     *              SleepTime : LREAL;
+     *         END_STRUCT;
+     *      END_TYPE
+     * @type {ApplicationTemplate}
+     */
+    template;
+    
     /**
      * Create an `ApplicationTemplate` object from the given `Datamodel` for Linux or AR.
      * The generated `ApplicationTemplate` is platform specific
@@ -137,30 +158,10 @@ class Template
         }
 
         this.datamodel = datamodel;
-        this._template = configTemplate(this.datamodel.dataset, Linux);
+        this.template = configTemplate(this.datamodel.dataset, Linux);
     }
 
-    /**
-     *  
-     * The structure description is based on the following example:
-     * 
-     *       TYPE
-     *         MyApplication : 	STRUCT 
-     *              Enable : BOOL; (*PUB*)
-     *              Counter : INT; (*SUB*)
-     *              Buffer : ARRAY[0..9]OF USINT;
-     *              Config : MyConfig; (*PUB SUB*)
-     *         END_STRUCT;
-     *         MyConfig : 	STRUCT 
-     *              Message : STRING[80];
-     *              SleepTime : LREAL;
-     *         END_STRUCT;
-     *      END_TYPE
-     * @returns {ApplicationTemplate}
-     */
-    get template() {
-        return this._template;
-    }
+    
 }
 
 module.exports = {Template};
