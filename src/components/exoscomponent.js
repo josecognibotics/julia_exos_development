@@ -1,16 +1,16 @@
-const { ExosPackage } = require('../exospackage');
+const { ExosPackage, IECProgram, LinuxPackage, CLibrary} = require('../exospackage');
 const { Datamodel } = require('../datamodel');
 
 const path = require('path')
 
 class Component {
 
-    /**name of the `ExosPackage` 
+    /**name of the {@link ExosPackage} 
      * @type {string}
     */
     _name;
 
-    /**`ExosPackage` created with the name `{name}` 
+    /**{@link ExosPackage} created with the name `{name}` 
      * @type {ExosPackage}
     */
     _exospackage;
@@ -32,7 +32,7 @@ class Component {
  */
 class ExosComponent extends Component {
 
-    /**name of the IEC datatype used to generate the datamodel, `name` is also set to this `typeName`
+    /**name of the IEC datatype used to generate the datamodel, {@link _name} is also set to this {@link _typeName}
      * @type {string}
     */
     _typeName;
@@ -42,27 +42,27 @@ class ExosComponent extends Component {
     */
     _fileName;
 
-    /**generated datamodel using `typeName` and `{typeName}.h` as SGInclude 
+    /**generated datamodel using {@link _typeName} and `{typeName}.h` as SGInclude 
      * @type {Datamodel}
     */
     _datamodel;
 
-    /**object returned from `exospkg.getNewWSLBuildCommand()` in order to add files as build dependencies
+    /**object returned from {@link ExosPackage.getNewWSLBuildCommand} in order to add files as build dependencies
      * @type {Object}
     */
     _linuxBuild;
 
-    /**`LinuxPackage` created in the folder "Linux". contains generated headerfiles
+    /**{@link LinuxPackage} created in the folder `Linux`. by default, the package only contains generated headerfiles
      * @type {LinuxPackage}
     */
     _linuxPackage;
 
-    /**`CLibrary` for AR created in the folder `{typeName}`. contains generated headerfiles
+    /**{@link CLibrary} for AR created in the folder `{typeName}`. by default, the package only contains generated headerfiles
      * @type {CLibrary}
     */
     _cLibrary;
 
-    /**`IECProgram` for AR created in the folder `{typeName}_0`. does not contain any files
+    /**{@link IECProgram} for AR created in the folder `{typeName}_0`. by default, the package does not contain any files
      * @type {IECProgram}
     */
     _iecProgram;

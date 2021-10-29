@@ -35,8 +35,8 @@
  * @property {boolean} enable whether or not a SWIG python module should be created. mutually exclusive with `executable`, and `napi`. default: `false`
  * @property {string[]} sourceFiles list of source files used to build the module. default: [] 
  * @property {string} moduleName name of the module that the sources are built into. default: `lib` + `Name`
- * @property {string} soFileName (read only) name of the generated .so file. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the LinuxPackage
- * @property {string} pyFileName (read only) name of the generated .py file. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the LinuxPackage
+ * @property {string} soFileName (read only) name of the generated .so file. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the {@link LinuxPackage}
+ * @property {string} pyFileName (read only) name of the generated .py file. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the {@link LinuxPackage}
  * 
  * @typedef {Object} BuildOptionsNAPI
  * @property {boolean} enable whether or not a N-API nodejs module should be created. mutually exclusive with `executable`, and `swigPython`. default: `false`

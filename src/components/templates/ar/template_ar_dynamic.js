@@ -1,5 +1,5 @@
 const { Datamodel } = require('../../../datamodel');
-const { Template } = require('../template')
+const { Template, ApplicationTemplate } = require('../template')
 
 class TemplateARDynamic extends Template {
 
@@ -9,13 +9,17 @@ class TemplateARDynamic extends Template {
     
     generateSource() {
 
+        /**
+         * @param {ApplicationTemplate} template 
+         * @returns {string}
+         */
         function generateIncludes(template) {
             let out = "";
             out += `#include <${template.datamodel.dataType.substring(0, 10)}.h>\n\n`;
             out += `#define EXOS_ASSERT_LOG &${template.handle.name}->${template.logname}\n`;
             out += `#define EXOS_ASSERT_CALLBACK inst->_state = 255;\n`;
             out += `#include "exos_log.h"\n`;
-            out += `#include "exos_${template.datamodel.dataType.toLowerCase()}.h"\n`;
+            out += `#include "${template.headerName}"\n`;
             out += `#include <string.h>\n`;
             out += `\n`;
         
@@ -27,6 +31,10 @@ class TemplateARDynamic extends Template {
             return out;
         }
 
+        /**
+         * @param {ApplicationTemplate} template 
+         * @returns {string}
+         */
         function generateHandle(template) {
             let out = "";
         
@@ -50,6 +58,10 @@ class TemplateARDynamic extends Template {
             return out;
         }
 
+        /**
+         * @param {ApplicationTemplate} template 
+         * @returns {string}
+         */
         function generateCallbacks(template) {
             let out = "";
         
@@ -185,6 +197,10 @@ class TemplateARDynamic extends Template {
             return out;
         }
         
+        /**
+         * @param {ApplicationTemplate} template 
+         * @returns {string}
+         */
         function generateInit(template) {
             let out = "";
         
@@ -222,6 +238,10 @@ class TemplateARDynamic extends Template {
             return out;
         }
         
+        /**
+         * @param {ApplicationTemplate} template 
+         * @returns {string}
+         */
         function generateCyclic(template) {
             let out = "";
         
@@ -358,6 +378,10 @@ class TemplateARDynamic extends Template {
             return out;
         }
         
+        /**
+         * @param {ApplicationTemplate} template 
+         * @returns {string}
+         */
         function generateExit(template) {
             let out = "";
             out += `_BUR_PUBLIC void ${template.datamodel.structName}Exit(struct ${template.datamodel.structName}Exit *inst)\n{\n`;
@@ -450,6 +474,10 @@ class TemplateARDynamic extends Template {
     }
 
     generateFun() {
+        /**
+         * @param {ApplicationTemplate} template 
+         * @returns {string}
+         */
         function generateFun(template) {
             let out = "";
 

@@ -1,4 +1,4 @@
-const { Template } = require('../template')
+const { Template, ApplicationTemplate } = require('../template')
 const { Datamodel } = require('../../../datamodel');
 
 class TemplateLinuxC extends Template {
@@ -7,6 +7,10 @@ class TemplateLinuxC extends Template {
     }
 
     generateSource() {
+        /**
+         * @param {ApplicationTemplate} template 
+         * @returns {string}
+         */
         function generateIncludes(template) {
             let out = "";
         
@@ -23,6 +27,10 @@ class TemplateLinuxC extends Template {
             return out;
         }
         
+        /**
+         * @param {ApplicationTemplate} template 
+         * @returns {string}
+         */
         function generateCallbacks(template) {
             let out = "";
             out += `static void datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE event_type, void *info)\n{\n`;
@@ -137,7 +145,11 @@ class TemplateLinuxC extends Template {
         
             return out;
         }
-        
+
+        /**
+         * @param {ApplicationTemplate} template 
+         * @returns {string}
+         */
         function generateInit(template) {
             let out = "";
         
@@ -187,7 +199,11 @@ class TemplateLinuxC extends Template {
         
             return out;
         }
-        
+
+        /**
+         * @param {ApplicationTemplate} template 
+         * @returns {string}
+         */
         function generateCyclic(template) {
             var out = "";
             out += `        EXOS_ASSERT_OK(exos_datamodel_process(&${template.datamodel.varName}));\n`;
@@ -197,6 +213,10 @@ class TemplateLinuxC extends Template {
             return out;
         }
         
+        /**
+         * @param {ApplicationTemplate} template 
+         * @returns {string}
+         */
         function generateExit(template) {
             var out = "";
         

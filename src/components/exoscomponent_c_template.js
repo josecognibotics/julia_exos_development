@@ -52,6 +52,7 @@ class ExosComponentCTemplate extends ExosComponent {
         this._linuxPackage.addNewBuildFile(this._linuxBuild,"termination.c",this._templateLinux.generateTerminationSource());
         this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName,this._templateBuild.options.debPackage.packageName);
         this._exospackage.exospkg.addService("Runtime", `./${this._templateBuild.options.executable.executableName}`, this._templateBuild.options.debPackage.destination);
+        this._exospackage.exospkg.addDatamodelInstance(`${this._typeName}_0`);
 
         super.makeComponent(location);
     }
@@ -70,7 +71,7 @@ if (require.main === module) {
         let outDir = path.join(__dirname,path.dirname(fileName));
 
         process.stdout.write(`Writing ${structName} to folder: ${outDir}\n`);
-        template.options.destinationDirectory = "/usr/bin"
+        
         template.makeComponent(outDir);     
     }
     else {

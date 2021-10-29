@@ -3,10 +3,10 @@ const {Datamodel} = require('../../datamodel');
 /**
  * Class used to generate a template object for code-generators
  * 
- * It uses `Datamodel` class as input for creating the `ApplicationTemplate` object
- * The `Datamodel` that passed to the contructor can be accessed via the `.datamodel` property
+ * It uses {@link Datamodel} class as input for creating the {@link ApplicationTemplate} object
+ * The {@link Datamodel} that passed to the contructor can be accessed via the {@link Template.datamodel} property
  * 
- * Structure of the `ApplicationTemplate` object:
+ * Structure of the {@link ApplicationTemplate} object:
  * 
  * @typedef {Object} ApplicationTemplateHandle 
  * @property {string} dataType typename of a handle structure => `MyApplicationHandle_t`
@@ -32,7 +32,7 @@ const {Datamodel} = require('../../datamodel');
  * @property {boolean} isPrivate set to true if the comment includes the word `private`
  * 
  * @typedef {Object} ApplicationTemplate
- * @property {string} headerName name of the headerfile to be included => `Datamodel.headerFileName`
+ * @property {string} headerName name of the generated headerfile to be included in applications => `Datamodel.headerFileName`
  * @property {string} libHeaderName name of a library wrapper headerfile to be included `libmyapplication.h`
  * @property {string} logname name of a `exos_log_handle_t` instance in the application, hardcoded => `logger`
  * @property {ApplicationTemplateHandle} handle handle structure for used for AR libraries (to overcome downloads)
@@ -44,31 +44,34 @@ class Template
 
     /**
      * Template structure for creating applications 
-     * The structure description is based on the following example:
      * 
-     *       TYPE
-     *         MyApplication : 	STRUCT 
-     *              Enable : BOOL; (*PUB*)
-     *              Counter : INT; (*SUB*)
-     *              Buffer : ARRAY[0..9]OF USINT;
-     *              Config : MyConfig; (*PUB SUB*)
-     *         END_STRUCT;
-     *         MyConfig : 	STRUCT 
-     *              Message : STRING[80];
-     *              SleepTime : LREAL;
-     *         END_STRUCT;
-     *      END_TYPE
+     * The structure description is based on the following datatype:
+     * 
+     * @example
+     * TYPE
+     *   MyApplication : 	STRUCT 
+     *        Enable : BOOL; (*PUB*)
+     *        Counter : INT; (*SUB*)
+     *        Buffer : ARRAY[0..9]OF USINT;
+     *        Config : MyConfig; (*PUB SUB*)
+     *   END_STRUCT;
+     *   MyConfig : 	STRUCT 
+     *        Message : STRING[80];
+     *        SleepTime : LREAL;
+     *   END_STRUCT;
+     * END_TYPE
+     * 
      * @type {ApplicationTemplate}
      */
     template;
     
     /**
-     * Create an `ApplicationTemplate` object from the given `Datamodel` for Linux or AR.
-     * The generated `ApplicationTemplate` is platform specific
+     * Create an {@link ApplicationTemplate} object from the given {@link Datamodel} for Linux or AR.
+     * The generated {@link ApplicationTemplate} is platform specific
      * so that `datasets` that are published (via `isPub=true`) in Automation Runtime 
      * are subscribed to  (via `isSub=true`) in Linux, and vice versa.
      *
-     * @param {Datamodel} datamodel existing `Datamodel` class that should be used for this template 
+     * @param {Datamodel} datamodel existing {@link Datamodel} class that should be used for this template 
      * @param {boolean} Linux generate structure for Linux (`true`), otherwise AR (`false`) when used in Linux, the `datasets[].isPub` and `datasets[].isSub` are reversed
      */
     constructor(datamodel, Linux) {
@@ -76,8 +79,8 @@ class Template
         /**
          * create the template structure form the Dataset structure
          * 
-         * @param {Dataset} types generated `Dataset` structure from the `Datamodel` class
-         * @param {string} headerName predefined headerFileName from the `Datamodel` class
+         * @param {Dataset} types generated {@link Dataset} structure from the {@link Datamodel} class
+         * @param {string} headerName predefined headerFileName from the {@link Datamodel} class
          * @param {boolean} Linux when used in Linux, the `datasets[].isPub` and `datasets[].isSub` are reversed
          * @returns {ApplicationTemplate}
          */
