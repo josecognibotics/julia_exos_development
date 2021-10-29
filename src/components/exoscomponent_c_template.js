@@ -6,9 +6,17 @@ const path = require('path');
 
 /**
  * @typedef {Object} ExosComponentCTemplateOptions
- * @property {string} destinationDirectory destination 
+ * @property {string} destinationDirectory destination of the generated executable in Linux. default: `/home/user` + `typeName`
+ * 
  */
 class ExosComponentCTemplate extends ExosComponent {
+
+    /**
+     * Options for manipulating the output of the `ExosComponentCTemplate` class in the `makeComponent` method
+     * 
+     * @type {ExosComponentCTemplateOptions}
+     */
+    options;
 
     /**
      * 
@@ -18,30 +26,32 @@ class ExosComponentCTemplate extends ExosComponent {
     constructor(fileName, typeName) {
         super(fileName, typeName, "build.sh");
 
-        this.templateAR = new TemplateARDynamic(this.datamodel);
-        this.templateLinux = new TemplateLinuxC(this.datamodel);
-        this.templateBuild = new TemplateLinuxBuild(typeName);
+        this._templateAR = new TemplateARDynamic(this._datamodel);
+        this._templateLinux = new TemplateLinuxC(this._datamodel);
+        this._templateBuild = new TemplateLinuxBuild(typeName);
+        this.options = {destinationDirectory: `/home/user/${typeName}`}
     }
 
     makeComponent(location) {
 
-        this.templateBuild.options.executable.enable = true;
-        this.templateBuild.options.executable.sourceFiles = ["termination.c", `${this.typeName.toLowerCase()}.c`]
-        this.templateBuild.options.debPackage.enable = true;
+        this._templateBuild.options.executable.enable = true;
+        this._templateBuild.options.executable.sourceFiles = ["termination.c", `${this._typeName.toLowerCase()}.c`]
+        this._templateBuild.options.debPackage.enable = true;
+        this._templateBuild.options.debPackage.destination = this.options.destinationDirectory;
 
-        this.cLibrary.addNewFile(`${this.typeName}.fun`, this.templateAR.generateFun());
-        this.cLibrary.addNewFile(`${this.typeName.toLowerCase()}.c`, this.templateAR.generateSource());
+        this._cLibrary.addNewFile(`${this._typeName}.fun`, this._templateAR.generateFun());
+        this._cLibrary.addNewFile(`${this._typeName.toLowerCase()}.c`, this._templateAR.generateSource());
 
-        this.iecProgram.addNewFile(`${this.typeName}.var`,this.templateAR.generateIECProgramVar());
-        this.iecProgram.addNewFile(`${this.typeName}.st`, this.templateAR.generateIECProgramST());
+        this._iecProgram.addNewFile(`${this._typeName}.var`,this._templateAR.generateIECProgramVar());
+        this._iecProgram.addNewFile(`${this._typeName}.st`, this._templateAR.generateIECProgramST());
         
-        this.linuxPackage.addNewBuildFile(this.linuxBuild,"CMakeLists.txt",this.templateBuild.generateCMakeLists());
-        this.linuxPackage.addNewBuildFile(this.linuxBuild,"build.sh",this.templateBuild.generateShBuild());
-        this.linuxPackage.addNewBuildFile(this.linuxBuild,`${this.typeName.toLowerCase()}.c`,this.templateLinux.generateSource());
-        this.linuxPackage.addNewBuildFile(this.linuxBuild,"termination.h",this.templateLinux.generateTerminationHeader());
-        this.linuxPackage.addNewBuildFile(this.linuxBuild,"termination.c",this.templateLinux.generateTerminationSource());
-        this.linuxPackage.addExistingTransferDebFile(this.templateBuild.options.debPackage.fileName,this.templateBuild.options.debPackage.packageName);
-        this.exospackage.exospkg.addService("Runtime", `./${this.templateBuild.options.executable.executableName}`, this.templateBuild.options.debPackage.destination);
+        this._linuxPackage.addNewBuildFile(this._linuxBuild,"CMakeLists.txt",this._templateBuild.generateCMakeLists());
+        this._linuxPackage.addNewBuildFile(this._linuxBuild,"build.sh",this._templateBuild.generateShBuild());
+        this._linuxPackage.addNewBuildFile(this._linuxBuild,`${this._typeName.toLowerCase()}.c`,this._templateLinux.generateSource());
+        this._linuxPackage.addNewBuildFile(this._linuxBuild,"termination.h",this._templateLinux.generateTerminationHeader());
+        this._linuxPackage.addNewBuildFile(this._linuxBuild,"termination.c",this._templateLinux.generateTerminationSource());
+        this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName,this._templateBuild.options.debPackage.packageName);
+        this._exospackage.exospkg.addService("Runtime", `./${this._templateBuild.options.executable.executableName}`, this._templateBuild.options.debPackage.destination);
 
         super.makeComponent(location);
     }
@@ -60,6 +70,7 @@ if (require.main === module) {
         let outDir = path.join(__dirname,path.dirname(fileName));
 
         process.stdout.write(`Writing ${structName} to folder: ${outDir}\n`);
+        template.options.destinationDirectory = "/usr/bin"
         template.makeComponent(outDir);     
     }
     else {

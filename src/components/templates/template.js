@@ -32,7 +32,7 @@ const {Datamodel} = require('../../datamodel');
  * @property {boolean} isPrivate set to true if the comment includes the word `private`
  * 
  * @typedef {Object} ApplicationTemplate
- * @property {string} headerName name of the headerfile to be included => `exos_myapplication.h`
+ * @property {string} headerName name of the headerfile to be included => `Datamodel.headerFileName`
  * @property {string} libHeaderName name of a library wrapper headerfile to be included `libmyapplication.h`
  * @property {string} logname name of a `exos_log_handle_t` instance in the application, hardcoded => `logger`
  * @property {ApplicationTemplateHandle} handle handle structure for used for AR libraries (to overcome downloads)
@@ -77,10 +77,11 @@ class Template
          * create the template structure form the Dataset structure
          * 
          * @param {Dataset} types generated `Dataset` structure from the `Datamodel` class
+         * @param {string} headerName predefined headerFileName from the `Datamodel` class
          * @param {boolean} Linux when used in Linux, the `datasets[].isPub` and `datasets[].isSub` are reversed
          * @returns {ApplicationTemplate}
          */
-        function configTemplate(types, Linux) {
+        function configTemplate(types, headerName, Linux) {
 
             var template = {
                 headerName: "",
@@ -102,7 +103,7 @@ class Template
             }
         
             template.logname = "logger";
-            template.headerName = `exos_${types.attributes.dataType.toLowerCase()}.h`
+            template.headerName = headerName;
             template.libHeaderName = `lib${types.attributes.dataType.toLowerCase()}.h`
             template.handle.dataType = `${types.attributes.dataType}Handle_t`;
             template.handle.name = "handle";
@@ -158,7 +159,7 @@ class Template
         }
 
         this.datamodel = datamodel;
-        this.template = configTemplate(this.datamodel.dataset, Linux);
+        this.template = configTemplate(this.datamodel.dataset, this.datamodel.headerFileName, Linux);
     }
 
     

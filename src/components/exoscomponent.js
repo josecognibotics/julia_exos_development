@@ -5,20 +5,24 @@ const path = require('path')
 
 class Component {
 
-    /**name of the `ExosPackage` */
-    name;
+    /**name of the `ExosPackage` 
+     * @type {string}
+    */
+    _name;
 
-    /**`ExosPackage` created with the name `{name}` */
-    exospackage;
+    /**`ExosPackage` created with the name `{name}` 
+     * @type {ExosPackage}
+    */
+    _exospackage;
 
     constructor(name) {
-        this.name = name;
-        this.exospackage = new ExosPackage(name);
+        this._name = name;
+        this._exospackage = new ExosPackage(name);
     }
 
     makeComponent(location)
     {
-        this.exospackage.makePackage(location);
+        this._exospackage.makePackage(location);
     }
 }
 
@@ -28,29 +32,40 @@ class Component {
  */
 class ExosComponent extends Component {
 
-    /**name of the IEC datatype used to generate the datamodel, `name` is also set to this `typeName`*/
-    typeName;
+    /**name of the IEC datatype used to generate the datamodel, `name` is also set to this `typeName`
+     * @type {string}
+    */
+    _typeName;
 
-    /**name of the .typ source file for generating the datamodel */
-    fileName;
+    /**name of the .typ source file for generating the datamodel 
+     * @type {string}
+    */
+    _fileName;
 
-    /**generated datamodel using `typeName` and `{typeName}.h` as SGInclude */
-    datamodel;
+    /**generated datamodel using `typeName` and `{typeName}.h` as SGInclude 
+     * @type {Datamodel}
+    */
+    _datamodel;
 
-    /**filenames of the generated datamodel files*/
-    datamodelFiles;
+    /**object returned from `exospkg.getNewWSLBuildCommand()` in order to add files as build dependencies
+     * @type {Object}
+    */
+    _linuxBuild;
 
-    /**object returned from `exospkg.getNewWSLBuildCommand()` in order to add files as build dependencies*/
-    linuxBuild;
+    /**`LinuxPackage` created in the folder "Linux". contains generated headerfiles
+     * @type {LinuxPackage}
+    */
+    _linuxPackage;
 
-    /**`LinuxPackage` created in the folder "Linux". contains generated headerfiles*/
-    linuxPackage;
+    /**`CLibrary` for AR created in the folder `{typeName}`. contains generated headerfiles
+     * @type {CLibrary}
+    */
+    _cLibrary;
 
-    /**`CLibrary` for AR created in the folder `{typeName}`. contains generated headerfiles*/
-    cLibrary;
-
-    /**`IECProgram` for AR created in the folder `{typeName}_0`. does not contain any files*/
-    iecProgram;
+    /**`IECProgram` for AR created in the folder `{typeName}_0`. does not contain any files
+     * @type {IECProgram}
+    */
+    _iecProgram;
 
     /**
      * 
@@ -62,21 +77,22 @@ class ExosComponent extends Component {
 
         super(typeName);
 
-        this.fileName = fileName;
+        this._typeName = typeName;
+        this._fileName = fileName;
 
-        this.datamodel = new Datamodel(fileName, typeName, [`${typeName}.h`])
-        this.exospackage.exospkg.addGenerateDatamodel(`${typeName}/${typeName}.typ`, typeName, [`${typeName}.h`], [typeName, "Linux"]);
-        this.linuxBuild = this.exospackage.exospkg.getNewWSLBuildCommand("Linux", buildScript);
+        this._datamodel = new Datamodel(fileName, typeName, [`${typeName}.h`])
+        this._exospackage.exospkg.addGenerateDatamodel(`${typeName}/${typeName}.typ`, typeName, [`${typeName}.h`], [typeName, "Linux"]);
+        this._linuxBuild = this._exospackage.exospkg.getNewWSLBuildCommand("Linux", buildScript);
 
-        this.linuxPackage = this.exospackage.getNewLinuxPackage("Linux");
-        this.linuxPackage.addNewFile(this.datamodelFiles.headerFileName,this.datamodel.headerFileCode);
-        this.linuxPackage.addNewFile(this.datamodelFiles.sourceFileName, this.datamodel.sourceFileCode);
+        this._linuxPackage = this._exospackage.getNewLinuxPackage("Linux");
+        this._linuxPackage.addNewFile(this._datamodel.headerFileName,this._datamodel.headerFileCode);
+        this._linuxPackage.addNewFile(this._datamodel.sourceFileName, this._datamodel.sourceFileCode);
 
-        this.cLibrary = this.exospackage.getNewCLibrary(typeName, ``);
-        this.cLibrary.addNewFile(this.datamodelFiles.headerFileName,this.datamodel.headerFileCode);
-        this.cLibrary.addNewFile(this.datamodelFiles.sourceFileName, this.datamodel.sourceFileCode);
+        this._cLibrary = this._exospackage.getNewCLibrary(typeName, ``);
+        this._cLibrary.addNewFile(this._datamodel.headerFileName,this._datamodel.headerFileCode);
+        this._cLibrary.addNewFile(this._datamodel.sourceFileName, this._datamodel.sourceFileCode);
 
-        this.iecProgram = this.exospackage.getNewIECProgram(`${typeName}_0`,``);
+        this._iecProgram = this._exospackage.getNewIECProgram(`${typeName}_0`,``);
     }
 
     makeComponent(location)
