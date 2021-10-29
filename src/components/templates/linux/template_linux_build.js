@@ -53,12 +53,14 @@
  * 
  */
 class TemplateLinuxBuild {
+    #_options;
+    #_name;
     /**
      * @param {string} name general name for objects, this name will be converted to lowercase or uppercase as needed
      */
     constructor(name) {
-        this._name = name;
-        this._options = {
+        this.#_name = name;
+        this.#_options = {
             buildType: "Debug",
             executable: {
                 enable: false,
@@ -73,15 +75,15 @@ class TemplateLinuxBuild {
             swigPython: {
                 enable: false,
                 sourceFiles: [],
-                moduleName: `lib${this._name}`,
-                soFileName: `_lib${this._name}.so`,
-                pyFileName: `lib${this._name}.py`
+                moduleName: `lib${this.#_name}`,
+                soFileName: `_lib${this.#_name}.so`,
+                pyFileName: `lib${this.#_name}.py`
             },
             napi: {
                 enable: false,
                 includeNodeModules: true,
                 sourceFiles: [],
-                nodeFileName: `l_${this._name}.node`
+                nodeFileName: `l_${this.#_name}.node`
             },
             debPackage: {
                 enable: true,
@@ -105,7 +107,7 @@ class TemplateLinuxBuild {
      * @returns {BuildOptions}
      */
     get options() {
-        return this._options;
+        return this.#_options;
     }
 
     /**
@@ -118,28 +120,28 @@ class TemplateLinuxBuild {
 
         out += `cmake_minimum_required(VERSION 3.0)\n`;
         out += `\n`;
-        out += `project(${this._name.toLowerCase()})\n`;
+        out += `project(${this.#_name.toLowerCase()})\n`;
         out += `\n`;
-        out += `set(CMAKE_BUILD_TYPE ${this._options.buildType})\n`;
+        out += `set(CMAKE_BUILD_TYPE ${this.#_options.buildType})\n`;
 
-        if(this._options.napi.enable) {
+        if(this.#_options.napi.enable) {
             
-            if(this._options.debPackage.enable) {
+            if(this.#_options.debPackage.enable) {
                 out += `\n`;
-                out += `set(${this._name.toUpperCase()}_MODULE_FILES\n`;
-                out += `    ${this._options.napi.nodeFileName}\n`;
-                for (const source of this._options.napi.sourceFiles) {
+                out += `set(${this.#_name.toUpperCase()}_MODULE_FILES\n`;
+                out += `    ${this.#_options.napi.nodeFileName}\n`;
+                for (const source of this.#_options.napi.sourceFiles) {
                     out += `    ${source}\n`;
                 }
                 out += `    )\n`;
                 out += `\n`;
-                out += `install(FILES \${${this._name.toUpperCase()}_MODULE_FILES} DESTINATION ${this._options.debPackage.destination})\n`;
-                out += `install(DIRECTORY node_modules DESTINATION ${this._options.debPackage.destination})\n`;
+                out += `install(FILES \${${this.#_name.toUpperCase()}_MODULE_FILES} DESTINATION ${this.#_options.debPackage.destination})\n`;
+                out += `install(DIRECTORY node_modules DESTINATION ${this.#_options.debPackage.destination})\n`;
             }
         }
-        else if(this._options.swigPython.enable) {
-            this._options.swigPython.soFileName = `_${this._options.swigPython.moduleName}.so`;
-            this._options.swigPython.pyFileName = `${this._options.swigPython.moduleName}.py`;
+        else if(this.#_options.swigPython.enable) {
+            this.#_options.swigPython.soFileName = `_${this.#_options.swigPython.moduleName}.so`;
+            this.#_options.swigPython.pyFileName = `${this.#_options.swigPython.moduleName}.py`;
 
             out += `find_package(SWIG REQUIRED)\n`;
             out += `include(\${SWIG_USE_FILE})\n`;
@@ -160,71 +162,71 @@ class TemplateLinuxBuild {
             out += `\n`;
             out += `set(CMAKE_SWIG_FLAGS "")\n`;
             out += `\n`;
-            out += `set(${this._name.toUpperCase()}_SOURCES\n`;
-            for (const source of this._options.swigPython.sourceFiles) {
+            out += `set(${this.#_name.toUpperCase()}_SOURCES\n`;
+            for (const source of this.#_options.swigPython.sourceFiles) {
                 out += `    ${source}\n`;
             }
             out += `    )\n`;
             out += `\n`;
-            out += `set_source_files_properties(\${${this._name.toUpperCase()}_SOURCES} PROPERTIES CPLUSPLUS ON)\n`;
+            out += `set_source_files_properties(\${${this.#_name.toUpperCase()}_SOURCES} PROPERTIES CPLUSPLUS ON)\n`;
             out += `\n`;
-            out += `swig_add_module(${this._options.swigPython.moduleName} python \${${this._name.toUpperCase()}_SOURCES})\n`;
-            out += `swig_link_libraries(${this._options.swigPython.moduleName} \${PYTHON_LIBRARIES} zmq exos-api)\n`;
+            out += `swig_add_module(${this.#_options.swigPython.moduleName} python \${${this.#_name.toUpperCase()}_SOURCES})\n`;
+            out += `swig_link_libraries(${this.#_options.swigPython.moduleName} \${PYTHON_LIBRARIES} zmq exos-api)\n`;
 
-            if(this._options.debPackage.enable) {
+            if(this.#_options.debPackage.enable) {
                 out += `\n`;
-                out += `set(${this._name.toUpperCase()}_MODULE_FILES\n`;
-                out += `    ${this._options.swigPython.soFileName}\n`;
-                out += `    ${this._options.swigPython.pyFileName}\n`;
+                out += `set(${this.#_name.toUpperCase()}_MODULE_FILES\n`;
+                out += `    ${this.#_options.swigPython.soFileName}\n`;
+                out += `    ${this.#_options.swigPython.pyFileName}\n`;
                 out += `    )\n`;
                 out += `\n`;
-                out += `install(FILES \${${typName.toUpperCase()}_MODULE_FILES} DESTINATION ${this._options.debPackage.destination})\n`;
+                out += `install(FILES \${${typName.toUpperCase()}_MODULE_FILES} DESTINATION ${this.#_options.debPackage.destination})\n`;
             }
         }
-        else if(this._options.executable.enable) {
-            if(this._options.executable.staticLibrary.enable) {
-                out += `add_library(${this._options.executable.staticLibrary.libraryName} STATIC`;
-                for (const source of this._options.executable.staticLibrary.sourceFiles) {
+        else if(this.#_options.executable.enable) {
+            if(this.#_options.executable.staticLibrary.enable) {
+                out += `add_library(${this.#_options.executable.staticLibrary.libraryName} STATIC`;
+                for (const source of this.#_options.executable.staticLibrary.sourceFiles) {
                     out += ` ${source}`;
                 }
                 out += `)\n`;
-                out += `target_include_directories(${this._options.executable.staticLibrary.libraryName} PUBLIC ..)\n`;
+                out += `target_include_directories(${this.#_options.executable.staticLibrary.libraryName} PUBLIC ..)\n`;
             }
-            out += `add_executable(${this._options.executable.executableName}`;
-            for (const source of this._options.executable.sourceFiles) {
+            out += `add_executable(${this.#_options.executable.executableName}`;
+            for (const source of this.#_options.executable.sourceFiles) {
                 out += ` ${source}`;
             }
             out += `)\n`;
-            out += `target_include_directories(${this._options.executable.executableName} PUBLIC ..)\n`;
-            if(this._options.executable.staticLibrary.enable) {
-                out += `target_link_libraries(${this._options.executable.executableName} ${this._options.executable.staticLibrary.libraryName} zmq exos-api)\n`;
+            out += `target_include_directories(${this.#_options.executable.executableName} PUBLIC ..)\n`;
+            if(this.#_options.executable.staticLibrary.enable) {
+                out += `target_link_libraries(${this.#_options.executable.executableName} ${this.#_options.executable.staticLibrary.libraryName} zmq exos-api)\n`;
             }
             else {
-                out += `target_link_libraries(${this._options.executable.executableName} zmq exos-api)\n`;
+                out += `target_link_libraries(${this.#_options.executable.executableName} zmq exos-api)\n`;
             }
-            if(this._options.debPackage.enable) {
+            if(this.#_options.debPackage.enable) {
                 out += `\n`;
-                out += `install(TARGETS ${this._options.executable.executableName} RUNTIME DESTINATION ${this._options.debPackage.destination})\n`;
+                out += `install(TARGETS ${this.#_options.executable.executableName} RUNTIME DESTINATION ${this.#_options.debPackage.destination})\n`;
             }
         }
 
-        if(this._options.debPackage.enable) {
-            this._options.debPackage.fileName = `${this._options.debPackage.packageName}_${this._options.debPackage.version.major}.${this._options.debPackage.version.minor}.${this._options.debPackage.version.patch}_amd64.deb`;
+        if(this.#_options.debPackage.enable) {
+            this.#_options.debPackage.fileName = `${this.#_options.debPackage.packageName}_${this.#_options.debPackage.version.major}.${this.#_options.debPackage.version.minor}.${this.#_options.debPackage.version.patch}_amd64.deb`;
 
             out += `\n`;
             out += `set(CPACK_GENERATOR "DEB")\n`;
-            out += `set(CPACK_PACKAGE_NAME ${this._options.debPackage.packageName})\n`;
-            out += `set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${this._options.debPackage.summary}")\n`;
-            out += `set(CPACK_PACKAGE_DESCRIPTION "${this._options.debPackage.description}")\n`;
-            out += `set(CPACK_PACKAGE_VENDOR "${this._options.debPackage.vendor}")\n`;
+            out += `set(CPACK_PACKAGE_NAME ${this.#_options.debPackage.packageName})\n`;
+            out += `set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${this.#_options.debPackage.summary}")\n`;
+            out += `set(CPACK_PACKAGE_DESCRIPTION "${this.#_options.debPackage.description}")\n`;
+            out += `set(CPACK_PACKAGE_VENDOR "${this.#_options.debPackage.vendor}")\n`;
             out += `\n`;
-            out += `set(CPACK_PACKAGE_VERSION_MAJOR ${this._options.debPackage.version.major})\n`;
-            out += `set(CPACK_PACKAGE_VERSION_MINOR ${this._options.debPackage.version.minor})\n`;
-            out += `set(CPACK_PACKAGE_VERSION_PATCH ${this._options.debPackage.version.patch})\n`;
+            out += `set(CPACK_PACKAGE_VERSION_MAJOR ${this.#_options.debPackage.version.major})\n`;
+            out += `set(CPACK_PACKAGE_VERSION_MINOR ${this.#_options.debPackage.version.minor})\n`;
+            out += `set(CPACK_PACKAGE_VERSION_PATCH ${this.#_options.debPackage.version.patch})\n`;
 
-            out += `set(CPACK_PACKAGE_FILE_NAME ${this._options.debPackage.fileName})\n`;
+            out += `set(CPACK_PACKAGE_FILE_NAME ${this.#_options.debPackage.fileName})\n`;
 
-            out += `set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${this._options.debPackage.maintainer}")\n`;
+            out += `set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${this.#_options.debPackage.maintainer}")\n`;
             out += `\n`;
             out += `set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)\n`;
             out += `\n`;
@@ -245,7 +247,7 @@ class TemplateLinuxBuild {
         
         out += `#!/bin/sh\n\n`;
 
-        if(this._options.napi.enable) {
+        if(this.#_options.napi.enable) {
             
             out += `finalize() {\n`;
             out += `    rm -rf build/*\n`;
@@ -273,7 +275,7 @@ class TemplateLinuxBuild {
         
             out += `cd build\n\n`;
             
-            if(this._options.debPackage.enable) {
+            if(this.#_options.debPackage.enable) {
                 out += `cmake -Wno-dev ..\n`;
                 out += `if [ "$?" -ne 0 ] ; then\n`;
                 out += `    finalize 2\n`;
@@ -293,7 +295,7 @@ class TemplateLinuxBuild {
             out += `rm -rf build/*\n\n`;
             out += `cd build\n\n`;
             //cmake
-            if(this._options.swigPython.enable) {
+            if(this.#_options.swigPython.enable) {
                 out += `cmake -Wno-dev ..\n`;
             }
             else {
@@ -310,25 +312,25 @@ class TemplateLinuxBuild {
         }    
         
         //pack
-        if(this._options.debPackage.enable) {
+        if(this.#_options.debPackage.enable) {
             out += `cpack\n`;
             out += `if [ "$?" -ne 0 ] ; then\n`;
             out += `    finalize 3\n`;
             out += `fi\n\n`;
-            out += `cp -f ${this._options.debPackage.fileName} ..\n\n`;
+            out += `cp -f ${this.#_options.debPackage.fileName} ..\n\n`;
         }
         else {
-            if(this._options.napi.enable) {
-                out += `cp -f ${this._options.napi.nodeFileName} ..\n\n`;
+            if(this.#_options.napi.enable) {
+                out += `cp -f ${this.#_options.napi.nodeFileName} ..\n\n`;
             }
             else {
-                if(this._options.swigPython.enable) {
-                    out += `cp -f ${this._options.swigPython.soFileName} ..\n\n`;
-                    out += `cp -f ${this._options.swigPython.pyFileName} ..\n\n`;
+                if(this.#_options.swigPython.enable) {
+                    out += `cp -f ${this.#_options.swigPython.soFileName} ..\n\n`;
+                    out += `cp -f ${this.#_options.swigPython.pyFileName} ..\n\n`;
                 }
                 else {
-                    if(this._options.executable.enable) {
-                        out += `cp -f ${this._options.executable.executableName} ..\n\n`;
+                    if(this.#_options.executable.enable) {
+                        out += `cp -f ${this.#_options.executable.executableName} ..\n\n`;
                     }
                 }
             }
