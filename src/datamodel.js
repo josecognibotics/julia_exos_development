@@ -361,24 +361,24 @@ class Datamodel {
                         
                         if (parent == "") {
                             if (child.attributes.arraySize > 0) {
-                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}),{${parentArray}}},\n`);
+                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}),{${parentArray}}},\r\n`);
                                 infoId++;
                                 child.attributes.info2 = "<infoId" + infoId + ">";
-                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}[0]),{${arrayStr}}},\n`);
+                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}[0]),{${arrayStr}}},\r\n`);
                             }
                             else {
-                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}),{${arrayStr}}},\n`);
+                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}),{${arrayStr}}},\r\n`);
                             }
                         }
                         else {
                             if (child.attributes.arraySize > 0) {
-                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}),{${parentArray}}},\n`);
+                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}),{${parentArray}}},\r\n`);
                                 infoId++;
                                 child.attributes.info2 = "<infoId" + infoId + ">";
-                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}[0]),{${arrayStr}}},\n`);
+                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}[0]),{${arrayStr}}},\r\n`);
                             }
                             else {
-                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}),{${arrayStr}}},\n`);
+                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}),{${arrayStr}}},\r\n`);
                             }
                         }
                     }
@@ -387,29 +387,29 @@ class Datamodel {
 
                         if (parent == "") {
                             if (child.attributes.arraySize > 0) {
-                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}),{${parentArray}}},\n`);
+                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}),{${parentArray}}},\r\n`);
                                 infoId++;
                                 child.attributes.info2 = "<infoId" + infoId + ">";
-                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}[0]),{${arrayStr}}},\n`);
+                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}[0]),{${arrayStr}}},\r\n`);
                                 out += _infoChildren(child.children, `${child.attributes.name}[0]`, arrayStr,sortedStructs);
                             }
                             else {
-                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}),{${arrayStr}}},\n`);
+                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${child.attributes.name}),{${arrayStr}}},\r\n`);
                                 out += _infoChildren(child.children, child.attributes.name, arrayStr, sortedStructs);
                             }
                         }
                         else {
                             if (child.attributes.arraySize > 0) {
         
-                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}),{${parentArray}}},\n`);
+                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}),{${parentArray}}},\r\n`);
                                 infoId++;
                                 child.attributes.info2 = "<infoId" + infoId + ">";
-                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}[0]),{${arrayStr}}},\n`);
+                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}[0]),{${arrayStr}}},\r\n`);
                                 out += _infoChildren(child.children, `${parent}.${child.attributes.name}[0]`, arrayStr, sortedStructs);
         
                             }
                             else {
-                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}),{${arrayStr}}},\n`);
+                                out += checkExosInfoCallParam(`        {EXOS_DATASET_BROWSE_NAME(${parent}.${child.attributes.name}),{${arrayStr}}},\r\n`);
                                 out += _infoChildren(child.children, `${parent}.${child.attributes.name}`, arrayStr, sortedStructs);
                             }
                         }
@@ -427,6 +427,17 @@ class Datamodel {
                 || (key == 'comment' && value == '')) {
               return undefined; // return undefined so JSON.stringify will omitt it
             }
+            if(key == 'comment') {
+                //clear all comments that are not purely PUB SUB
+                let commentStr = '';
+                if(value.includes("PUB")) {
+                    commentStr += "PUB";
+                }
+                if(value.includes("SUB")) {
+                    commentStr += " SUB"; //this is the same as the TP, SUB always comes with a trailing space..
+                }
+                return commentStr;
+            }
             return value; // otherwise return the value as it is
         }
         
@@ -441,26 +452,26 @@ class Datamodel {
         let jsonConfig = JSON.stringify(this.dataset, replacer).split('"').join('\\"'); // one liner with escapes on "
         if (jsonConfig.length > Datamodel.MAX_CONFIG_LENGTH) throw (`JSON config (${jsonConfig.length} chars) is longer than maximum (${Datamodel.MAX_CONFIG_LENGTH}).`);
     
-        out += `/*Automatically generated c file from ${path.basename(this.fileName)}*/\n\n`;
+        out += `/*Automatically generated c file from ${path.basename(this.fileName)}*/\r\n\r\n`;
         
-        out += `#include "exos_${this.typeName.toLowerCase()}.h"\n\n`;
+        out += `#include "exos_${this.typeName.toLowerCase()}.h"\r\n\r\n`;
 
-        out += `const char config_${this.typeName.toLowerCase()}[] = "${jsonConfig}";\n\n`; 
+        out += `const char config_${this.typeName.toLowerCase()}[] = "${jsonConfig}";\r\n\r\n`; 
 
-        out += `/*Connect the ${this.typeName} datamodel to the server*/\n`;
-        out += `EXOS_ERROR_CODE exos_datamodel_connect_${this.typeName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback)\n{\n`;
-        out += `    ${this.typeName} data;\n`;
-        out += `    exos_dataset_info_t datasets[] = {\n`;
-        out += `        {EXOS_DATASET_BROWSE_NAME_INIT,{}},\n`;
+        out += `/*Connect the ${this.typeName} datamodel to the server*/\r\n`;
+        out += `EXOS_ERROR_CODE exos_datamodel_connect_${this.typeName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback)\r\n{\r\n`;
+        out += `    ${this.typeName} data;\r\n`;
+        out += `    exos_dataset_info_t datasets[] = {\r\n`;
+        out += `        {EXOS_DATASET_BROWSE_NAME_INIT,{}},\r\n`;
         out += info;
-        out = out.slice(0, -2); //remove the last ,\n
-        out += `\n`;
-        out += `    };\n\n`;
+        out = out.slice(0, -3); //remove the last ,\r\n
+        out += `\r\n`;
+        out += `    };\r\n\r\n`;
     
-        out += `    exos_datamodel_calc_dataset_info(datasets,sizeof(datasets));\n\n`;
+        out += `    exos_datamodel_calc_dataset_info(datasets, sizeof(datasets));\r\n\r\n`;
     
-        out += `    return exos_datamodel_connect(datamodel, config_${this.typeName.toLowerCase()}, datasets, sizeof(datasets), datamodel_event_callback);\n`;
-        out += `}\n`;
+        out += `    return exos_datamodel_connect(datamodel, config_${this.typeName.toLowerCase()}, datasets, sizeof(datasets), datamodel_event_callback);\r\n`;
+        out += `}\r\n`;
 
         return out;
     }
@@ -472,32 +483,32 @@ class Datamodel {
     _makeHeader() {
     
         let out = "";
-        out = `/*Automatically generated header file from ${path.basename(this.fileName)}*/\n\n`;
+        out = `/*Automatically generated header file from ${path.basename(this.fileName)}*/\r\n\r\n`;
     
-        out += `#ifndef _EXOS_COMP_${this.typeName.toUpperCase()}_H_\n`;
-        out += `#define _EXOS_COMP_${this.typeName.toUpperCase()}_H_\n\n`;
-        out += `#include "exos_api.h"\n\n`;
+        out += `#ifndef _EXOS_COMP_${this.typeName.toUpperCase()}_H_\r\n`;
+        out += `#define _EXOS_COMP_${this.typeName.toUpperCase()}_H_\r\n\r\n`;
+        out += `#include "exos_api.h"\r\n\r\n`;
     
         if (Array.isArray(this.SG4Includes)) {
-            out += `#if defined(_SG4)\n`;
+            out += `#if defined(_SG4)\r\n`;
             for (let SG4Include of this.SG4Includes) {
-                out += `#include <${SG4Include}>\n`;
+                out += `#include <${SG4Include}>\r\n`;
             }
-            out += `#else\n`;
+            out += `#else\r\n`;
         }
-        out += `#include <stddef.h>\n`;
-        out += `#include <stdint.h>\n`;
-        out += `#include <stdbool.h>\n\n`;
+        out += `#include <stddef.h>\r\n`;
+        out += `#include <stdint.h>\r\n`;
+        out += `#include <stdbool.h>\r\n\r\n`;
     
         out += this.dataTypeCode;
     
         if (Array.isArray(this.SG4Includes)) {
-            out += `#endif // _SG4\n\n`;
+            out += `#endif // _SG4\r\n\r\n`;
         }
  
-        out += `EXOS_ERROR_CODE exos_datamodel_connect_${this.typeName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback);\n\n`;
+        out += `EXOS_ERROR_CODE exos_datamodel_connect_${this.typeName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback);\r\n\r\n`;
     
-        out += `#endif // _EXOS_COMP_${this.typeName.toUpperCase()}_H_\n`
+        out += `#endif // _EXOS_COMP_${this.typeName.toUpperCase()}_H_\r\n`
     
         return out;
     }
@@ -525,7 +536,7 @@ class Datamodel {
             out += `;`
         
             if (comment != "") out += ` //${comment}`;
-            out += `\n`;
+            out += `\r\n`;
             return out;
         }
 
@@ -569,16 +580,16 @@ class Datamodel {
     
                     if (line[1] == ("STRUCT")) {
                         cmd = "read_struct";
-                        if (comment != "") out += "//" + comment + "\n";
+                        if (comment != "") out += "//" + comment + "\r\n";
                         structname = line[0];
-                        out += `typedef struct ${structname}\n{\n`;
+                        out += `typedef struct ${structname}\r\n{\r\n`;
                         structs.push({ name: structname, out: "", depends: [] });
                     }
                     else if (line[1] == ("")) {
                         cmd = "read_enum";
-                        if (comment != "") out += "//" + comment + "\n";
+                        if (comment != "") out += "//" + comment + "\r\n";
                         structname = line[0];
-                        out += `typedef enum ${structname}\n{\n`;
+                        out += `typedef enum ${structname}\r\n{\r\n`;
                         members = 0;
                         structs.push({ name: structname, out: "", depends: [] });
                     }
@@ -589,10 +600,10 @@ class Datamodel {
                     if (line.includes(")")) {
                         cmd = "find_struct_enum";
                         if (members > 0) {
-                            out = out.slice(0, -2); //remove the last ,\n
-                            out += `\n`;
+                            out = out.slice(0, -3); //remove the last ,\r\n
+                            out += `\r\n`;
                         }
-                        out += `\n} ${structname};\n\n`;
+                        out += `\r\n} ${structname};\r\n\r\n`;
                         structs[structs.length - 1].out = out;
                         out = "";
                     }
@@ -601,11 +612,11 @@ class Datamodel {
                             let name = line.split(":=")[0].trim();
                             let enumValue = line.split(":=")[1].trim();
                             enumValue = parseInt(enumValue.split(",")[0].trim());
-                            out += `    ${name} = ${enumValue},\n`;
+                            out += `    ${name} = ${enumValue},\r\n`;
                         }
                         else {
                             let name = line.split(",")[0].trim();
-                            out += `    ${name},\n`;
+                            out += `    ${name},\r\n`;
                         }
                         members++;
                     }
@@ -614,7 +625,7 @@ class Datamodel {
                 case "read_struct":
                     if (line.includes("END_STRUCT")) {
                         cmd = "find_struct_enum";
-                        out += `\n} ${structname};\n\n`;
+                        out += `\r\n} ${structname};\r\n\r\n`;
                         structs[structs.length - 1].out = out;
                         out = "";
                     }
@@ -967,7 +978,7 @@ class Datamodel {
 
 if (require.main === module) {
 
-    process.stdout.write(`exOS Datamodel version ${version}\n`);
+    process.stdout.write(`exOS Datamodel version ${version}\r\n`);
 
     if (process.argv.length > 3) {
 
@@ -979,7 +990,7 @@ if (require.main === module) {
                 let datamodel = new Datamodel(fileName, structName, [`${structName}.h`]);
                 let outDir = path.join(__dirname,path.dirname(fileName));
 
-                process.stdout.write(`Writing ${structName} to folder: ${outDir}\n`);
+                process.stdout.write(`Writing ${structName} to folder: ${outDir}\r\n`);
 
                 fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.h`),datamodel.headerFileCode);
                 fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.c`),datamodel.sourceFileCode);
@@ -994,7 +1005,7 @@ if (require.main === module) {
 
     }
     else {
-        process.stderr.write("usage: ./Datamodel.js <filename.typ> <structname>\n");
+        process.stderr.write("usage: ./Datamodel.js <filename.typ> <structname>\r\n");
     }
 }
 
