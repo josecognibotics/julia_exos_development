@@ -1,5 +1,4 @@
 const { Datamodel } = require('../../datamodel');
-const { TemplateLinuxTermination } = require('./linux/template_linux_termination');
 const { Template, ApplicationTemplate } = require('./template')
 
 class TemplateStaticCLib extends Template {
@@ -18,7 +17,6 @@ class TemplateStaticCLib extends Template {
      */
     constructor(datamodel, Linux) {
         super(datamodel,Linux);
-        this._templateLinuxTermination = new TemplateLinuxTermination();
     }
 
     generateLibSource() {
