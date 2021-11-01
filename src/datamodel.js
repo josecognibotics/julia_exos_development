@@ -434,9 +434,17 @@ class Datamodel {
                     commentStr += "PUB";
                 }
                 if(value.includes("SUB")) {
-                    commentStr += " SUB"; //this is the same as the TP, SUB always comes with a trailing space..
+                    if(commentStr.length > 0) {
+                        commentStr += " SUB";
+                    }
+                    else {
+                        commentStr += "SUB";
+                    }
                 }
-                return commentStr;
+                if(commentStr.length > 0)
+                    return commentStr;
+                else 
+                    return undefined;
             }
             return value; // otherwise return the value as it is
         }
