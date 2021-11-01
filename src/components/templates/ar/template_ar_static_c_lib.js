@@ -2,7 +2,7 @@ const { Template, ApplicationTemplate } = require('../template');
 const {TemplateStaticCLib} = require('../template_static_c_lib');
 const { Datamodel } = require('../../../datamodel');
 
-class TemplateARStaticCLib extends Template {
+class TemplateARStaticCLib extends TemplateStaticCLib {
 
     /**
      * {@linkcode TemplateARStaticCLib} Generate code for static c-library wrapper and main function for Linux applications
@@ -26,8 +26,6 @@ class TemplateARStaticCLib extends Template {
 
     constructor(datamodel) {
         super(datamodel,false);
-        this._templateStaticLib = new TemplateStaticCLib(datamodel, false);
-
     }
 
     /**
@@ -276,22 +274,8 @@ class TemplateARStaticCLib extends Template {
             return out;
         }
 
-        return generateMainAR(this.template, this.isLinux, this._templateStaticLib.generateLegend());
+        return generateMainAR(this.template, this.isLinux, this.generateLegend());
 
-    }
-
-    /**
-     * @returns {string} `{libName}.c`: static library source code
-     */
-    generateLibSource() {
-        return this._templateStaticLib.generateLibSource();
-    }
-
-    /**
-     * @returns {string} `{libName}.h`: static library header
-     */
-    generateLibHeader() {
-        return this._templateStaticLib.generateLibHeader();
     }
 }
 

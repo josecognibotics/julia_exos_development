@@ -3,7 +3,7 @@ const { TemplateLinuxTermination } = require('./template_linux_termination');
 const {TemplateStaticCLib} = require('../template_static_c_lib');
 const { Datamodel } = require('../../../datamodel');
 
-class TemplateLinuxStaticCLib extends Template {
+class TemplateLinuxStaticCLib extends TemplateStaticCLib {
 
     /**
      * {@linkcode TemplateLinuxStaticCLib} Generate code for static c-library wrapper and main function for Linux applications
@@ -24,7 +24,6 @@ class TemplateLinuxStaticCLib extends Template {
 
     constructor(datamodel) {
         super(datamodel, true);
-        this._templateStaticLib = new TemplateStaticCLib(datamodel, true);
         this._templateTermination = new TemplateLinuxTermination();
     }
 
@@ -122,21 +121,7 @@ class TemplateLinuxStaticCLib extends Template {
             return out;
         }
 
-        return generateMain(this.template,this.isLinux, this._templateStaticLib.generateLegend())
-    }
-
-    /**
-     * @returns {string} `{libName}.c`: static library source code
-     */
-    generateLibSource() {
-        return this._templateStaticLib.generateLibSource();
-    }
-
-    /**
-     * @returns {string} `{libName}.h`: static library header
-     */
-    generateLibHeader() {
-        return this._templateStaticLib.generateLibHeader();
+        return generateMain(this.template,this.isLinux, this.generateLegend())
     }
 
     /**
