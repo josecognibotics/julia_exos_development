@@ -1,12 +1,26 @@
 const { Datamodel } = require('../../../datamodel');
 const { Template, ApplicationTemplate } = require('../template')
 
+
 class TemplateARDynamic extends Template {
 
+    /**
+     * {@linkcode TemplateARDynamic} Generate source code for dynamic AR C-Library and ST-Application
+     * 
+     * - `{LibraryName}.c`: {@linkcode generateSource} source code with all functionality for the libary
+     * - `{LibraryName}.fun`: {@linkcode generateFun} function block declaration for the AR library (needs to have the same name as the library itself)
+     * - `{ProgramName}.var`: {@linkcode generateIECProgramVar} varaible declaration for the ST program
+     * - `{ProgramName}.st`: {@linkcode generateIECProgramST} application implementation code in ST
+     * 
+     * @param {Datamodel} datamodel
+     */
     constructor(datamodel) {
         super(datamodel,false);
     }
     
+    /**
+     * @returns {string} `{LibraryName}.c`: source code with all functionality for the libary
+     */
     generateSource() {
 
         /**
@@ -214,7 +228,7 @@ class TemplateARDynamic extends Template {
             out += `    }\n\n`;
             out += `    memset(&${template.handle.name}->data, 0, sizeof(${template.handle.name}->data));\n`;
             out += `    ${template.handle.name}->self = ${template.handle.name};\n\n`;
-            out += `    exos_log_init(&${template.handle.name}->${template.logname}, "${template.datamodel.structName}_0");\n\n`;
+            out += `    exos_log_init(&${template.handle.name}->${template.logname}, "${template.aliasName}");\n\n`;
             out += `    \n`;
             out += `    \n`;
             out += `    exos_datamodel_handle_t *${template.datamodel.varName} = &${template.handle.name}->${template.datamodel.varName};\n`;
@@ -225,7 +239,7 @@ class TemplateARDynamic extends Template {
             }
         
             //initialization
-            out += `    EXOS_ASSERT_OK(exos_datamodel_init(${template.datamodel.varName}, "${template.datamodel.structName}", "${template.datamodel.structName}_0"));\n\n`;
+            out += `    EXOS_ASSERT_OK(exos_datamodel_init(${template.datamodel.varName}, "${template.datamodelInstanceName}", "${template.aliasName}"));\n\n`;
             for (let dataset of template.datasets) {
                 if (dataset.isSub || dataset.isPub) {
                     out += `    EXOS_ASSERT_OK(exos_dataset_init(${dataset.varName}, ${template.datamodel.varName}, "${dataset.structName}", &${template.handle.name}->data.${dataset.structName}, sizeof(${template.handle.name}->data.${dataset.structName})));\n`;
@@ -429,6 +443,9 @@ class TemplateARDynamic extends Template {
         return out;
     }
 
+    /**
+     * @returns {string} `{ProgramName}.var`: varaible declaration for the ST program
+     */
     generateIECProgramVar() {
         function generateIECProgramVar(typName) {
             let out = "";
@@ -445,6 +462,9 @@ class TemplateARDynamic extends Template {
         return generateIECProgramVar(this.datamodel.typeName);
     }
 
+    /**
+     * @returns {string} `{ProgramName}.st`: application implementation code in ST
+     */
     generateIECProgramST() {
         function generateIECProgramST(typName) {
             let out = "";
@@ -473,6 +493,9 @@ class TemplateARDynamic extends Template {
         return generateIECProgramST(this.datamodel.typeName);
     }
 
+    /**
+     * @returns {string} `{LibraryName}.fun`: function block declaration for the AR library (needs to have the same name as the library itself)
+     */
     generateFun() {
         /**
          * @param {ApplicationTemplate} template 

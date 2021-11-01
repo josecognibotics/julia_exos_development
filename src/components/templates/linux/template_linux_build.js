@@ -1,8 +1,4 @@
 /**
- * Linux Build template class
- * 
- * This class covers different build alternatives for linux
- * sources within exOS packages
  * 
  * @typedef {Object} BuildOptionsPackageVersion
  * @property {number} major default: `1`
@@ -67,6 +63,14 @@ class TemplateLinuxBuild {
     name;
 
     /**
+     *  {@linkcode TemplateLinuxBuild} Linux Build template class
+     * 
+     * This class covers different build alternatives for Linux
+     * 
+     * it generates code for two files:
+     * - `CMakeLists.txt`: {@linkcode generateCMakeLists} cmake build script
+     * - `{build}.sh`: {@linkcode generateShBuild} build shell script
+     * 
      * @param {string} name general name for objects, this name will be converted to lowercase or uppercase as needed
      */
     constructor(name) {
@@ -117,7 +121,7 @@ class TemplateLinuxBuild {
     /**
      * Use the build `options` to configure the CMake file
      * 
-     * @returns {string} the contents of the generated CMakeLists.txt
+     * @returns {string} `CMakeLists.txt`: the contents of the generated cmake build script
      */
     generateCMakeLists() {
         let out = "";
@@ -244,7 +248,7 @@ class TemplateLinuxBuild {
     /**
      * Use the build `options` to configure the buildscript
      * 
-     * @returns {string} the contents of generated build.sh file
+     * @returns {string} `{build}.sh`: the contents of generated build script file
      */
     generateShBuild() {
         let out = "";

@@ -215,10 +215,8 @@ class Datamodel {
     /**
      * @returns {string} datatype (BOOL, UDINT) as stdint.h/stdbool.h datatype (bool, uint32_t) or struct (unchanged)
      * @param {string} type IEC type, like BOOL or UDINT 
-     * 
-     * PREVIOUSLY convertPlcType
      */
-     static getTypeFromIEC(type) {
+     static convertPlcType(type) {
         switch (type) {
             case "BOOL": return "bool";
             case "USINT": return "uint8_t";
@@ -269,10 +267,8 @@ class Datamodel {
      * @returns {string} the printf format string for the given IEC type, like %u for UDINT or %s for STRING
      * 
      * @param {string} type IEC type, like BOOL or UDINT  
-     * 
-     * PREVIOUSLY convertPlcTypePrintf
      */
-    static getFormatString(type) {
+    static convertPlcTypePrintf(type) {
         switch (type) {
             case "BOOL": return "%i";
             case "USINT": return "%u";
@@ -677,7 +673,7 @@ class Datamodel {
                                 }
                             }
                             else if (Datamodel.isScalarType(type)) {
-                                let stdtype = Datamodel.getTypeFromIEC(type);
+                                let stdtype = Datamodel.convertPlcType(type);
                                 typeForSwig = stdtype;
                                 out += _outputMember(stdtype, name, [arraySize], comment);
                             }

@@ -35,6 +35,8 @@ const {Datamodel} = require('../../datamodel');
  * @property {string} headerName name of the generated headerfile to be included in applications => `Datamodel.headerFileName`
  * @property {string} libHeaderName name of a library wrapper headerfile to be included `libmyapplication.h`
  * @property {string} logname name of a `exos_log_handle_t` instance in the application, hardcoded => `logger`
+ * @property {string} aliasName the 'alias' name use in the `exos_datamodel_init` and name for the `exos_log_init` - meaning the name that the Application gets in the Logger => `gMyApplication_0`
+ * @property {string} datamodelInstanceName name of the datamodel instance (aka shared memory name) for the configuration and the `exos_datamodel_connect()` => `MyApplication_0`
  * @property {ApplicationTemplateHandle} handle handle structure for used for AR libraries (to overcome downloads)
  * @property {ApplicationTemplateDatamodel} datamodel datamodel related types and instance names for the application
  * @property {ApplicationTemplateDataset[]} datasets dataset type and instance names for the application  
@@ -66,6 +68,12 @@ class Template
     template;
     
     /**
+     * Whether the template is generated for Linux or not
+     * @type {boolean}
+     */
+    isLinux;
+
+    /**
      * Create an {@link ApplicationTemplate} object from the given {@link Datamodel} for Linux or AR.
      * The generated {@link ApplicationTemplate} is platform specific
      * so that `datasets` that are published (via `isPub=true`) in Automation Runtime 
@@ -88,6 +96,8 @@ class Template
 
             var template = {
                 headerName: "",
+                logname: "",
+                aliasName: "",
                 handle: {
                     dataType: "",
                     name: "",
@@ -101,11 +111,12 @@ class Template
                     libStructName: "",
                     handleName: ""
                 },
-                datasets: [],
-                logname: ""
+                datasets: []
             }
         
             template.logname = "logger";
+            template.aliasName = `g${types.attributes.dataType}_0`;
+            template.datamodelInstanceName = `${types.attributes.dataType}_0`;
             template.headerName = headerName;
             template.libHeaderName = `lib${types.attributes.dataType.toLowerCase()}.h`
             template.handle.dataType = `${types.attributes.dataType}Handle_t`;
@@ -161,6 +172,7 @@ class Template
             return template;
         }
 
+        this.isLinux = Linux;
         this.datamodel = datamodel;
         this.template = configTemplate(this.datamodel.dataset, this.datamodel.headerFileName, Linux);
     }
