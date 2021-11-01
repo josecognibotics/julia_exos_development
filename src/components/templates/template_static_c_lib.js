@@ -31,9 +31,7 @@ class TemplateStaticCLib extends Template {
          */
         function generateTemplate(template, PubSubSwap) {
             let out = "";
-        
-            let template = configTemplate(fileName, typName);
-        
+                
             //includes
         
             out += `#include <string.h>\n`;
@@ -450,7 +448,7 @@ class TemplateStaticCLib extends Template {
         
             return out;
         }
-        
+        return genenerateLegend(this.template, this.isLinux);
     }
 }
 

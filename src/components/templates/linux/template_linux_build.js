@@ -23,7 +23,7 @@
  *
  * @typedef {Object} BuildOptionsExecutable
  * @property {boolean} enable whether or not an executable should be created. mutually exclusive with `napi` and `swigPython`. default: `false`
- * @property {BuildOptionsLibrary} staticLibrary build options for creating a static library, if enabled, the `executable` will be linked to this library
+ * @property {BuildOptionsStaticLibrary} staticLibrary build options for creating a static library, if enabled, the `executable` will be linked to this library
  * @property {string} executableName name of the executable. default: `name`. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the LinuxPackage
  * @property {string[]} sourceFiles list of source files used to build the executable. default: [] 
  * 
