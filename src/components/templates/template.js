@@ -18,6 +18,8 @@ const {Datamodel} = require('../../datamodel');
  * @property {string} structName typename of the datamodel structure or enum, same as dataType => `MyApplication`
  * @property {string} libStructName typename of a library wrapper datamodel - same as dataType with a "lib" prefix => `libMyApplication`
  * @property {string} handleName name of a handle used for the datamodel in the library wrapper => `h_MyApplication`
+ * @property {string} className name of a generated class for this datamodel => `MyApplicationDatamodel`
+ * @property {string} datasetClassName name of a generated class for its datasets => `MyApplicationDataset`
  * 
  * @typedef {Object} ApplicationTemplateDataset
  * @property {string} dataType typename of the dataset structure enum or variable, => `MyConfig`, `BOOL` or `USINT`
@@ -36,6 +38,7 @@ const {Datamodel} = require('../../datamodel');
  * @property {string} libHeaderName name of a library wrapper headerfile to be included `libmyapplication.h`
  * @property {string} logname name of a `exos_log_handle_t` instance in the application, hardcoded => `logger`
  * @property {string} aliasName the 'alias' name use in the `exos_datamodel_init` and name for the `exos_log_init` - meaning the name that the Application gets in the Logger => `gMyApplication_0`
+ * @property {string} loggerClassName name of a generated logger class => `MyApplicationLogger`
  * @property {string} datamodelInstanceName name of the datamodel instance (aka shared memory name) for the configuration and the `exos_datamodel_connect()` => `MyApplication_0`
  * @property {ApplicationTemplateHandle} handle handle structure for used for AR libraries (to overcome downloads)
  * @property {ApplicationTemplateDatamodel} datamodel datamodel related types and instance names for the application
@@ -98,6 +101,8 @@ class Template
                 headerName: "",
                 logname: "",
                 aliasName: "",
+                loggerClassName: "",
+                datasetClassName: "",
                 handle: {
                     dataType: "",
                     name: "",
@@ -109,13 +114,15 @@ class Template
                     dataType: "",
                     comment: "",
                     libStructName: "",
-                    handleName: ""
+                    handleName: "",
+                    className: ""
                 },
                 datasets: []
             }
         
             template.logname = "logger";
             template.aliasName = `g${types.attributes.dataType}_0`;
+            template.loggerClassName = `${types.attributes.dataType}Logger`
             template.datamodelInstanceName = `${types.attributes.dataType}_0`;
             template.headerName = headerName;
             template.libHeaderName = `lib${types.attributes.dataType.toLowerCase()}.h`
@@ -124,6 +131,8 @@ class Template
 
             template.datamodel.dataType = types.attributes.dataType;
             template.datamodel.structName = types.attributes.dataType;
+            template.datamodel.className = `${types.attributes.dataType}Datamodel`;
+            template.datamodel.datasetClassName = `${types.attributes.dataType}Dataset`;
             //check if toLowerCase is equal to datatype name, then extend it with _datamodel
             if (types.attributes.dataType == types.attributes.dataType.toLowerCase()) {
                 template.datamodel.varName = types.attributes.dataType.toLowerCase() + "_datamodel";

@@ -63,6 +63,13 @@ class ExosComponent extends Component {
     _iecProgram;
 
     /**
+     * Creates an exOS package from the given `fileName/typeName` and generates headerfiles in the AR Library and the Linux Pacakge
+     * 
+     * Following objects should be used in inherited classes
+     * - {@linkcode _datamodel} datamodel for the `fileName/typeName` with an _SG4 include being the AR Library
+     * - {@linkcode _cLibrary} C/C++ library for AR with the name of the datatype (typeName)
+     * - {@linkcode _iecProgram} IEC program that uses the Library
+     * - {@linkcode _linuxPackage} Linux package
      * 
      * @param {string} fileName 
      * @param {string} typeName  

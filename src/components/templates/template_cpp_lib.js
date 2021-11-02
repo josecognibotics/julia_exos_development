@@ -1,37 +1,80 @@
 const { Template, ApplicationTemplate } = require('./template')
-const { Datamodel } = require('../../datamodel');
+const { Datamodel, GeneratedFileObj } = require('../../datamodel');
 
 class TemplateCppLib extends Template {
+    
     /**
-     * {@linkcode TemplateCppLib} Generate static C library for Linux and AR
+     * @type {GeneratedFileObj}
+     */
+    datasetHeader;
+
+    /**
+     * @type {GeneratedFileObj}
+     */
+    loggerHeader;
+
+    /**
+     * @type {GeneratedFileObj}
+     */
+    loggerSource;
+
+    /**
+     * @type {GeneratedFileObj}
+     */
+    datamodelHeader;
+
+    /**
+     * @type {GeneratedFileObj}
+     */
+    datamodelSource;
+
+    /**
+     * souce code comment to be added to the implementing source code - describing the datamodel interface
+     * @type {string}
+     */
+    datamodelLegend;
+
+    /**
+     * {@linkcode TemplateCppLib} Generate C++ Datamodel template for Linux and AR
      * 
-     * This class creates a static wrapper library for simplified use of exos in C
+     * This class creates a following {@link GeneratedFileObj} objects
      * 
-     * - `[typeName]Dataset.h`: {@linkcode generateDatasetHeader} dataset class
-     * - `[typeName]Logger.h`: {@linkcode generateLoggerHeader} datalogger class
-     * - `[typeName]Logger.cpp`: {@linkcode generateLoggerSource} datalogger class implementation
-     * - `[typeName]DataModel.h` {@linkcode generateDatamodelHeader} datamodel class
-     * - `[typeName]DataModel.cpp` {@linkcode generateDatamodelSource datamodel class implementation
+     * - {@linkcode datasetHeader} dataset class
+     * - {@linkcode loggerHeader} datalogger class
+     * - {@linkcode loggerSource} datalogger class implementation
+     * - {@linkcode datamodelHeader} datamodel class
+     * - {@linkcode datamodelSource} datamodel class implementation
      * 
-     * - {@linkcode generateLegend} code comment to be added to the implementing source code - describing the library interface
+     * - {@linkcode datamodelLegend} code comment to be added to the implementing source code - describing the library interface
      * 
      * @param {Datamodel} datamodel 
      * @param {boolean} Linux true if generated for Linux, false for AR
      */
     constructor(datamodel, Linux) {
         super(datamodel,Linux);
+
+        this.datasetHeader = {name: `${this.template.datamodel.datasetClassName}.h`, contents:this._generateDatasetHeader(), description:`${this.datamodel.typeName} dataset class`}
+        this.loggerHeader = {name: `${this.template.loggerClassName}.h`, contents:this._generateLoggerHeader(), description:`${this.datamodel.typeName} logger class`}
+        this.loggerSource = {name: `${this.template.loggerClassName}.cpp`, contents:this._generateLoggerSource(), description:`${this.datamodel.typeName} logger class implementation`}
+        this.datamodelHeader = {name: `${this.template.datamodel.className}.h`, contents:this._generateDatamodelHeader(), description:`${this.datamodel.typeName} datamodel class`}
+        this.datamodelSource = {name: `${this.template.datamodel.className}.cpp`, contents:this._generateDatamodelSource(), description:`${this.datamodel.typeName} datamodel class implementation`}
+        this.datamodelLegend = this._genenerateLegend();
     }
 
     /**
      * @returns {string} `[typeName]Dataset.h`: {@linkcode generateDatasetHeader} dataset class
      */
-    generateDatasetHeader() {
-        function generateExosDataSetHeader(typName) {
+    _generateDatasetHeader() {
+        /**
+         * @param {ApplicationTemplate} template 
+         * @returns {string}
+         */
+        function generateExosDataSetHeader(template) {
 
             let out = "";
         
-            out += `#ifndef _${typName.toUpperCase()}DATASET_H_\n`;
-            out += `#define _${typName.toUpperCase()}DATASET_H_\n`;
+            out += `#ifndef _${template.datamodel.structName.toUpperCase()}DATASET_H_\n`;
+            out += `#define _${template.datamodel.structName.toUpperCase()}DATASET_H_\n`;
             out += `\n`;
             out += `#include <string>\n`;
             out += `#include <iostream>\n`;
@@ -39,10 +82,10 @@ class TemplateCppLib extends Template {
             out += `#include <functional>\n`;
             out += `\n`;
             out += `extern "C" {\n`;
-            out += `    #include "exos_${typName.toLowerCase()}.h"\n`;
+            out += `    #include "${template.headerName}"\n`;
             out += `}\n`;
             out += `\n`;
-            out += `#include "${typName}Logger.h"\n`;
+            out += `#include "${template.loggerClassName}.h"\n`;
             out += `#define exos_assert_ok(_plog_,_exp_)                                                                                                    \\\n`;
             out += `    do                                                                                                                                  \\\n`;
             out += `    {                                                                                                                                   \\\n`;
@@ -56,11 +99,11 @@ class TemplateCppLib extends Template {
             
             out += `\n`;
             out += `template <typename T>\n`;
-            out += `class ${typName}DataSet\n`;
+            out += `class ${template.datamodel.datasetClassName}\n`;
             out += `{\n`;
             out += `private:\n`;
             out += `    exos_dataset_handle_t dataset = {};\n`;
-            out += `    ${typName}Logger* log;\n`;
+            out += `    ${template.loggerClassName}* log;\n`;
             out += `    std::function<void()> _onChange = [](){};\n`;
             out += `    void datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE event_type, void *info) {\n`;
             out += `        switch (event_type)\n`;
@@ -95,29 +138,29 @@ class TemplateCppLib extends Template {
             out += `        }\n`;
             out += `    }\n`;
             out += `    static void _datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE event_type, void *info) {\n`;
-            out += `        ${typName}DataSet* inst = static_cast<${typName}DataSet*>(dataset->user_context);\n`;
+            out += `        ${template.datamodel.datasetClassName}* inst = static_cast<${template.datamodel.datasetClassName}*>(dataset->user_context);\n`;
             out += `        inst->datasetEvent(dataset, event_type, info);\n`;
             out += `    }\n`;
             out += `\n`;
             out += `public:\n`;
-            out += `    ${typName}DataSet() {};\n`;
+            out += `    ${template.datamodel.datasetClassName}() {};\n`;
             out += `    \n`;
             out += `    T value;\n`;
             out += `    int nettime;\n`;
-            out += `    void init(exos_datamodel_handle_t *datamodel, const char *browse_name, ${typName}Logger* _log) {\n`;
+            out += `    void init(exos_datamodel_handle_t *datamodel, const char *browse_name, ${template.loggerClassName}* _log) {\n`;
             out += `        log = _log;\n`;
             out += `        exos_assert_ok(log, exos_dataset_init(&dataset, datamodel, browse_name, &value, sizeof(value)));\n`;
             out += `        dataset.user_context = this;\n`;
             out += `    };\n`;
             out += `    void connect(EXOS_DATASET_TYPE type) {\n`;
-            out += `        exos_assert_ok(log, exos_dataset_connect(&dataset, type, &${typName}DataSet::_datasetEvent));\n`;
+            out += `        exos_assert_ok(log, exos_dataset_connect(&dataset, type, &${template.datamodel.datasetClassName}::_datasetEvent));\n`;
             out += `    };\n`;
             out += `    void publish() {\n`;
             out += `        exos_dataset_publish(&dataset);\n`;
             out += `    };\n`;
             out += `    void onChange(std::function<void()> f) {_onChange = std::move(f);};\n`;
             out += `    \n`;
-            out += `    ~${typName}DataSet() {\n`;
+            out += `    ~${template.datamodel.datasetClassName}() {\n`;
             out += `        exos_assert_ok(log, exos_dataset_delete(&dataset));\n`;
             out += `    };\n`;
             out += `};\n`;
@@ -126,19 +169,23 @@ class TemplateCppLib extends Template {
         
             return out;
         }
-        return generateExosDataSetHeader(this.datamodel.typeName);
+        return generateExosDataSetHeader(this.template);
     }
 
     /**
      * @returns {string} `[typeName]Logger.h`: datalogger class
      */
-    generateLoggerHeader() {
-        function generateExosLoggerHeader(typName) {
+    _generateLoggerHeader() {
+        /**
+         * @param {ApplicationTemplate} template 
+         * @returns {string}
+         */
+        function generateExosLoggerHeader(template) {
             
             let out = "";
             
-            out += `#ifndef _${typName.toUpperCase()}_LOGGER_H_\n`;
-            out += `#define _${typName.toUpperCase()}_LOGGER_H_\n`;
+            out += `#ifndef _${template.datamodel.structName.toUpperCase()}_LOGGER_H_\n`;
+            out += `#define _${template.datamodel.structName.toUpperCase()}_LOGGER_H_\n`;
             out += `\n`;
             out += `#include <iostream>\n`;
             out += `#include <sstream>\n`;
@@ -190,10 +237,10 @@ class TemplateCppLib extends Template {
             out += `    ExosLogger();\n`;
             out += `};\n`;
             out += `\n`;
-            out += `class ${typName}Logger\n`;
+            out += `class ${template.loggerClassName}\n`;
             out += `{\n`;
             out += `public:\n`;
-            out += `    ${typName}Logger(std::string name)\n`;
+            out += `    ${template.loggerClassName}(std::string name)\n`;
             out += `        : info(&logger, EXOS_LOG_LEVEL_INFO, EXOS_LOG_TYPE_USER)\n`;
             out += `        , warning(&logger, EXOS_LOG_LEVEL_WARNING, EXOS_LOG_TYPE_USER)\n`;
             out += `        , error(&logger, EXOS_LOG_LEVEL_ERROR, EXOS_LOG_TYPE_USER)\n`;
@@ -206,7 +253,7 @@ class TemplateCppLib extends Template {
             out += `    void process() {\n`;
             out += `        exos_log_process(&logger);\n`;
             out += `    }\n`;
-            out += `    ~${typName}Logger() {\n`;
+            out += `    ~${template.loggerClassName}() {\n`;
             out += `        exos_log_delete(&logger);\n`;
             out += `    };\n`;
             out += `    ExosLogger info;\n`;
@@ -223,18 +270,18 @@ class TemplateCppLib extends Template {
             
             return out;
         }
-        return generateExosLoggerHeader(this.datamodel.typeName);
+        return generateExosLoggerHeader(this.template);
     }
 
     /**
      * @returns {string} `[typeName]Logger.cpp`: datalogger class implementation
      */
-    generateLoggerSource() {
-        function generateExosLoggerCpp(typName) {
+    _generateLoggerSource() {
+        function generateExosLoggerCpp(loggerHeaderName) {
         
             let out = "";
             
-            out += `#include "${typName}Logger.h"\n`;
+            out += `#include "${loggerHeaderName}"\n`;
             out += `\n`;
             out += `ExosLogger::ExosLogger(exos_log_handle_t* logger, EXOS_LOG_LEVEL logLevel, EXOS_LOG_TYPE logType)\n`;
             out += `    : logger(logger)\n`;
@@ -269,13 +316,13 @@ class TemplateCppLib extends Template {
         
             return out;
         }
-        return generateExosLoggerCpp(this.datamodel.typeName);
+        return generateExosLoggerCpp(this.loggerHeader.name);
     }
 
     /**
-     * @returns {string} `[typeName]DataModel.h` datamodel class
+     * @returns {string} `[typeName]Datamodel.h` datamodel class
      */
-    generateDatamodelHeader() {
+    _generateDatamodelHeader() {
         /**
          * @param {ApplicationTemplate} template 
          * @returns {string}
@@ -284,16 +331,16 @@ class TemplateCppLib extends Template {
         
             let out = "";
         
-            out += `#ifndef _${typName.toUpperCase()}DATAMODEL_H_\n`;
-            out += `#define _${typName.toUpperCase()}DATAMODEL_H_\n`;
+            out += `#ifndef _${template.datamodel.structName.toUpperCase()}DATAMODEL_H_\n`;
+            out += `#define _${template.datamodel.structName.toUpperCase()}DATAMODEL_H_\n`;
             out += `\n`;
             out += `#include <string>\n`;
             out += `#include <iostream>\n`;
             out += `#include <string.h>\n`;
             out += `#include <functional>\n`;
-            out += `#include "${typName}DataSet.h"\n`;
+            out += `#include "${template.datamodel.datasetClassName}.h"\n`;
             out += `\n`;
-            out += `class ${typName}DataModel\n`;
+            out += `class ${template.datamodel.className}\n`;
             out += `{\n`;
             out += `private:\n`;
             out += `    exos_datamodel_handle_t datamodel = {};\n`;
@@ -301,12 +348,12 @@ class TemplateCppLib extends Template {
             out += `\n`;
             out += `    void datamodelEvent(exos_datamodel_handle_t *datamodel, const EXOS_DATAMODEL_EVENT_TYPE event_type, void *info);\n`;
             out += `    static void _datamodelEvent(exos_datamodel_handle_t *datamodel, const EXOS_DATAMODEL_EVENT_TYPE event_type, void *info) {\n`;
-            out += `        ${typName}DataModel* inst = static_cast<${typName}DataModel*>(datamodel->user_context);\n`;
+            out += `        ${template.datamodel.className}* inst = static_cast<${template.datamodel.className}*>(datamodel->user_context);\n`;
             out += `        inst->datamodelEvent(datamodel, event_type, info);\n`;
             out += `    }\n`;
             out += `\n`;
             out += `public:\n`;
-            out += `    ${typName}DataModel();\n`;
+            out += `    ${template.datamodel.className}();\n`;
             out += `    void process();\n`;
             out += `    void connect();\n`;
             out += `    void disconnect();\n`;
@@ -318,7 +365,7 @@ class TemplateCppLib extends Template {
             out += `    bool isConnected = false;\n`;
             out += `    EXOS_CONNECTION_STATE connectionState = EXOS_STATE_DISCONNECTED;\n`;
             out += `\n`;
-            out += `    ${typName}Logger log;\n`;
+            out += `    ${template.loggerClassName} log;\n`;
             out += `\n`;
             for (let dataset of template.datasets) {
                 if (dataset.isPub || dataset.isSub) {
@@ -329,11 +376,11 @@ class TemplateCppLib extends Template {
                     if(header.isScalarType(dataType)){
                         dataType = header.convertPlcType(dataType);
                     }
-                    out += `    ${typName}DataSet<${dataType}${dataset.arraySize > 0 ? '['+dataset.arraySize+']' : ''}${dataset.stringLength && dataset.stringLength > 0 ? '['+dataset.stringLength+']' : ''}> ${dataset.structName};\n`;
+                    out += `    ${template.datamodel.datasetClassName}<${dataType}${dataset.arraySize > 0 ? '['+dataset.arraySize+']' : ''}${dataset.stringLength && dataset.stringLength > 0 ? '['+dataset.stringLength+']' : ''}> ${dataset.structName};\n`;
                 }
             }
             out += `\n`;
-            out += `    ~${typName}DataModel();\n`;
+            out += `    ~${template.datamodel.className}();\n`;
             out += `};\n`;
             out += `\n`;
             out += `#endif\n`;
@@ -346,7 +393,7 @@ class TemplateCppLib extends Template {
     /**
      * @returns {string}
      */
-    generateDatamodelSource() {
+    _generateDatamodelSource() {
         /**
          * 
          * @param {ApplicationTemplate} template 
@@ -359,9 +406,9 @@ class TemplateCppLib extends Template {
             let out = "";
         
             out += `#define EXOS_STATIC_INCLUDE\n`;
-            out += `#include "${typName}DataModel.h"\n`;
+            out += `#include "${template.datamodel.className}.h"\n`;
             out += `\n`;
-            out += `${typName}DataModel::${typName}DataModel()\n`;
+            out += `${template.datamodel.className}::${template.datamodel.className}()\n`;
             out += `    : log("${template.aliasName}")\n`;
             out += `{\n`;
             out += `    log.success << "starting ${template.aliasName} application.." << std::endl;\n`;
@@ -376,8 +423,8 @@ class TemplateCppLib extends Template {
             }
             out += `}\n`;
             out += `\n`;
-            out += `void ${typName}DataModel::connect() {\n`;
-            out += `    exos_assert_ok((&log), exos_datamodel_connect_${typName.toLowerCase()}(&datamodel, &${typName}DataModel::_datamodelEvent));\n`;
+            out += `void ${template.datamodel.className}::connect() {\n`;
+            out += `    exos_assert_ok((&log), exos_datamodel_connect_${typName.toLowerCase()}(&datamodel, &${template.datamodel.className}::_datamodelEvent));\n`;
             out += `\n`;
             for (let dataset of template.datasets) {
                 if (dataset.isPub && dataset.isSub) {
@@ -392,24 +439,24 @@ class TemplateCppLib extends Template {
             }
             out += `}\n`;
             out += `\n`;
-            out += `void ${typName}DataModel::disconnect() {\n`;
+            out += `void ${template.datamodel.className}::disconnect() {\n`;
             out += `    exos_assert_ok((&log), exos_datamodel_disconnect(&datamodel));\n`;
             out += `}\n`;
             out += `\n`;
-            out += `void ${typName}DataModel::setOperational() {\n`;
+            out += `void ${template.datamodel.className}::setOperational() {\n`;
             out += `    exos_assert_ok((&log), exos_datamodel_set_operational(&datamodel));\n`;
             out += `}\n`;
             out += `\n`;
-            out += `void ${typName}DataModel::process() {\n`;
+            out += `void ${template.datamodel.className}::process() {\n`;
             out += `    exos_assert_ok((&log), exos_datamodel_process(&datamodel));\n`;
             out += `    log.process();\n`;
             out += `}\n`;
             out += `\n`;
-            out += `int ${typName}DataModel::getNettime() {\n`;
+            out += `int ${template.datamodel.className}::getNettime() {\n`;
             out += `    return exos_datamodel_get_nettime(&datamodel);\n`;
             out += `}\n`;
             out += `\n`;
-            out += `void ${typName}DataModel::datamodelEvent(exos_datamodel_handle_t *datamodel, const EXOS_DATAMODEL_EVENT_TYPE event_type, void *info) {\n`;
+            out += `void ${template.datamodel.className}::datamodelEvent(exos_datamodel_handle_t *datamodel, const EXOS_DATAMODEL_EVENT_TYPE event_type, void *info) {\n`;
             out += `    switch (event_type)\n`;
             out += `    {\n`;
             out += `    case EXOS_DATAMODEL_EVENT_CONNECTION_CHANGED:\n`;
@@ -443,7 +490,7 @@ class TemplateCppLib extends Template {
             out += `    }\n`;
             out += `}\n`;
             out += `\n`;
-            out += `${typName}DataModel::~${typName}DataModel()\n`;
+            out += `${template.datamodel.className}::~${template.datamodel.className}()\n`;
             out += `{\n`;
             out += `    exos_assert_ok((&log), exos_datamodel_delete(&datamodel));\n`;
             out += `}\n`;
@@ -457,7 +504,7 @@ class TemplateCppLib extends Template {
      * 
      * @returns {string}
      */
-    genenerateLegend() {
+    _genenerateLegend() {
         /**
          * 
          * @param {ApplicationTemplate} template

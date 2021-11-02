@@ -7,18 +7,18 @@ const { ExosComponent } = require('./exoscomponent');
 const path = require('path');
 
 /**
- * @typedef {Object} ExosComponentCTemplateOptions
+ * @typedef {Object} ExosComponentCOptions
  * @property {string} destinationDirectory destination of the generated executable in Linux. default: `/home/user/{typeName.toLowerCase()}`
  * @property {boolean} generateARStaticLib if `true`, the AR side will be generated using the static library wrapper, which has less overhead and is easier to program / change, but only allows one instance in AR. If false, the library main function will use the exos_api commands directly
  * @property {boolean} generateLinuxStaticLib if `true`, the linux application will use the static library wrapper, which has less overhead and easier to program / change. If `false`, the `exos_api` interfece is used directly in the main code.
  * 
  */
-class ExosComponentCTemplate extends ExosComponent {
+class ExosComponentC extends ExosComponent {
 
     /**
-     * Options for manipulating the output of the `ExosComponentCTemplate` class in the `makeComponent` method
+     * Options for manipulating the output of the `ExosComponentC` class in the `makeComponent` method
      * 
-     * @type {ExosComponentCTemplateOptions}
+     * @type {ExosComponentCOptions}
      */
     options;
 
@@ -82,7 +82,7 @@ class ExosComponentCTemplate extends ExosComponent {
 
         this._linuxPackage.addNewBuildFileObj(linuxBuild,this._templateBuild.CMakeLists);
         this._linuxPackage.addNewBuildFileObj(linuxBuild,this._templateBuild.buildScript);
-        this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName, this._templateBuild.options.debPackage.packageName);
+        this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName, this._templateBuild.options.debPackage.packageName, `${this._typeName} debian package`);
 
         /* Additional exospkg settings */
 
@@ -102,7 +102,7 @@ if (require.main === module) {
         let fileName = process.argv[2];
         let structName = process.argv[3];
 
-        let template = new ExosComponentCTemplate(fileName, structName);
+        let template = new ExosComponentC(fileName, structName);
         let outDir = path.join(__dirname,path.dirname(fileName));
 
         process.stdout.write(`Writing ${structName} to folder: ${outDir}\n`);
@@ -116,4 +116,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = {ExosComponentCTemplate};
+module.exports = {ExosComponentC};
