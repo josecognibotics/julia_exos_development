@@ -1,6 +1,6 @@
 const { Datamodel, GeneratedFileObj } = require('../../../datamodel');
-const { Template, ApplicationTemplate } = require('../template')
-
+const { Template, ApplicationTemplate } = require('../template');
+const {TemplateARHeap } = require('./template_ar_heap');
 
 class TemplateARDynamic extends Template {
 
@@ -29,6 +29,11 @@ class TemplateARDynamic extends Template {
     iecProgramST;
 
     /**
+     * @type {TemplateARHeap}
+     */
+    heap;
+
+    /**
      * {@linkcode TemplateARDynamic} Generate source code for dynamic AR C-Library and ST-Application
      * 
      * Generates following {@link GeneratedFileObj}
@@ -36,6 +41,9 @@ class TemplateARDynamic extends Template {
      * - {@linkcode libraryFun}
      * - {@linkcode iecProgramVar} 
      * - {@linkcode iecProgramST}
+     * 
+     * Using {@linkcode TemplateARHeap}
+     * - `heap.heapSource` declaring the dynamic heap
      * 
      * @param {Datamodel} datamodel
      */
@@ -46,6 +54,7 @@ class TemplateARDynamic extends Template {
         this.libraryFun = {name:`${this.datamodel.typeName}.fun`, contents:this._generateFun(), description:`${this.datamodel.typeName} function blocks`};
         this.iecProgramVar = {name:`${this.datamodel.typeName}.var`, contents:this._generateIECProgramVar(), description:`${this.datamodel.typeName} variable declaration`};
         this.iecProgramST = {name:`${this.datamodel.typeName}.st`, contents:this._generateIECProgramST(), description:`${this.datamodel.typeName} application`};
+        this.heap = new TemplateARHeap(100000);
     }
     
     /**

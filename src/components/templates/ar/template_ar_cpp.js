@@ -1,6 +1,7 @@
 const { Datamodel, GeneratedFileObj } = require('../../../datamodel');
 const { Template, ApplicationTemplate } = require('../template')
 const { TemplateCppLib } = require('../template_cpp_lib');
+const {TemplateARHeap } = require('./template_ar_heap');
 
 class TemplateARCpp extends TemplateCppLib {
 
@@ -29,6 +30,11 @@ class TemplateARCpp extends TemplateCppLib {
     iecProgramST;
 
     /**
+     * @type {TemplateARHeap}
+     */
+    heap;
+
+    /**
      * {@linkcode TemplateARCpp} Generate source code for AR C++ library and IEC program
      * 
      * Generates following {@link GeneratedFileObj}
@@ -43,7 +49,10 @@ class TemplateARCpp extends TemplateCppLib {
      * - {@linkcode loggerSource} datalogger class implementation
      * - {@linkcode datamodelHeader} datamodel class
      * - {@linkcode datamodelSource} datamodel class implementation
-     * 
+     *
+     * Using {@linkcode TemplateARHeap}
+     * - `heap.heapSource` declaring the dynamic heap
+     *  
      * @param {Datamodel} datamodel
      */
     constructor(datamodel) {
@@ -252,6 +261,8 @@ class TemplateARCpp extends TemplateCppLib {
         this.libraryFun = {name:`${this.datamodel.typeName}.fun`, contents:generateFun(this.template), description:`${this.datamodel.typeName} function blocks`};
         this.iecProgramVar = {name:`${this.datamodel.typeName}.var`, contents:generateIECProgramVar(this.template), description:`${this.datamodel.typeName} variable declaration`};
         this.iecProgramST = {name:`${this.datamodel.typeName}.st`, contents:generateIECProgramST(this.template), description:`${this.datamodel.typeName} application`};
+
+        this.heap = new TemplateARHeap(100000);
     }
 }
 

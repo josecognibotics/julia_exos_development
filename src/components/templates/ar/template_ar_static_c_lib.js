@@ -1,6 +1,7 @@
 const { Template, ApplicationTemplate } = require('../template');
 const {TemplateStaticCLib} = require('../template_static_c_lib');
 const { Datamodel, GeneratedFileObj } = require('../../../datamodel');
+const {TemplateARHeap } = require('./template_ar_heap');
 
 class TemplateARStaticCLib extends TemplateStaticCLib {
 
@@ -29,6 +30,11 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
     iecProgramST;
 
     /**
+     * @type {TemplateARHeap}
+     */
+    heap;
+
+    /**
      * {@linkcode TemplateARStaticCLib} Generate code for static c-library wrapper and main function for Linux applications
      *
      * Generates following {@link GeneratedFileObj} objects 
@@ -42,6 +48,9 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
      * - {@linkcode staticLibrarySource} static library source code
      * - {@linkcode staticLibraryHeader} static library header
      * 
+     * Using {@linkcode TemplateARHeap}
+     * - `heap.heapSource` declaring the dynamic heap
+     * 
      * @param {Datamodel} datamodel
      */
     constructor(datamodel) {
@@ -51,6 +60,7 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
         this.libraryFun = {name:`${this.datamodel.typeName}.fun`, contents:this._generateFun(), description:`${this.datamodel.typeName} function blocks`};
         this.iecProgramVar = {name:`${this.datamodel.typeName}.var`, contents:this._generateIECProgramVar(), description:`${this.datamodel.typeName} variable declaration`};
         this.iecProgramST = {name:`${this.datamodel.typeName}.st`, contents:this._generateIECProgramST(), description:`${this.datamodel.typeName} application`};
+        this.heap = new TemplateARHeap(100000);
     }
 
     /**

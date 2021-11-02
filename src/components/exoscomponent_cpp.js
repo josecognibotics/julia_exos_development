@@ -41,6 +41,7 @@ class ExosComponentCpp extends ExosComponent{
         this._cLibrary.addNewFileObj(this._templateCppAR.datamodelSource);
         this._cLibrary.addNewFileObj(this._templateCppAR.loggerHeader);
         this._cLibrary.addNewFileObj(this._templateCppAR.loggerSource);
+        this._cLibrary.addNewFileObj(this._templateCppAR.heap.heapSource);
 
         this._iecProgram.addNewFileObj(this._templateCppAR.iecProgramVar);
         this._iecProgram.addNewFileObj(this._templateCppAR.iecProgramST);

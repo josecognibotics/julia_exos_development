@@ -51,6 +51,8 @@ class ExosComponentC extends ExosComponent {
 
         this._cLibrary.addNewFileObj(templateAR.libraryFun);
         this._cLibrary.addNewFileObj(templateAR.librarySource);
+        this._cLibrary.addNewFileObj(templateAR.heap.heapSource);
+        
         this._iecProgram.addNewFileObj(templateAR.iecProgramVar);
         this._iecProgram.addNewFileObj(templateAR.iecProgramST);
         
