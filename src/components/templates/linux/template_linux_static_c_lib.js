@@ -21,14 +21,14 @@ class TemplateLinuxStaticCLib extends TemplateStaticCLib {
      * 
      * - `{main}.c`: {@linkcode generateSource} main Linux application
      * 
-     * Using {@linkcode TemplateLinuxTermination}:
-     * - {@linkcode termination.terminationHeader} termination handling header
-     * - {@linkcode termination.terminationSource} termination handling source code
-     * 
      * inherited from {@linkcode TemplateStaticCLib}
      * 
      * - {@linkcode staticLibrarySource} static library source code
      * - {@linkcode staticLibraryHeader} static library header
+     * 
+     * Using {@linkcode TemplateLinuxTermination}:
+     * - `termination.terminationHeader` termination handling header
+     * - `termination.terminationSource` termination handling source code
      * 
      * @param {Datamodel} datamodel
      */

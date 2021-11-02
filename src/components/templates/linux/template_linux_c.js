@@ -21,8 +21,8 @@ class TemplateLinuxC extends Template {
      * - {@linkcode mainSource} main sourcefile for the application
      * 
      * Using {@linkcode TemplateLinuxTermination}:
-     * - {@linkcode termination.terminationHeader} termination handling header
-     * - {@linkcode termination.terminationSource} termination handling source code
+     * - `termination.terminationHeader` termination handling header
+     * - `termination.terminationSource` termination handling source code
      * 
      * @param {Datamodel} datamodel
      */

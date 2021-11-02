@@ -4,8 +4,6 @@ const { Template, ApplicationTemplate } = require('../template')
 
 class TemplateARDynamic extends Template {
 
-    
-
     /** 
      * source code with all functionality for the libary
      * @type {GeneratedFileObj} 

@@ -28,7 +28,7 @@ class ExosComponentC extends ExosComponent {
      * @param {string} typeName 
      */
     constructor(fileName, typeName) {
-        super(fileName, typeName, "build.sh");
+        super(fileName, typeName);
         
         this._templateAR = new TemplateARDynamic(this._datamodel);
         this._templateLinux = new TemplateLinuxC(this._datamodel);

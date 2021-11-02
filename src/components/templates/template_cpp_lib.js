@@ -53,10 +53,10 @@ class TemplateCppLib extends Template {
     constructor(datamodel, Linux) {
         super(datamodel,Linux);
 
-        this.datasetHeader = {name: `${this.template.datamodel.datasetClassName}.h`, contents:this._generateDatasetHeader(), description:`${this.datamodel.typeName} dataset class`}
-        this.loggerHeader = {name: `${this.template.loggerClassName}.h`, contents:this._generateLoggerHeader(), description:`${this.datamodel.typeName} logger class`}
+        this.datasetHeader = {name: `${this.template.datamodel.datasetClassName}.hpp`, contents:this._generateDatasetHeader(), description:`${this.datamodel.typeName} dataset class`}
+        this.loggerHeader = {name: `${this.template.loggerClassName}.hpp`, contents:this._generateLoggerHeader(), description:`${this.datamodel.typeName} logger class`}
         this.loggerSource = {name: `${this.template.loggerClassName}.cpp`, contents:this._generateLoggerSource(), description:`${this.datamodel.typeName} logger class implementation`}
-        this.datamodelHeader = {name: `${this.template.datamodel.className}.h`, contents:this._generateDatamodelHeader(), description:`${this.datamodel.typeName} datamodel class`}
+        this.datamodelHeader = {name: `${this.template.datamodel.className}.hpp`, contents:this._generateDatamodelHeader(), description:`${this.datamodel.typeName} datamodel class`}
         this.datamodelSource = {name: `${this.template.datamodel.className}.cpp`, contents:this._generateDatamodelSource(), description:`${this.datamodel.typeName} datamodel class implementation`}
         this.datamodelLegend = this._genenerateLegend();
     }
@@ -85,7 +85,7 @@ class TemplateCppLib extends Template {
             out += `    #include "${template.headerName}"\n`;
             out += `}\n`;
             out += `\n`;
-            out += `#include "${template.loggerClassName}.h"\n`;
+            out += `#include "${template.loggerClassName}.hpp"\n`;
             out += `#define exos_assert_ok(_plog_,_exp_)                                                                                                    \\\n`;
             out += `    do                                                                                                                                  \\\n`;
             out += `    {                                                                                                                                   \\\n`;
@@ -277,11 +277,14 @@ class TemplateCppLib extends Template {
      * @returns {string} `[typeName]Logger.cpp`: datalogger class implementation
      */
     _generateLoggerSource() {
-        function generateExosLoggerCpp(loggerHeaderName) {
+        /**
+         * @param {ApplicationTemplate} template 
+         */
+        function generateExosLoggerCpp(template) {
         
             let out = "";
             
-            out += `#include "${loggerHeaderName}"\n`;
+            out += `#include "${template.loggerClassName}.hpp"\n`;
             out += `\n`;
             out += `ExosLogger::ExosLogger(exos_log_handle_t* logger, EXOS_LOG_LEVEL logLevel, EXOS_LOG_TYPE logType)\n`;
             out += `    : logger(logger)\n`;
@@ -316,7 +319,7 @@ class TemplateCppLib extends Template {
         
             return out;
         }
-        return generateExosLoggerCpp(this.loggerHeader.name);
+        return generateExosLoggerCpp(this.template);
     }
 
     /**
@@ -338,7 +341,7 @@ class TemplateCppLib extends Template {
             out += `#include <iostream>\n`;
             out += `#include <string.h>\n`;
             out += `#include <functional>\n`;
-            out += `#include "${template.datamodel.datasetClassName}.h"\n`;
+            out += `#include "${template.datamodel.datasetClassName}.hpp"\n`;
             out += `\n`;
             out += `class ${template.datamodel.className}\n`;
             out += `{\n`;
@@ -373,8 +376,8 @@ class TemplateCppLib extends Template {
                     if(dataType.includes("STRING")) {
                         dataType = "char";
                     }
-                    if(header.isScalarType(dataType)){
-                        dataType = header.convertPlcType(dataType);
+                    if(Datamodel.isScalarType(dataType)){
+                        dataType = Datamodel.convertPlcType(dataType);
                     }
                     out += `    ${template.datamodel.datasetClassName}<${dataType}${dataset.arraySize > 0 ? '['+dataset.arraySize+']' : ''}${dataset.stringLength && dataset.stringLength > 0 ? '['+dataset.stringLength+']' : ''}> ${dataset.structName};\n`;
                 }
@@ -387,7 +390,7 @@ class TemplateCppLib extends Template {
         
             return out;
         }
-        return generateExosDataModelHeader(this.datamodel.template);
+        return generateExosDataModelHeader(this.template);
     }
 
     /**
@@ -406,7 +409,7 @@ class TemplateCppLib extends Template {
             let out = "";
         
             out += `#define EXOS_STATIC_INCLUDE\n`;
-            out += `#include "${template.datamodel.className}.h"\n`;
+            out += `#include "${template.datamodel.className}.hpp"\n`;
             out += `\n`;
             out += `${template.datamodel.className}::${template.datamodel.className}()\n`;
             out += `    : log("${template.aliasName}")\n`;
@@ -424,7 +427,7 @@ class TemplateCppLib extends Template {
             out += `}\n`;
             out += `\n`;
             out += `void ${template.datamodel.className}::connect() {\n`;
-            out += `    exos_assert_ok((&log), exos_datamodel_connect_${typName.toLowerCase()}(&datamodel, &${template.datamodel.className}::_datamodelEvent));\n`;
+            out += `    exos_assert_ok((&log), exos_datamodel_connect_${template.datamodel.structName.toLowerCase()}(&datamodel, &${template.datamodel.className}::_datamodelEvent));\n`;
             out += `\n`;
             for (let dataset of template.datasets) {
                 if (dataset.isPub && dataset.isSub) {
@@ -473,7 +476,7 @@ class TemplateCppLib extends Template {
             out += `            isConnected = true;\n`;
             out += `            break;\n`;
             out += `        case EXOS_STATE_OPERATIONAL:\n`;
-            out += `            log.success << "${moduleName} operational!" << std::endl;\n`;
+            out += `            log.success << "${template.aliasName} operational!" << std::endl;\n`;
             out += `            isOperational = true;\n`;
             out += `            break;\n`;
             out += `        case EXOS_STATE_ABORTED:\n`;
@@ -516,7 +519,6 @@ class TemplateCppLib extends Template {
             let dmDelim = PubSubSwap ? "." : "->";
             let out = "";
         
-            let template = configTemplate(fileName, typName);
             out += `/* datamodel features:\n`;
         
             out += `\nmain methods:\n`
@@ -553,7 +555,7 @@ class TemplateCppLib extends Template {
                         out += `    })\n`;
                         out += `    ${template.datamodel.varName}${dmDelim}${dataset.structName}.nettime : (int32_t) nettime @ time of publish\n`;
                     }
-                    out += `    ${template.datamodel.varName}${dmDelim}${dataset.structName}.value : (${header.convertPlcType(dataset.dataType)}`;
+                    out += `    ${template.datamodel.varName}${dmDelim}${dataset.structName}.value : (${Datamodel.convertPlcType(dataset.dataType)}`;
                     if (dataset.arraySize > 0) { // array comes before string length in c (unlike AS typ editor where it would be: STRING[80][0..1])
                         out += `[${parseInt(dataset.arraySize)}]`;
                     }
@@ -563,7 +565,7 @@ class TemplateCppLib extends Template {
                         out += `) `;
                     }
                     out += ` actual dataset value`;
-                    if(header.isScalarType(dataset.dataType, true)) {
+                    if(Datamodel.isScalarType(dataset.dataType, true)) {
                         out += `\n`;
                     }
                     else {
@@ -575,7 +577,7 @@ class TemplateCppLib extends Template {
         
             return out;
         }
-        return genenerateLegend(this.datamodel.template, this.datamodel.isLinux);
+        return genenerateLegend(this.template, this.datamodel.isLinux);
     }
 }
 
