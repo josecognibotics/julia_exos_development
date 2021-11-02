@@ -63,10 +63,10 @@ class ExosComponentCTemplate extends ExosComponent {
             this._cLibrary.addNewFile(`lib${this._typeName.toLowerCase()}.c`, templateAR.generateLibHeader());
         }
 
-        this._cLibrary.addNewFile(`${this._typeName}.fun`, templateAR.generateFun());
-        this._cLibrary.addNewFile(`${this._typeName.toLowerCase()}.c`, templateAR.generateSource());
-        this._iecProgram.addNewFile(`${this._typeName}.var`, templateAR.generateIECProgramVar());
-        this._iecProgram.addNewFile(`${this._typeName}.st`, templateAR.generateIECProgramST());
+        this._cLibrary.addNewFileObj(templateAR.libraryFun);
+        this._cLibrary.addNewFileObj(templateAR.librarySource);
+        this._iecProgram.addNewFileObj(templateAR.iecProgramVar);
+        this._iecProgram.addNewFileObj(templateAR.iecProgramST);
         
         let templateLinux = this._templateLinux;
         if(this.options.generateLinuxStaticLib) {

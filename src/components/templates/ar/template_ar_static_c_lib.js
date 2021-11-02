@@ -1,16 +1,43 @@
 const { Template, ApplicationTemplate } = require('../template');
 const {TemplateStaticCLib} = require('../template_static_c_lib');
-const { Datamodel } = require('../../../datamodel');
+const { Datamodel, GeneratedFileObj } = require('../../../datamodel');
 
 class TemplateARStaticCLib extends TemplateStaticCLib {
 
+    
+
+    /** 
+     * source code with all functionality for the libary
+     * @type {GeneratedFileObj} 
+     */
+    librarySource;
+    
+    /** 
+     * function block declaration for the AR library
+     * @type {GeneratedFileObj} 
+     */
+    libraryFun;
+     
+    /** 
+     * varaible declaration for the ST program
+     * @type {GeneratedFileObj} 
+     */
+    iecProgramVar;
+     
+    /**
+     * application implementation code in ST
+     * @type {GeneratedFileObj} 
+     */
+    iecProgramST;
+
     /**
      * {@linkcode TemplateARStaticCLib} Generate code for static c-library wrapper and main function for Linux applications
-     * 
-     * - `{main}.c`: {@linkcode generateSource} main AR library function
-     * - `{Library}.fun`: {@linkcode generateFun} Library function block declaration
-     * - `{ProgramName}.var`: {@linkcode generateIECProgramVar} varaible declaration for the ST program
-     * - `{ProgramName}.st`: {@linkcode generateIECProgramST} application implementation code in ST
+     *
+     * Generates following {@link GeneratedFileObj} objects 
+     * - {@linkcode librarySource}
+     * - {@linkcode libraryFun}
+     * - {@linkcode iecProgramVar}
+     * - {@linkcode iecProgramST}
      * 
      * Using {@linkcode TemplateLinuxTermination}:
      * - `termination.h`: {@linkcode generateTerminationHeader}
@@ -23,15 +50,19 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
      * 
      * @param {Datamodel} datamodel
      */
-
     constructor(datamodel) {
         super(datamodel,false);
+
+        this.librarySource = {name:`${this.datamodel.typeName}.c`, contents:this._generateSource(), description:`${this.datamodel.typeName} library source`};
+        this.libraryFun = {name:`${this.datamodel.typeName}.fun`, contents:this._generateFun(), description:`${this.datamodel.typeName} function blocks`};
+        this.iecProgramVar = {name:`${this.datamodel.typeName}.var`, contents:this._generateIECProgramVar(), description:`${this.datamodel.typeName} variable declaration`};
+        this.iecProgramST = {name:`${this.datamodel.typeName}.st`, contents:this._generateIECProgramST(), description:`${this.datamodel.typeName} application`};
     }
 
     /**
      * @returns {string} `{Library}.fun`: Library function block declaration
      */
-    generateFun() {
+    _generateFun() {
 
         /**
          * @param {ApplicationTemplate} template 
@@ -68,7 +99,7 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
     /**
      * @returns {string} `{ProgramName}.var`: varaible declaration for the ST program
      */
-    generateIECProgramVar() {
+    _generateIECProgramVar() {
 
         /**
          * @param {ApplicationTemplate} template 
@@ -91,7 +122,7 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
     /**
      * @returns {string} `{ProgramName}.st`: application implementation code in ST
      */
-    generateIECProgramST()
+    _generateIECProgramST()
     {
         /**
          * @param {ApplicationTemplate} template 
@@ -128,7 +159,7 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
     /**
      * @returns {string} `{main}.c`: main AR library function
      */
-    generateSource() {
+    _generateSource() {
 
         /**
          * 

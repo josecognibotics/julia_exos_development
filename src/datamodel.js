@@ -36,10 +36,10 @@ const path = require('path');
  * @property {string} name name of the structure
  * @property {string} dependencies list of structures that this structure dependends on
  * 
- * @typedef {Object} GeneratedFile
- * @property {string} fileName
- * @property {string} contents
- * @property {string} description
+ * @typedef {Object} GeneratedFileObj object that represents a file generated in memory, which can be used for populating the {@link ExosPackage}. Its the same as the {@linkcode FileObj}, but theres currently no dependency between the two, so keeping them separate for now
+ * @property {string} name name of the file
+ * @property {string} contents contents of the file
+ * @property {string} description description visible in AS
  */
 class Datamodel {
 
@@ -113,7 +113,7 @@ class Datamodel {
      * 
      * *PREVIOUSLY:* `generateHeader`
      * 
-     * @type {GeneratedFile} 
+     * @type {GeneratedFileObj} 
      */
     headerFile;
 
@@ -122,7 +122,7 @@ class Datamodel {
      * 
      * *PREVIOUSLY:* `generateHeader`
      * 
-     * @type {GeneratedFile} 
+     * @type {GeneratedFileObj} 
      */
     sourceFile;
 
@@ -190,8 +190,8 @@ class Datamodel {
         //now split with line endings
         this.fileLines = this.fileLines.split("\n");
 
-        this.headerFile = {fileName:"", contents:"", description:""};
-        this.sourceFile = {fileName:"", contents:"", description:""};
+        this.headerFile = {name:"", contents:"", description:""};
+        this.sourceFile = {name:"", contents:"", description:""};
 
         //create the objects that the class exposes
         //the sequence of the calls cannot be changed
@@ -200,9 +200,9 @@ class Datamodel {
         this.dataTypeCode = this._makeDataTypes();
         this.dataTypeCodeSWIG = this._makeDataTypes(true);
         this.headerFile.contents = this._makeHeader();
-        this.headerFile.fileName = `exos_${this.typeName.toLowerCase()}.h`;
+        this.headerFile.name = `exos_${this.typeName.toLowerCase()}.h`;
         this.headerFile.description = `Generated datamodel header for ${this.typeName}`;
-        this.sourceFile.fileName = `exos_${this.typeName.toLowerCase()}.c`;
+        this.sourceFile.name = `exos_${this.typeName.toLowerCase()}.c`;
         this.sourceFile.description = `Generated datamodel source for ${this.typeName}`;
     }
 

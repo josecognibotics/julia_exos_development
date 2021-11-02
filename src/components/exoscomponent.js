@@ -85,12 +85,12 @@ class ExosComponent extends Component {
         this._linuxBuild = this._exospackage.exospkg.getNewWSLBuildCommand("Linux", buildScript);
 
         this._linuxPackage = this._exospackage.getNewLinuxPackage("Linux");
-        this._linuxPackage.addNewFile(this._datamodel.headerFile.fileName, this._datamodel.headerFile.contents, this._datamodel.headerFile.description);
-        this._linuxPackage.addNewFile(this._datamodel.sourceFile.fileName, this._datamodel.sourceFile.contents, this._datamodel.sourceFile.description);
+        this._linuxPackage.addNewFile(this._datamodel.headerFile.name, this._datamodel.headerFile.contents, this._datamodel.headerFile.description);
+        this._linuxPackage.addNewFile(this._datamodel.sourceFile.name, this._datamodel.sourceFile.contents, this._datamodel.sourceFile.description);
 
         this._cLibrary = this._exospackage.getNewCLibrary(typeName, ``);
-        this._cLibrary.addNewFile(this._datamodel.headerFile.fileName, this._datamodel.headerFile.contents, this._datamodel.headerFile.description);
-        this._cLibrary.addNewFile(this._datamodel.sourceFile.fileName, this._datamodel.sourceFile.contents, this._datamodel.sourceFile.description);
+        this._cLibrary.addNewFile(this._datamodel.headerFile.name, this._datamodel.headerFile.contents, this._datamodel.headerFile.description);
+        this._cLibrary.addNewFile(this._datamodel.sourceFile.name, this._datamodel.sourceFile.contents, this._datamodel.sourceFile.description);
 
         this._iecProgram = this._exospackage.getNewIECProgram(`${typeName}_0`,``);
     }

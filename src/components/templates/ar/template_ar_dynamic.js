@@ -1,27 +1,59 @@
-const { Datamodel } = require('../../../datamodel');
+const { Datamodel, GeneratedFileObj } = require('../../../datamodel');
 const { Template, ApplicationTemplate } = require('../template')
 
 
 class TemplateARDynamic extends Template {
 
+    
+
+    /** 
+     * source code with all functionality for the libary
+     * @type {GeneratedFileObj} 
+     */
+    librarySource;
+    
+    /** 
+     * function block declaration for the AR library
+     * @type {GeneratedFileObj} 
+    */
+    libraryFun;
+    
+    /** 
+     * varaible declaration for the ST program
+     * @type {GeneratedFileObj} 
+     */
+    iecProgramVar;
+
+    /**
+     * application implementation code in ST
+     * @type {GeneratedFileObj} 
+     */
+    iecProgramST;
+
     /**
      * {@linkcode TemplateARDynamic} Generate source code for dynamic AR C-Library and ST-Application
      * 
-     * - `{LibraryName}.c`: {@linkcode generateSource} source code with all functionality for the libary
-     * - `{LibraryName}.fun`: {@linkcode generateFun} function block declaration for the AR library (needs to have the same name as the library itself)
-     * - `{ProgramName}.var`: {@linkcode generateIECProgramVar} varaible declaration for the ST program
-     * - `{ProgramName}.st`: {@linkcode generateIECProgramST} application implementation code in ST
+     * Generates following {@link GeneratedFileObj}
+     * - {@linkcode librarySource}
+     * - {@linkcode libraryFun}
+     * - {@linkcode iecProgramVar} 
+     * - {@linkcode iecProgramST}
      * 
      * @param {Datamodel} datamodel
      */
     constructor(datamodel) {
         super(datamodel,false);
+
+        this.librarySource = {name:`${this.datamodel.typeName}.c`, contents:this._generateSource(), description:`${this.datamodel.typeName} library source`};
+        this.libraryFun = {name:`${this.datamodel.typeName}.fun`, contents:this._generateFun(), description:`${this.datamodel.typeName} function blocks`};
+        this.iecProgramVar = {name:`${this.datamodel.typeName}.var`, contents:this._generateIECProgramVar(), description:`${this.datamodel.typeName} variable declaration`};
+        this.iecProgramST = {name:`${this.datamodel.typeName}.st`, contents:this._generateIECProgramST(), description:`${this.datamodel.typeName} application`};
     }
     
     /**
      * @returns {string} `{LibraryName}.c`: source code with all functionality for the libary
      */
-    generateSource() {
+    _generateSource() {
 
         /**
          * @param {ApplicationTemplate} template 
@@ -446,7 +478,7 @@ class TemplateARDynamic extends Template {
     /**
      * @returns {string} `{ProgramName}.var`: varaible declaration for the ST program
      */
-    generateIECProgramVar() {
+    _generateIECProgramVar() {
         function generateIECProgramVar(typName) {
             let out = "";
         
@@ -465,7 +497,7 @@ class TemplateARDynamic extends Template {
     /**
      * @returns {string} `{ProgramName}.st`: application implementation code in ST
      */
-    generateIECProgramST() {
+    _generateIECProgramST() {
         function generateIECProgramST(typName) {
             let out = "";
         
@@ -496,7 +528,7 @@ class TemplateARDynamic extends Template {
     /**
      * @returns {string} `{LibraryName}.fun`: function block declaration for the AR library (needs to have the same name as the library itself)
      */
-    generateFun() {
+    _generateFun() {
         /**
          * @param {ApplicationTemplate} template 
          * @returns {string}

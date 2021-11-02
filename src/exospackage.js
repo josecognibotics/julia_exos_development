@@ -45,11 +45,21 @@ class Package {
         }
 
         this._objects.push({type:"File", name:fileName, attributes:"", description:description, contents:contents});
-        return this._objects.last();
     }
 
     /**
-     * Create a new file in this package and return a object for populating its contents
+     * Create a new file in this package using a {@link FileObj} object.
+     * Same as the {@link addNewFile} whereas the `fileObj` contains all information for the file
+     * 
+     * @param {FileObj} fileObj 
+     * @returns {FileObj} the fileobj within this package to be further manipulated
+     */
+    addNewFileObj(fileObj) {
+        this.addNewFile(fileObj.name, fileObj.contents, fileObj.description);
+    }
+
+    /**
+     * Create a new file in this package and return a object for populating its contents.
      * If the complete contents of the file are already available at this point in time, 
      * use the simpler {@link addNewFile()} instead
      * 
@@ -70,6 +80,17 @@ class Package {
 
         this._objects.push({type:"File", name:fileName, attributes:"", description:description, contents:""});
         return this._objects.last();
+    }
+
+    /**
+     * Create a new file in this package using a {@link FileObj} object and return a object for populating its contents.
+     * Same as the {@link getNewFile} whereas the `fileObj` contains all information for the file
+     * 
+     * @param {FileObj} fileObj 
+     * @returns {FileObj} the fileobj within this package to be further manipulated
+     */
+    getNewFileObj(fileObj) {
+        return this.getNewFile(fileObj.name, fileObj.contents, fileObj.description);
     }
 
     /**
@@ -194,10 +215,10 @@ class ExosPkg {
      * //set exOS TP to generate files in the "TypeLib" and "Linux" directories, and include the "TypeLib" library in AR
      * myPackage.exospkg.addGenerateDatamodel("TypeLib/Types.typ", "Types", ["TypeLib.h"], ["TypeLib", "Linux"]);
      * //add the generated files to the "TypeLib" and "Linux" packages, and populate the contents from the parsed datamodel
-     * linux.addNewFile(datamodel.headerFile.fileName, datamodel.headerFile.contents, datamodel.headerFile.description); 
-     * linux.addNewFile(datamodel.sourceFile.fileName, datamodel.sourceFile.contents, datamodel.sourceFile.description);
-     * lib.addNewFile(datamodel.headerFile.fileName, datamodel.headerFile.contents, datamodel.headerFile.description);
-     * lib.addNewFile(datamodel.sourceFile.fileName, datamodel.sourceFile.contents, datamodel.sourceFile.description);
+     * linux.addNewFile(datamodel.headerFile.name, datamodel.headerFile.contents, datamodel.headerFile.description); 
+     * linux.addNewFile(datamodel.sourceFile.name, datamodel.sourceFile.contents, datamodel.sourceFile.description);
+     * lib.addNewFile(datamodel.headerFile.name, datamodel.headerFile.contents, datamodel.headerFile.description);
+     * lib.addNewFile(datamodel.sourceFile.name, datamodel.sourceFile.contents, datamodel.sourceFile.description);
      *      
      * 
      * @param {string} fileName Name of the IEC .typ file that contains the datatype, relative to the exospkg location
