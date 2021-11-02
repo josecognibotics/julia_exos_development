@@ -32,7 +32,7 @@ const {Datamodel} = require('../../datamodel');
  * @property {boolean} isPrivate set to true if the comment includes the word `private`
  * 
  * @typedef {Object} ApplicationTemplate
- * @property {string} headerName name of the generated headerfile to be included in applications => `Datamodel.headerFileName`
+ * @property {string} headerName name of the generated headerfile to be included in applications => `Datamodel.headerFile.fileName`
  * @property {string} libHeaderName name of a library wrapper headerfile to be included `libmyapplication.h`
  * @property {string} logname name of a `exos_log_handle_t` instance in the application, hardcoded => `logger`
  * @property {string} aliasName the 'alias' name use in the `exos_datamodel_init` and name for the `exos_log_init` - meaning the name that the Application gets in the Logger => `gMyApplication_0`
@@ -88,7 +88,7 @@ class Template
          * create the template structure form the Dataset structure
          * 
          * @param {Dataset} types generated {@link Dataset} structure from the {@link Datamodel} class
-         * @param {string} headerName predefined headerFileName from the {@link Datamodel} class
+         * @param {string} headerName predefined `headerFile.fileName` from the {@link Datamodel} class
          * @param {boolean} Linux when used in Linux, the `datasets[].isPub` and `datasets[].isSub` are reversed
          * @returns {ApplicationTemplate}
          */
@@ -174,7 +174,7 @@ class Template
 
         this.isLinux = Linux;
         this.datamodel = datamodel;
-        this.template = configTemplate(this.datamodel.dataset, this.datamodel.headerFileName, Linux);
+        this.template = configTemplate(this.datamodel.dataset, this.datamodel.headerFile.fileName, Linux);
     }
 
     

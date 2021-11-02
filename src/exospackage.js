@@ -194,10 +194,10 @@ class ExosPkg {
      * //set exOS TP to generate files in the "TypeLib" and "Linux" directories, and include the "TypeLib" library in AR
      * myPackage.exospkg.addGenerateDatamodel("TypeLib/Types.typ", "Types", ["TypeLib.h"], ["TypeLib", "Linux"]);
      * //add the generated files to the "TypeLib" and "Linux" packages, and populate the contents from the parsed datamodel
-     * linux.addNewFile(datamodel.headerFileName, datamodel.headerFileCode); 
-     * linux.addNewFile(datamodel.sourceFileName, datamodel.sourceFileCode);
-     * lib.addNewFile(datamodel.headerFileName, datamodel.headerFileCode);
-     * lib.addNewFile(datamodel.sourceFileName, datamodel.sourceFileCode);
+     * linux.addNewFile(datamodel.headerFile.fileName, datamodel.headerFile.contents, datamodel.headerFile.description); 
+     * linux.addNewFile(datamodel.sourceFile.fileName, datamodel.sourceFile.contents, datamodel.sourceFile.description);
+     * lib.addNewFile(datamodel.headerFile.fileName, datamodel.headerFile.contents, datamodel.headerFile.description);
+     * lib.addNewFile(datamodel.sourceFile.fileName, datamodel.sourceFile.contents, datamodel.sourceFile.description);
      *      
      * 
      * @param {string} fileName Name of the IEC .typ file that contains the datatype, relative to the exospkg location

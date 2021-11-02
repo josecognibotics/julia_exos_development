@@ -33,7 +33,7 @@ class TemplateLinuxC extends Template {
         
             out += `#define EXOS_ASSERT_LOG &${template.logname}\n`;
             out += `#include "exos_log.h"\n`;
-            out += `#include "exos_${template.datamodel.dataType.toLowerCase()}.h"\n\n`;
+            out += `#include "${template.headerName}"\n\n`;
         
             out += `#define SUCCESS(_format_, ...) exos_log_success(&${template.logname}, EXOS_LOG_TYPE_USER, _format_, ##__VA_ARGS__);\n`;
             out += `#define INFO(_format_, ...) exos_log_info(&${template.logname}, EXOS_LOG_TYPE_USER, _format_, ##__VA_ARGS__);\n`;

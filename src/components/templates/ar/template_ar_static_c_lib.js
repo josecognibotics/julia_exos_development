@@ -45,7 +45,7 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
             out += `	VAR_INPUT\n`;
             out += `		Enable : BOOL;\n`;
             out += `		Start : BOOL;\n`;
-            out += `        p${template.datamodel.structName} : REFERENCE TO ${template.datamodel.structName};`;
+            out += `		p${template.datamodel.structName} : REFERENCE TO ${template.datamodel.structName};`;
             out += `	END_VAR\n`;
             out += `	VAR_OUTPUT\n`;
             out += `		Connected : BOOL;\n`;
