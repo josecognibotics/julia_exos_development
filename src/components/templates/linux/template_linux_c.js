@@ -1,29 +1,41 @@
 const { Template, ApplicationTemplate } = require('../template')
 const { TemplateLinuxTermination } = require('./template_linux_termination');
-const { Datamodel } = require('../../../datamodel');
+const { Datamodel, GeneratedFileObj } = require('../../../datamodel');
 
 class TemplateLinuxC extends Template {
+    
+    /**
+     * @type {TemplateLinuxTermination}
+     */
+    termination;
+
+    /**
+     * main sourcefile for the application
+     * @type {GeneratedFileObj}
+     */
+    mainSource;
+
     /**
      * {@linkcode TemplateLinuxC} Generates code for a Linux "standard" c-application
      * 
-     * - `{main}.c`: {@linkcode generateSource} main sourcefile for the application
+     * - {@linkcode mainSource} main sourcefile for the application
      * 
      * Using {@linkcode TemplateLinuxTermination}:
-     * - `termination.h`: {@linkcode generateTerminationHeader} termination handling header
-     * - `termination.c`: {@linkcode generateTerminationSource} termination handling source code
+     * - {@linkcode termination.terminationHeader} termination handling header
+     * - {@linkcode termination.terminationSource} termination handling source code
      * 
      * @param {Datamodel} datamodel
      */
     constructor(datamodel) {
         super(datamodel,true);
-        this._templateTermination = new TemplateLinuxTermination();
-
+        this.termination = new TemplateLinuxTermination();
+        this.mainSource = {name:`${this.datamodel.typeName.toLowerCase()}.c`, contents:this._generateSource(), description:"Linux application"};
     }
 
     /**
      * @returns `{main}.c`: main sourcefile for the application
      */
-    generateSource() {
+    _generateSource() {
         /**
          * @param {ApplicationTemplate} template 
          * @returns {string}
@@ -250,7 +262,7 @@ class TemplateLinuxC extends Template {
         let out = "";
         out += `#include <unistd.h>\n`;
         out += `#include <string.h>\n`;
-        out += `#include "termination.h"\n\n`;
+        out += `#include "${this.termination.terminationHeader.name}"\n\n`;
         out += generateIncludes(this.template);
     
         out += generateCallbacks(this.template);
@@ -281,20 +293,6 @@ class TemplateLinuxC extends Template {
         out += `}\n`
     
         return out;
-    }
-
-    /**
-     * @returns {string} `termination.c`: termination handling source code
-     */
-    generateTerminationSource() {
-        return this._templateTermination.generateTerminationSource();
-    }
-
-    /**
-     * @returns {string} `termination.h`: termination handling header
-     */
-    generateTerminationHeader() {
-        return this._templateTermination.generateTerminationHeader();
     }
     
 }

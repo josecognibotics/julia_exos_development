@@ -4,8 +4,6 @@ const { Datamodel, GeneratedFileObj } = require('../../../datamodel');
 
 class TemplateARStaticCLib extends TemplateStaticCLib {
 
-    
-
     /** 
      * source code with all functionality for the libary
      * @type {GeneratedFileObj} 
@@ -39,21 +37,17 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
      * - {@linkcode iecProgramVar}
      * - {@linkcode iecProgramST}
      * 
-     * Using {@linkcode TemplateLinuxTermination}:
-     * - `termination.h`: {@linkcode generateTerminationHeader}
-     * - `termination.c`: {@linkcode generateTerminationSource}
+     * inherited from {@linkcode TemplateStaticCLib}
      * 
-     * Using {@linkcode TemplateStaticCLib}
-     * 
-     * - `{libName}.c`: {@linkcode generateLibSource} static library source code
-     * - `{libName}.h`: {@linkcode generateLibHeader} static library header
+     * - {@linkcode staticLibrarySource} static library source code
+     * - {@linkcode staticLibraryHeader} static library header
      * 
      * @param {Datamodel} datamodel
      */
     constructor(datamodel) {
         super(datamodel,false);
 
-        this.librarySource = {name:`${this.datamodel.typeName}.c`, contents:this._generateSource(), description:`${this.datamodel.typeName} library source`};
+        this.librarySource = {name:`${this.datamodel.typeName.toLowerCase()}.c`, contents:this._generateSource(), description:`${this.datamodel.typeName} library source`};
         this.libraryFun = {name:`${this.datamodel.typeName}.fun`, contents:this._generateFun(), description:`${this.datamodel.typeName} function blocks`};
         this.iecProgramVar = {name:`${this.datamodel.typeName}.var`, contents:this._generateIECProgramVar(), description:`${this.datamodel.typeName} variable declaration`};
         this.iecProgramST = {name:`${this.datamodel.typeName}.st`, contents:this._generateIECProgramST(), description:`${this.datamodel.typeName} application`};
@@ -305,7 +299,7 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
             return out;
         }
 
-        return generateMainAR(this.template, this.isLinux, this.generateLegend());
+        return generateMainAR(this.template, this.isLinux, this.staticLibraryLegend);
 
     }
 }

@@ -1,9 +1,20 @@
 const { Template, ApplicationTemplate } = require('../template');
 const { TemplateLinuxTermination } = require('./template_linux_termination');
-const {TemplateStaticCLib} = require('../template_static_c_lib');
+const { TemplateStaticCLib } = require('../template_static_c_lib');
 const { Datamodel } = require('../../../datamodel');
 
 class TemplateLinuxStaticCLib extends TemplateStaticCLib {
+
+    /**
+     * @type {TemplateLinuxTermination}
+     */
+    termination;
+
+    /**
+     * main sourcefile for the application
+     * @type {GeneratedFileObj}
+     */
+    mainSource;
 
     /**
      * {@linkcode TemplateLinuxStaticCLib} Generate code for static c-library wrapper and main function for Linux applications
@@ -11,23 +22,24 @@ class TemplateLinuxStaticCLib extends TemplateStaticCLib {
      * - `{main}.c`: {@linkcode generateSource} main Linux application
      * 
      * Using {@linkcode TemplateLinuxTermination}:
-     * - `termination.h`: {@linkcode generateTerminationHeader} termination handling header
-     * - `termination.c`: {@linkcode generateTerminationSource} termination handling source code
+     * - {@linkcode termination.terminationHeader} termination handling header
+     * - {@linkcode termination.terminationSource} termination handling source code
      * 
-     * Using {@linkcode TemplateStaticCLib}
+     * inherited from {@linkcode TemplateStaticCLib}
      * 
-     * - `{libName}.c`: {@linkcode generateLibSource} library source code
-     * - `{libName}.h`: {@linkcode generateLibHeader} library header
+     * - {@linkcode staticLibrarySource} static library source code
+     * - {@linkcode staticLibraryHeader} static library header
      * 
      * @param {Datamodel} datamodel
      */
 
     constructor(datamodel) {
         super(datamodel, true);
-        this._templateTermination = new TemplateLinuxTermination();
+        this.termination = new TemplateLinuxTermination();
+        this.mainSource = {name:`${this.datamodel.typeName.toLowerCase()}.c`, contents:this._generateSource(), description:"Linux application"};
     }
 
-    generateSource() {
+    _generateSource() {
 
         /**
          * 
@@ -36,7 +48,7 @@ class TemplateLinuxStaticCLib extends TemplateStaticCLib {
          * @param {string} legend 
          * @returns 
          */
-        function generateMain(template, PubSubSwap, legend) {
+        function generateMain(template, PubSubSwap, legend, terminationHeaderName) {
             let out = "";
             let prepend = "// ";
             if(process.env.VSCODE_DEBUG_MODE) {
@@ -45,7 +57,7 @@ class TemplateLinuxStaticCLib extends TemplateStaticCLib {
         
             out += `#include <unistd.h>\n`;
             out += `#include "${template.libHeaderName}"\n`
-            out += `#include "termination.h"\n`;
+            out += `#include "${terminationHeaderName}"\n`;
             out += `#include <stdio.h>\n\n`;
         
             out += legend;
@@ -121,22 +133,9 @@ class TemplateLinuxStaticCLib extends TemplateStaticCLib {
             return out;
         }
 
-        return generateMain(this.template,this.isLinux, this.generateLegend())
+        return generateMain(this.template,this.isLinux, this.staticLibraryLegend, this.termination.terminationHeader.name);
     }
 
-    /**
-     * @returns {string} `termination.c`: termination handling source code
-     */
-    generateTerminationSource() {
-        return this._templateTermination.generateTerminationSource();
-    }
-
-    /**
-     * @returns {string} `termination.h`: termination handling header
-     */
-    generateTerminationHeader() {
-        return this._templateTermination.generateTerminationHeader();
-    }
 }
 
 module.exports = {TemplateLinuxStaticCLib};

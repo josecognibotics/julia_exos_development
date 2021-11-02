@@ -52,7 +52,6 @@ class Package {
      * Same as the {@link addNewFile} whereas the `fileObj` contains all information for the file
      * 
      * @param {FileObj} fileObj 
-     * @returns {FileObj} the fileobj within this package to be further manipulated
      */
     addNewFileObj(fileObj) {
         this.addNewFile(fileObj.name, fileObj.contents, fileObj.description);
@@ -528,6 +527,18 @@ class LinuxPackage extends Package {
         this._exosPkg.addBuildDependency(buildCommand,path.join(this._folderName,fileName));
         //return a new standard file where the contents can be populated
         super.addNewFile(fileName, contents, description);
+    }
+
+    /**
+     * Shortcut method(also populating the {@link ExosPkg}) to create a file that is populated and is added as a build dependency.
+     * 
+     * Same as {@link addNewBuildFile} but using a fileObj to simplify the usage
+     * 
+     * @param {object} buildCommand 
+     * @param {FileObj} fileObj 
+     */
+    addNewBuildFileObj(buildCommand, fileObj) {
+        this.addNewBuildFile(buildCommand, fileObj.name, fileObj.contents, fileObj.description);
     }
 
     /**

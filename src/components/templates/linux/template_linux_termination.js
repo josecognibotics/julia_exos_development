@@ -1,16 +1,32 @@
+const {GeneratedFileObj} = require('../../../datamodel')
 
 class TemplateLinuxTermination {
+    
+    /**
+     * termination handling header
+     * @type {GeneratedFileObj}
+     */
+    terminationHeader;
+
+    /**
+     * termination handling source code
+     * @type {GeneratedFileObj}
+     */
+    terminationSource;
+    
     /**
      * {@linkcode TemplateLinuxTermination} Generate code for handling Ctrl-C in Linux appliactions
      * 
-     * - `termination.h`: {@linkcode generateTerminationHeader} termination handling header
-     * - `termination.c`: {@linkcode generateTerminationSource} termination handling source code
+     * Generates following {@link GeneratedFileObj} objects
+     * - {@linkcode terminationHeader}
+     * - {@linkcode terminationSource}
      */
     constructor() {
-
+        this.terminationHeader = {name:"termination.h", contents:this._generateTerminationHeader(), description:"Handling for Ctrl-C header"};
+        this.terminationSource = {name:"termination.c", contents:this._generateTerminationSource(), description:"Handling for Ctrl-C source"};
     }
 
-    generateTerminationHeader() {
+    _generateTerminationHeader() {
         function generateTerminationHeader() {
             let out = "";
         
@@ -29,7 +45,7 @@ class TemplateLinuxTermination {
         return generateTerminationHeader();
     }
 
-    generateTerminationSource() {
+    _generateTerminationSource() {
         function generateTerminationSource() {
             let out = "";
         

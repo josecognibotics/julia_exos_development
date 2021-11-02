@@ -47,11 +47,6 @@ class ExosComponent extends Component {
     */
     _datamodel;
 
-    /**object returned from {@link ExosPackage.getNewWSLBuildCommand} in order to add files as build dependencies
-     * @type {Object}
-    */
-    _linuxBuild;
-
     /**{@link LinuxPackage} created in the folder `Linux`. by default, the package only contains generated headerfiles
      * @type {LinuxPackage}
     */
@@ -70,10 +65,9 @@ class ExosComponent extends Component {
     /**
      * 
      * @param {string} fileName 
-     * @param {string} typeName 
-     * @param {string} buildScript 
+     * @param {string} typeName  
      */
-    constructor(fileName, typeName, buildScript) {
+    constructor(fileName, typeName) {
 
         super(typeName);
 
@@ -82,7 +76,6 @@ class ExosComponent extends Component {
 
         this._datamodel = new Datamodel(fileName, typeName, [`${typeName}.h`])
         this._exospackage.exospkg.addGenerateDatamodel(`${typeName}/${typeName}.typ`, typeName, [`${typeName}.h`], [typeName, "Linux"]);
-        this._linuxBuild = this._exospackage.exospkg.getNewWSLBuildCommand("Linux", buildScript);
 
         this._linuxPackage = this._exospackage.getNewLinuxPackage("Linux");
         this._linuxPackage.addNewFile(this._datamodel.headerFile.name, this._datamodel.headerFile.contents, this._datamodel.headerFile.description);

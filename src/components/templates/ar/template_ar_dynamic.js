@@ -44,7 +44,7 @@ class TemplateARDynamic extends Template {
     constructor(datamodel) {
         super(datamodel,false);
 
-        this.librarySource = {name:`${this.datamodel.typeName}.c`, contents:this._generateSource(), description:`${this.datamodel.typeName} library source`};
+        this.librarySource = {name:`${this.datamodel.typeName.toLowerCase()}.c`, contents:this._generateSource(), description:`${this.datamodel.typeName} library source`};
         this.libraryFun = {name:`${this.datamodel.typeName}.fun`, contents:this._generateFun(), description:`${this.datamodel.typeName} function blocks`};
         this.iecProgramVar = {name:`${this.datamodel.typeName}.var`, contents:this._generateIECProgramVar(), description:`${this.datamodel.typeName} variable declaration`};
         this.iecProgramST = {name:`${this.datamodel.typeName}.st`, contents:this._generateIECProgramST(), description:`${this.datamodel.typeName} application`};

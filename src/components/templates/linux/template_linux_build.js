@@ -1,3 +1,5 @@
+const {GeneratedFileObj} = require('../../../datamodel')
+
 /**
  * 
  * @typedef {Object} BuildOptionsPackageVersion
@@ -51,7 +53,7 @@
 class TemplateLinuxBuild {
     
     /**
-     * Options for controlling the output of the generator functions
+     * Options for controlling the output of the {@linkcode makeBuildFiles}
      * @type {BuildOptions}
      */
     options;
@@ -63,13 +65,26 @@ class TemplateLinuxBuild {
     name;
 
     /**
+     * cmake build script file object. The contents of this file is generated with {@linkcode makeBuildFiles}
+     * @type {GeneratedFileObj}
+     */
+    CMakeLists;
+
+    /**
+     * build script file object. The contents of this file is generated with {@linkcode makeBuildFiles}
+     * @type {GeneratedFileObj}
+     */
+    buildScript;
+
+    /**
      *  {@linkcode TemplateLinuxBuild} Linux Build template class
      * 
-     * This class covers different build alternatives for Linux
+     * This class uses {@linkcode makeBuildFiles} to generate following {@link GeneratedFileObj} objects using the configurable {@linkcode options}
      * 
-     * it generates code for two files:
-     * - `CMakeLists.txt`: {@linkcode generateCMakeLists} cmake build script
-     * - `{build}.sh`: {@linkcode generateShBuild} build shell script
+     * - {@linkcode CMakeLists} cmake build script
+     * - {@linkcode buildScript} build shell script
+     * 
+     * The file objects will have `name` and `description` at creation of the class.
      * 
      * @param {string} name general name for objects, this name will be converted to lowercase or uppercase as needed
      */
@@ -116,6 +131,17 @@ class TemplateLinuxBuild {
                 maintainer: `Your Name`
             }
         }
+        this.CMakeLists = {name:"CMakeLists.txt", contents:"", description:"CMake build file script"};
+        this.buildScript = {name:"build.sh", contents:"", description:"build file shell script"};
+    }
+
+    /**
+     * Populate the contents of the {@linkcode CMakeLists} and {@linkcode buildScript} file objects
+     * Use the build {@link options} to configure the output of these files
+     */
+    makeBuildFiles() {
+        this.CMakeLists.contents = this._generateCMakeLists();
+        this.buildScript.contents = this._generateShBuild();
     }
 
     /**
@@ -123,7 +149,7 @@ class TemplateLinuxBuild {
      * 
      * @returns {string} `CMakeLists.txt`: the contents of the generated cmake build script
      */
-    generateCMakeLists() {
+    _generateCMakeLists() {
         let out = "";
 
         out += `cmake_minimum_required(VERSION 3.0)\n`;
@@ -250,7 +276,7 @@ class TemplateLinuxBuild {
      * 
      * @returns {string} `{build}.sh`: the contents of generated build script file
      */
-    generateShBuild() {
+    _generateShBuild() {
         let out = "";
         
         out += `#!/bin/sh\n\n`;

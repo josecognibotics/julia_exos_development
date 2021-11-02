@@ -1,25 +1,47 @@
-const { Datamodel } = require('../../datamodel');
+const { Datamodel, GeneratedFileObj } = require('../../datamodel');
 const { Template, ApplicationTemplate } = require('./template')
 
 class TemplateStaticCLib extends Template {
+
+    /**
+     * wrapper library source code
+     * @type {GeneratedFileObj}
+     */
+    staticLibrarySource;
+
+    /**
+     * wrapper library header
+     * @type {GeneratedFileObj} 
+     */
+    staticLibraryHeader;
+
+    /**
+     * source code comment to be added to the implementing source code - describing the library interface
+     * @type {string}
+     */
+     staticLibraryLegend;
 
     /**
      * {@linkcode TemplateStaticCLib} Generate static C library for Linux and AR
      * 
      * This class creates a static wrapper library for simplified use of exos in C
      * 
-     * - `{libName}.c` - {@linkcode generateLibSource} library source code
-     * - `{libName}.h` - {@linkcode generateLibHeader} library header
-     * - {@linkcode generateLegend} code comment to be added to the implementing source code - describing the library interface
+     * - {@linkcode staticLibrarySource}
+     * - {@linkcode staticLibraryHeader}
+     * - {@linkcode staticLibraryLegend}
      * 
      * @param {Datamodel} datamodel 
      * @param {boolean} Linux true if generated for Linux, false for AR
      */
     constructor(datamodel, Linux) {
         super(datamodel,Linux);
+
+        this.staticLibrarySource = {name:`lib${this.datamodel.typeName.toLowerCase()}.c`, contents:this._generateLibSource(), description:`${this.datamodel.typeName} static library wrapper source`};
+        this.staticLibraryHeader = {name:this.template.libHeaderName, contents:this._generateLibHeader(), description:`${this.datamodel.typeName} static library wrapper header`};
+        this.staticLibraryLegend = this._generateLegend();
     }
 
-    generateLibSource() {
+    _generateLibSource() {
 
         /**
          * 
@@ -287,7 +309,7 @@ class TemplateStaticCLib extends Template {
 
     }
 
-    generateLibHeader() {
+    _generateLibHeader() {
 
         /**
          * 
@@ -380,7 +402,7 @@ class TemplateStaticCLib extends Template {
         return genenerateLibHeader(this.template, this.isLinux);
     }
 
-    generateLegend() {
+    _generateLegend() {
         /**
          * 
          * @param {ApplicationTemplate} template 
