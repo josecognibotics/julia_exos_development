@@ -60,7 +60,7 @@ class Package {
     /**
      * Create a new file in this package and return a object for populating its contents.
      * If the complete contents of the file are already available at this point in time, 
-     * use the simpler {@link addNewFile()} instead
+     * use the simpler {@link addNewFile} instead
      * 
      * @example
      * let myPackage = new ExosPackage("MyPackage");
@@ -472,6 +472,21 @@ class LinuxPackage extends Package {
         //return a new standard file where the contents can be populated
         return super.getNewFile(fileName,description);
     }
+
+    /**
+     * Shortcut method (also populating the {@link ExosPkg}) for adding a file object with its contents that should be transferred to the target system.
+     * 
+     * This is equivalent to using {@linkcode Package.addNewFileObj} and {@linkcode ExosPkg.addFile}
+     * 
+     * @param {FileObj} fileObj 
+     * @param {string} changeEvent 
+     */
+    addNewTransferFileObj(fileObj, changeEvent) {
+        //add this file to the exosPackage with a relative path to this package
+        this._exosPkg.addFile(path.join(this._folderName,fileObj.name),changeEvent);
+        super.addNewFileObj(fileObj);
+    }
+
 
     /**
      * Shortcut method (also populating the {@link ExosPkg}) for adding an existing .deb file that should be transferred to the target system, and triggers a component reinstallation when changed

@@ -214,7 +214,7 @@ class TemplateLinuxBuild {
                 out += `    ${this.options.swigPython.pyFileName}\n`;
                 out += `    )\n`;
                 out += `\n`;
-                out += `install(FILES \${${typName.toUpperCase()}_MODULE_FILES} DESTINATION ${this.options.debPackage.destination})\n`;
+                out += `install(FILES \${${this.name.toUpperCase()}_MODULE_FILES} DESTINATION ${this.options.debPackage.destination})\n`;
             }
         }
         else if(this.options.executable.enable) {

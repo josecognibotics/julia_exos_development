@@ -19,7 +19,7 @@ class TemplateLinuxStaticCLib extends TemplateStaticCLib {
     /**
      * {@linkcode TemplateLinuxStaticCLib} Generate code for static c-library wrapper and main function for Linux applications
      * 
-     * - `{main}.c`: {@linkcode generateSource} main Linux application
+     * - {@linkcode mainSource} main Linux application
      * 
      * inherited from {@linkcode TemplateStaticCLib}
      * 
