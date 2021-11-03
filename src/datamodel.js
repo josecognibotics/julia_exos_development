@@ -280,6 +280,62 @@ class Datamodel {
         }
     }
 
+    /**
+     * Reads a typ file and searches for any structures containing members with PUB or SUB comments
+     * The structures that match this criteria are put on top of the array which is returned
+     * 
+     * @typedef DatatypeListItem
+     * @property {string} name name of the structure
+     * @property {string[]} members string array of the members within this structures that contain PUB or SUB comment
+     * 
+     * @param {string} fileName name of the typ file on the disk 
+     * @returns {DatatypeListItem[]} al list of all structures in the typ file, with the structures containing PUB SUB comments first
+     */
+    static getDatatypeList(fileName) {
+
+        let fileLines = Datamodel._splitLines(fs.readFileSync(fileName).toString());
+
+        let searchStruct = false;
+        let structs = [];
+        let struct = {};
+        for (let line of fileLines) {
+            if (line.includes("STRUCT") && line.includes(":")) {
+                struct = {};
+                struct["name"] = line.split(":")[0].trim();
+                struct["members"] = [];
+                searchStruct = true;
+            }
+            else if (line.includes("END_STRUCT")) {
+                structs.push(struct);                
+                searchStruct = false;
+            }
+            else if(searchStruct)
+            {
+                let comment = ""
+                if (line.includes("(*") && line.includes("*)") && line.includes(":")) {
+                    comment = line.split("(*")[1].split("*)")[0];
+                    if (comment.includes("PUB") || comment.includes("SUB")) {
+                        struct["members"].push(line.split(":")[0].trim());
+                    }
+                }
+            }
+        }
+
+        structs.sort((a,b) => {return (b.members.length - a.members.length)});
+
+        return structs;
+    }
+
+    static _splitLines(fileLines)
+    {
+        //remove stuff we dont want to look at
+        fileLines = fileLines.split("\r").join("");
+        fileLines = fileLines.split(";").join("");
+        fileLines = fileLines.split("{REDUND_UNREPLICABLE}").join("");
+        //now split with line endings
+        fileLines = fileLines.split("\n");
+        return fileLines;
+    }
     /** 
      * internal function to generate the c-source file that can be accessed via the `Datamodel.sourceCode` property. `_makeJsonTypes()` must have been called prior to this method 
      * @returns {string}
@@ -996,6 +1052,7 @@ if (require.main === module) {
 
                 console.log(datamodel.sortedStructs);
 
+                console.log(Datamodel.getDatatypeList(fileName));
 
         } else {
             process.stderr.write(`file '${fileName}' not found.`);

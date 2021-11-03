@@ -1,84 +1,111 @@
-const { TemplateARDynamic } = require('./templates/ar/template_ar_dynamic');
-const { TemplateARStaticCLib } = require('./templates/ar/template_ar_static_c_lib');
 const { TemplateLinuxC } = require('./templates/linux/template_linux_c');
 const { TemplateLinuxStaticCLib } = require('./templates/linux/template_linux_static_c_lib');
+const { TemplateLinuxCpp } = require('./templates/linux/template_linux_cpp');
 const { TemplateLinuxBuild } = require('./templates/linux/template_linux_build');
-const { ExosComponent } = require('./exoscomponent');
+const { ExosComponentAR } = require('./exoscomponent_ar');
 const path = require('path');
 
 /**
  * @typedef {Object} ExosComponentCOptions
  * @property {string} destinationDirectory destination of the generated executable in Linux. default: `/home/user/{typeName.toLowerCase()}`
- * @property {boolean} generateARStaticLib if `true`, the AR side will be generated using the static library wrapper, which has less overhead and is easier to program / change, but only allows one instance in AR. If false, the library main function will use the exos_api commands directly
- * @property {boolean} generateLinuxStaticLib if `true`, the linux application will use the static library wrapper, which has less overhead and easier to program / change. If `false`, the `exos_api` interfece is used directly in the main code.
- * 
+ * @property {string} templateAR template used for AR: `c-static` | `cpp` | `c-api` - default: `c-api`
+ * @property {string} templateLinux template used for Linux: `c-static` | `cpp` | `c-api` - default: `c-api`
  */
-class ExosComponentC extends ExosComponent {
+class ExosComponentC extends ExosComponentAR {
 
     /**
-     * Options for manipulating the output of the `ExosComponentC` class in the `makeComponent` method
-     * 
+     * @type {TemplateLinuxStaticCLib | TemplateLinuxCpp | TemplateLinuxC}
+     */
+    _templateLinux;
+
+    /**
      * @type {ExosComponentCOptions}
      */
-    options;
+    _options;
 
     /**
+     * Create a C/C++ Component template
      * 
      * @param {string} fileName 
      * @param {string} typeName 
+     * @param {ExosComponentCOptions} options
      */
-    constructor(fileName, typeName) {
-        super(fileName, typeName);
+    constructor(fileName, typeName, options) {
         
-        this._templateAR = new TemplateARDynamic(this._datamodel);
-        this._templateLinux = new TemplateLinuxC(this._datamodel);
-        this._templateARStatic = new TemplateARStaticCLib(this._datamodel);
-        this._templateLinuxStatic = new TemplateLinuxStaticCLib(this._datamodel);
-        this._templateBuild = new TemplateLinuxBuild(typeName);
-        this.options = {destinationDirectory: `/home/user/${typeName.toLowerCase()}`, generateARStaticLib:false, generateLinuxStaticLib:false}
+        let _options = {destinationDirectory: `/home/user/${typeName.toLowerCase()}`, templateAR: "c-api", templateLinux: "c-api"};
+
+        if(options) {
+            if(options.destinationDirectory) {
+                _options.destinationDirectory = options.destinationDirectory;
+            }
+            if(options.templateAR) {
+                _options.templateAR = options.templateAR;
+            }
+            if(options.templateLinux) {
+                _options.templateLinux = options.templateLinux;
+            }
+        }
+
+        super(fileName, typeName, _options.templateAR);
+        this._options = _options;
+
+        switch(this._options.templateLinux)
+        {
+            case "c-static":
+                this._templateLinux = new TemplateLinuxStaticCLib(this._datamodel);
+                break;
+            case "cpp":
+                this._templateLinux = new TemplateLinuxCpp(this._datamodel);
+                break;
+            case "c-api":
+            default:
+                this._templateLinux = new TemplateLinuxC(this._datamodel);
+                break;
+        }
+        
+        this._templateBuild = new TemplateLinuxBuild(typeName);      
     }
 
     makeComponent(location) {
 
-        /* AR */
-
-        let templateAR = this._templateAR;
-        if(this.options.generateARStaticLib) {
-            templateAR = this._templateARStatic;
-            this._cLibrary.addNewFileObj(this._templateARStatic.staticLibraryHeader);
-            this._cLibrary.addNewFileObj(this._templateARStatic.staticLibrarySource);
-        }
-
-        this._cLibrary.addNewFileObj(templateAR.libraryFun);
-        this._cLibrary.addNewFileObj(templateAR.librarySource);
-        this._cLibrary.addNewFileObj(templateAR.heap.heapSource);
-        
-        this._iecProgram.addNewFileObj(templateAR.iecProgramVar);
-        this._iecProgram.addNewFileObj(templateAR.iecProgramST);
-        
-        /* Linux */
-
         let linuxBuild = this._exospackage.exospkg.getNewWSLBuildCommand("Linux", this._templateBuild.buildScript.name);
-
-        let templateLinux = this._templateLinux;
-        if(this.options.generateLinuxStaticLib) {
-            templateLinux = this._templateLinuxStatic;
-            this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinuxStatic.staticLibraryHeader);
-            this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinuxStatic.staticLibrarySource);
-        }
-        this._linuxPackage.addNewBuildFileObj(linuxBuild, templateLinux.mainSource);
-        this._linuxPackage.addNewBuildFileObj(linuxBuild, templateLinux.termination.terminationHeader);
-        this._linuxPackage.addNewBuildFileObj(linuxBuild, templateLinux.termination.terminationSource);
-
         this._templateBuild.options.executable.enable = true;
 
-        if(this.options.generateLinuxStaticLib) {
-            this._templateBuild.options.executable.staticLibrary.enable = true;
-            this._templateBuild.options.executable.staticLibrary.sourceFiles = [this._templateLinuxStatic.staticLibrarySource.name]
+        switch(this._options.templateLinux)
+        {
+            case "c-static":
+                this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.staticLibraryHeader);
+                this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.staticLibrarySource);
+                this._templateBuild.options.executable.staticLibrary.enable = true;
+                this._templateBuild.options.executable.staticLibrary.sourceFiles = [this._templateLinux.staticLibrarySource.name]
+                break;
+            case "cpp":
+                this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.datasetHeader);
+                this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.datamodelHeader);
+                this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.datamodelSource);
+                this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.loggerHeader);
+                this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.loggerSource);
+
+                this._templateBuild.options.executable.staticLibrary.enable = true;
+                this._templateBuild.options.executable.staticLibrary.sourceFiles = [this._templateLinux.datasetHeader.name,
+                                                                                    this._templateLinux.datamodelHeader.name,
+                                                                                    this._templateLinux.datamodelSource.name,
+                                                                                    this._templateLinux.loggerHeader.name,
+                                                                                    this._templateLinux.loggerSource.name];
+                break;
+            case "c-api":
+            default:
+                break;
         }
-        this._templateBuild.options.executable.sourceFiles = [templateLinux.termination.terminationSource.name, templateLinux.mainSource.name]
+
+        this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.mainSource);
+        this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.termination.terminationHeader);
+        this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.termination.terminationSource);
+
+        
+        this._templateBuild.options.executable.sourceFiles = [this._templateLinux.termination.terminationSource.name, this._templateLinux.mainSource.name]
         this._templateBuild.options.debPackage.enable = true;
-        this._templateBuild.options.debPackage.destination = this.options.destinationDirectory;
+        this._templateBuild.options.debPackage.destination = this._options.destinationDirectory;
 
         this._templateBuild.makeBuildFiles();
 
@@ -104,7 +131,7 @@ if (require.main === module) {
         let fileName = process.argv[2];
         let structName = process.argv[3];
 
-        let template = new ExosComponentC(fileName, structName);
+        let template = new ExosComponentC(fileName, structName, {templateAR:"c-api", templateLinux:"cpp"});
         let outDir = path.join(__dirname,path.dirname(fileName));
 
         process.stdout.write(`Writing ${structName} to folder: ${outDir}\n`);

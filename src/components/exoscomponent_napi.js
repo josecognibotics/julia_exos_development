@@ -1,55 +1,61 @@
-const { ExosComponent } = require('./exoscomponent');
-const { TemplateARStaticCLib } = require('./templates/ar/template_ar_static_c_lib');
-const { TemplateARDynamic } = require('./templates/ar/template_ar_dynamic');
 const { TemplateLinuxBuild } = require('./templates/linux/template_linux_build');
 const { TemplateLinuxNAPI } = require('./templates/linux/template_linux_napi');
+const { ExosComponentAR } = require('./exoscomponent_ar');
 
 const path = require('path');
 
-class ExosComponentNAPI extends ExosComponent {
+/**
+ * @typedef {Object} ExosComponentNAPIOptions
+ * @property {string} destinationDirectory destination of the generated executable in Linux. default: `/home/user/{typeName.toLowerCase()}`
+ * @property {string} templateAR template used for AR: `c-static` | `cpp` | `c-api` - default: `c-api`
+ * @property {boolean} includeNodeModules include additional `node_modules` in the package - default: `true`
+ */
+
+class ExosComponentNAPI extends ExosComponentAR {
+
     /**
-     * Options for manipulating the output of the `ExosComponentNAPI` class in the `makeComponent` method
-     * 
      * @type {ExosComponentNAPIOptions}
      */
-     options;
+     _options;
 
-     constructor(fileName, typeName) {
-        super(fileName, typeName);
+     /**
+      * Create a component for N-API, the template for AR is defined via the options
+      * 
+      * @param {string} fileName 
+      * @param {string} typeName 
+      * @param {ExosComponentNAPIOptions} options 
+      */
+     constructor(fileName, typeName, options) {
+        this._options = {destinationDirectory: `/home/user/${typeName.toLowerCase()}`, templateAR: "c-api", includeNodeModules: true};
 
-        this._templateAR = new TemplateARDynamic(this._datamodel);
-        this._templateARStatic = new TemplateARStaticCLib(this._datamodel);
+        if(options) {
+            if(options.destinationDirectory) {
+                this._options.destinationDirectory = options.destinationDirectory;
+            }
+            if(options.templateAR) {
+                this._options.templateAR = options.templateAR;
+            }
+            if(options.includeNodeModules)
+            {
+                this._options.includeNodeModules = options.includeNodeModules;
+            }
+        }
+
+        super(fileName, typeName, this._options.templateAR);
+
         this._templateBuild = new TemplateLinuxBuild(typeName);
         this._templateNAPI = new TemplateLinuxNAPI(this._datamodel);
-
-        this.options = {destinationDirectory: `/home/user/${typeName.toLowerCase()}`, generateARStaticLib:false, includeNodeModules:true}
     }
 
     makeComponent(location) {
-        /* AR */
-
-        let templateAR = this._templateAR;
-        if(this.options.generateARStaticLib) {
-            templateAR = this._templateARStatic;
-            this._cLibrary.addNewFileObj(this._templateARStatic.staticLibraryHeader);
-            this._cLibrary.addNewFileObj(this._templateARStatic.staticLibrarySource);
-        }
-
-        this._cLibrary.addNewFileObj(templateAR.libraryFun);
-        this._cLibrary.addNewFileObj(templateAR.librarySource);
-        this._cLibrary.addNewFileObj(templateAR.heap.heapSource);
-
-        this._iecProgram.addNewFileObj(templateAR.iecProgramVar);
-        this._iecProgram.addNewFileObj(templateAR.iecProgramST);
-
-        /* Linux */
+        
         let linuxBuild = this._exospackage.exospkg.getNewWSLBuildCommand("Linux", this._templateBuild.buildScript.name);
 
         this._templateBuild.options.napi.enable = true;
-        this._templateBuild.options.napi.includeNodeModules = this.options.includeNodeModules;
+        this._templateBuild.options.napi.includeNodeModules = this._options.includeNodeModules;
         this._templateBuild.options.napi.sourceFiles = [this._templateNAPI.indexJs.name, this._templateNAPI.packageJson.name, this._templateNAPI.packageLockJson.name];
         this._templateBuild.options.debPackage.enable = true;
-        this._templateBuild.options.debPackage.destination = this.options.destinationDirectory;
+        this._templateBuild.options.debPackage.destination = this._options.destinationDirectory;
         this._templateBuild.makeBuildFiles();
 
         this._linuxPackage.addNewBuildFileObj(linuxBuild,this._templateBuild.CMakeLists);

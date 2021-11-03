@@ -16,13 +16,34 @@ const { dir } = require('console');
 
 const isDebugMode = () => process.env.VSCODE_DEBUG_MODE === "true";
 
+const { Datamodel, DatatypeListItem } = require('./src/datamodel');
+const { ExosComponentC } = require('./src/components/exoscomponent_c');
+const { ExosComponentNAPI } = require('./src/components/exoscomponent_napi');
+const { ExosComponentSWIG } = require('./src/components/exoscomponent_swig');
+
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
+
+
+
 
 /**
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
+
+	function convertLabel2Teplate(label) {
+		switch(label) {
+			case "C API":
+				return "c-api";
+			case "C Interface":
+				return "c-static";
+			case "C++ Class":
+				return "cpp";
+			default:
+				return "c-api";
+		}
+	}
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
@@ -34,6 +55,82 @@ function activate(context) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
+
+	let createComponent = vscode.commands.registerCommand('exos-component-extension.createComponent', function (uri) {
+		// The code you place here will be executed every time your command is executed
+
+		let availableStructures = Datamodel.getDatatypeList(uri.fsPath);
+		if(!Array.isArray(availableStructures) || availableStructures.length == 0)
+		{
+			vscode.window.showErrorMessage(`The file ${path.basename(uri.fsPath)} has no structure definitions!`);
+		}
+		else
+		{
+			let pickStructureList = [];
+			for(let struct of availableStructures) {
+				if(struct.members.length > 0) {
+					pickStructureList.push({label:struct.name, detail:`datasets: ${struct.members.join(", ")}`})
+				}
+				else {
+					pickStructureList.push({label:struct.name});
+				}
+			}
+			vscode.window.showQuickPick(pickStructureList,{title:"Select datatype which becomes the new component datamodel"}).then(selectedStructure => {
+
+				let pickASType = []
+				pickASType.push({label: "C API", detail:"AR C library direcly using the exOS C-API"});
+				if(selectedStructure.detail)
+				{
+					pickASType.push({label: "C Interface", detail:`AR C library which uses a C interface for the ${selectedStructure.label} datamodel`})
+					pickASType.push({label: "C++ Class", detail:`AR C++ library which uses a C++ class for the ${selectedStructure.label} datamodel`})
+				};
+
+				vscode.window.showQuickPick(pickASType,{title:`Using datamodel: ${selectedStructure.label} - Select which template to use for Automation Runtime`}).then(selectedASType => {
+					
+					let pickLinuxType = [];
+					pickLinuxType.push({label: "C API", detail:"C application direcly using the exOS C-API"});
+					if(selectedStructure.detail) {
+						pickLinuxType.push({label: "C Interface", detail:`C application which uses a C interface for the ${selectedStructure.label} datamodel`})
+						pickLinuxType.push({label: "C++ Class", detail:`C++ application which uses a C++ class for the ${selectedStructure.label} datamodel`})
+						pickLinuxType.push({label: "Python Module", detail:`Python application which uses a SWIG module for the ${selectedStructure.label} datamodel`})
+						pickLinuxType.push({label: "JavaScript Module", detail:`nodejs JavaScript application which uses an N-API module for the ${selectedStructure.label} datamodel`})
+					}
+					
+					vscode.window.showQuickPick(pickLinuxType,{title:`Using datamodel: ${selectedStructure.label} - Select which template to use for Linux`}).then(selectedLinuxType => {
+					
+						vscode.window.showInformationMessage(`Creating component ${selectedStructure.label} AS: ${selectedASType.label} Linux: ${selectedLinuxType.label}`);
+					
+						switch(selectedLinuxType.label) {
+							case "C API":
+							case "C Interface":
+							case "C++ Class":
+								let template = new ExosComponentC(uri.fsPath, selectedStructure.label, {
+										templateLinux:convertLabel2Teplate(selectedLinuxType.label), 
+										templateAR:convertLabel2Teplate(selectedASType.label)});
+								template.makeComponent(path.dirname(uri.fsPath));
+								break;
+							case "Python Module":
+							case "JavaScript Module":
+								break;
+							default:
+								vscode.window.showErrorMessage(`The selected template for linux: ${selectedLinuxType.label} not found!`);
+						}
+
+					})
+
+					
+				});
+
+
+				
+			});
+		}
+
+
+	});
+	context.subscriptions.push(createComponent);
+
+
 	let generateTemplate = vscode.commands.registerCommand('exos-component-extension.generateTemplate', function (uri) {
 		// The code you place here will be executed every time your command is executed
 
