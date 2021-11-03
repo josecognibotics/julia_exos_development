@@ -1,0 +1,184 @@
+{
+    "headerName": "exos_watertank.h",
+    "datamodelInstanceName": "WaterTank_0",
+    "logname": "logger",
+    "aliasName": "gWaterTank_0",
+    "loggerClassName": "WaterTankLogger",
+    "datasetClassName": "",
+    "handle": {
+        "dataType": "WaterTankHandle_t",
+        "name": "handle"
+    },
+    "libHeaderName": "libwatertank.h",
+    "datamodel": {
+        "structName": "WaterTank",
+        "varName": "watertank",
+        "dataType": "WaterTank",
+        "comment": "",
+        "libStructName": "libWaterTank",
+        "handleName": "h_WaterTank",
+        "className": "WaterTankDatamodel",
+        "datasetClassName": "WaterTankDataset"
+    },
+    "datasets": [
+        {
+            "type": "enum",
+            "structName": "FillValve",
+            "varName": "fillvalve",
+            "dataType": "WaterTankFillValve_enum",
+            "libDataType": "libWaterTankFillValve",
+            "arraySize": 0,
+            "comment": "SUB",
+            "isPub": true,
+            "isSub": false,
+            "isPrivate": false,
+            "datasets": []
+        },
+        {
+            "type": "variable",
+            "structName": "EnableHeater",
+            "varName": "enableheater",
+            "dataType": "BOOL",
+            "libDataType": "libWaterTankEnableHeater",
+            "arraySize": 3,
+            "comment": "PUB",
+            "isPub": false,
+            "isSub": true,
+            "isPrivate": false,
+            "datasets": []
+        },
+        {
+            "type": "struct",
+            "structName": "HeaterConfig",
+            "varName": "heaterconfig",
+            "dataType": "WaterTankHeaterConfig",
+            "libDataType": "libWaterTankHeaterConfig",
+            "arraySize": 3,
+            "comment": "PUB SUB",
+            "isPub": true,
+            "isSub": true,
+            "isPrivate": false,
+            "datasets": [
+                {
+                    "type": "variable",
+                    "structName": "MaxTemperature",
+                    "varName": "maxtemperature",
+                    "dataType": "REAL",
+                    "libDataType": "libWaterTankMaxTemperature",
+                    "arraySize": 0,
+                    "comment": "",
+                    "isPub": false,
+                    "isSub": false,
+                    "isPrivate": false,
+                    "datasets": []
+                },
+                {
+                    "type": "variable",
+                    "structName": "MaxPower",
+                    "varName": "maxpower",
+                    "dataType": "DINT",
+                    "libDataType": "libWaterTankMaxPower",
+                    "arraySize": 0,
+                    "comment": "",
+                    "isPub": false,
+                    "isSub": false,
+                    "isPrivate": false,
+                    "datasets": []
+                }
+            ]
+        },
+        {
+            "type": "struct",
+            "structName": "Status",
+            "varName": "status",
+            "dataType": "WaterTankStatus",
+            "libDataType": "libWaterTankStatus",
+            "arraySize": 0,
+            "comment": "PUB",
+            "isPub": false,
+            "isSub": true,
+            "isPrivate": false,
+            "datasets": [
+                {
+                    "type": "variable",
+                    "structName": "LevelHigh",
+                    "varName": "levelhigh",
+                    "dataType": "BOOL",
+                    "libDataType": "libWaterTankLevelHigh",
+                    "arraySize": 0,
+                    "comment": "",
+                    "isPub": false,
+                    "isSub": false,
+                    "isPrivate": false,
+                    "datasets": []
+                },
+                {
+                    "type": "variable",
+                    "structName": "LevelLow",
+                    "varName": "levellow",
+                    "dataType": "BOOL",
+                    "libDataType": "libWaterTankLevelLow",
+                    "arraySize": 0,
+                    "comment": "",
+                    "isPub": false,
+                    "isSub": false,
+                    "isPrivate": false,
+                    "datasets": []
+                },
+                {
+                    "type": "variable",
+                    "structName": "WaterLevel",
+                    "varName": "waterlevel",
+                    "dataType": "UDINT",
+                    "libDataType": "libWaterTankWaterLevel",
+                    "arraySize": 0,
+                    "comment": "",
+                    "isPub": false,
+                    "isSub": false,
+                    "isPrivate": false,
+                    "datasets": []
+                },
+                {
+                    "type": "struct",
+                    "structName": "Heater",
+                    "varName": "heater",
+                    "dataType": "WaterTankHeaterStatus",
+                    "libDataType": "libWaterTankHeater",
+                    "arraySize": 0,
+                    "comment": "",
+                    "isPub": false,
+                    "isSub": false,
+                    "isPrivate": false,
+                    "datasets": [
+                        {
+                            "type": "variable",
+                            "structName": "WaterTemperature",
+                            "varName": "watertemperature",
+                            "dataType": "REAL",
+                            "libDataType": "libWaterTankWaterTemperature",
+                            "arraySize": 0,
+                            "comment": "",
+                            "isPub": false,
+                            "isSub": false,
+                            "isPrivate": false,
+                            "datasets": []
+                        },
+                        {
+                            "type": "variable",
+                            "structName": "HeatingActive",
+                            "varName": "heatingactive",
+                            "dataType": "BOOL",
+                            "libDataType": "libWaterTankHeatingActive",
+                            "arraySize": 0,
+                            "comment": "",
+                            "isPub": false,
+                            "isSub": false,
+                            "isPrivate": false,
+                            "datasets": []
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

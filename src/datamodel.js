@@ -683,7 +683,7 @@ class Datamodel {
     
                             if (arraySize > 0 && swig !== undefined && swig) {
                                 // add sai=swig array info
-                                out += `<sai>{"structname": "${structname}", "membername": "${name}", "datatype": "${typeForSwig}", "arraysize": "${arraySize}", "stringsize": "${stringSize}"}</sai>\r\n`
+                                out += `<sai>{"structname": "${structname}", "membername": "${name}", "datatype": "${typeForSwig}", "arraysize": "${arraySize}", "stringsize": "${stringSize}"}</sai>`
                             }
                         }
                     }
@@ -700,8 +700,7 @@ class Datamodel {
                 if(this.sortedStructs[i].name ==struct.name) {
                     this.sortedStructs[i].dependencies = struct.depends;
 
-                    if (swig !== undefined && swig/* && i < (this.sortedStructs.length-1)*/) {
-                        // do not include the last one (top-level struct) as it already exists as struct lib<typname>
+                    if (swig !== undefined && swig) {
                         // find and extract all swig array info stuff and add them last to be able to replace it correctly in swig template generator
                         let swigInfo = ""
                         let matches = struct.out.matchAll(/<sai>(.*)<\/sai>/g);

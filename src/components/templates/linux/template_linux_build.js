@@ -170,7 +170,9 @@ class TemplateLinuxBuild {
                 out += `    )\n`;
                 out += `\n`;
                 out += `install(FILES \${${this.name.toUpperCase()}_MODULE_FILES} DESTINATION ${this.options.debPackage.destination})\n`;
-                out += `install(DIRECTORY node_modules DESTINATION ${this.options.debPackage.destination})\n`;
+                if(this.options.napi.includeNodeModules) {
+                    out += `install(DIRECTORY node_modules DESTINATION ${this.options.debPackage.destination})\n`;
+                }
             }
         }
         else if(this.options.swigPython.enable) {
@@ -303,8 +305,10 @@ class TemplateLinuxBuild {
         
             out += `cp -f build/Release/l_*.node .\n\n`;
             
-            out += `mkdir -p node_modules #make sure the folder exists even if no submodules are needed\n\n`;
-        
+            if(this.options.napi.includeNodeModules) {
+                out += `mkdir -p node_modules #make sure the folder exists even if no submodules are needed\n\n`;
+            }
+            
             out += `rm -rf build/*\n`;
         
             out += `cd build\n\n`;

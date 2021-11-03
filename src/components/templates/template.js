@@ -1,4 +1,4 @@
-const {Datamodel} = require('../../datamodel');
+const {Datamodel, Dataset} = require('../../datamodel');
 
 /**
  * Class used to generate a template object for code-generators
@@ -22,6 +22,7 @@ const {Datamodel} = require('../../datamodel');
  * @property {string} datasetClassName name of a generated class for its datasets => `MyApplicationDataset`
  * 
  * @typedef {Object} ApplicationTemplateDataset
+ * @property {string} type `struct` | `variable` | `enum` | `value` type of dataset, whereas enums contains only values
  * @property {string} dataType typename of the dataset structure enum or variable, => `MyConfig`, `BOOL` or `USINT`
  * @property {string} structName name of the dataset structure enum or variable, => `Config`, `Enable` or `Buffer`
  * @property {string} varName name of a dataset instance, in lowercase => `config`, `enable` or `config_dataset`, `enable_dataset` if the dataType is all lowercase
@@ -84,8 +85,9 @@ class Template
      *
      * @param {Datamodel} datamodel existing {@link Datamodel} class that should be used for this template 
      * @param {boolean} Linux generate structure for Linux (`true`), otherwise AR (`false`) when used in Linux, the `datasets[].isPub` and `datasets[].isSub` are reversed
+     * @param {boolean} recurse (optional) generate a recursive template structure for datasets (at all sublevels) - with this you get `datasets[].datasets[].datasets[]` and so on
      */
-    constructor(datamodel, Linux) {
+    constructor(datamodel, Linux, recurse) {
         
         /**
          * create the template structure form the Dataset structure
@@ -93,12 +95,65 @@ class Template
          * @param {Dataset} types generated {@link Dataset} structure from the {@link Datamodel} class
          * @param {string} headerName predefined `headerFile.name` from the {@link Datamodel} class
          * @param {boolean} Linux when used in Linux, the `datasets[].isPub` and `datasets[].isSub` are reversed
+         * @param {boolean} recurse (optional) generate a recursive template structure for datasets (at all sublevels)
          * @returns {ApplicationTemplate}
          */
-        function configTemplate(types, headerName, Linux) {
+        function configTemplate(types, headerName, Linux, recurse) {
+
+            /**
+             * @param {ApplicationTemplateDataset[]} datasets 
+             * @param {Dataset} type 
+             * @param {boolean} recurse (optional) generate a recursive template structure for datasets (at all sublevels)
+             */
+            function readDatasets(datasets, type, recurse) {
+                for (let child of type.children) {
+                    let object = {};
+                    object["type"] = child.name;
+                    object["structName"] = child.attributes.name;
+                    object["varName"] = child.attributes.name.toLowerCase() + (child.attributes.name == child.attributes.name.toLowerCase() ? "_dataset" : "");
+                    object["dataType"] = child.attributes.dataType;
+                    object["libDataType"] = template.datamodel.libStructName + child.attributes.name;
+                    if (typeof child.attributes.arraySize === "number") {
+                        object["arraySize"] = child.attributes.arraySize;
+                    } else {
+                        object["arraySize"] = 0;
+                    }
+                    object["comment"] = child.attributes.comment;
+                    if (typeof child.attributes.comment === "string") {
+                        if(Linux)
+                        {
+                            object["isPub"] = child.attributes.comment.includes("SUB");
+                            object["isSub"] = child.attributes.comment.includes("PUB");
+                        }
+                        else
+                        {
+                            object["isPub"] = child.attributes.comment.includes("PUB");
+                            object["isSub"] = child.attributes.comment.includes("SUB");
+                        }
+                        object["isPrivate"] = child.attributes.comment.includes("private");
+                    } else {
+                        object["comment"] = "";
+                        object["isPub"] = false;
+                        object["isSub"] = false;
+                        object["isPrivate"] = false;
+                    }
+                    if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
+                    
+                    if(recurse !== undefined && recurse)
+                    {
+                        object["datasets"] = [];
+                        if(child.name == "struct") {
+                            readDatasets(object["datasets"],child, recurse);
+                        }
+                    }
+                    datasets.push(object);
+
+                }
+            }
 
             var template = {
                 headerName: "",
+                datamodelInstanceName: "",
                 logname: "",
                 aliasName: "",
                 loggerClassName: "",
@@ -119,10 +174,9 @@ class Template
                 },
                 datasets: []
             }
-        
             template.logname = "logger";
             template.aliasName = `g${types.attributes.dataType}_0`;
-            template.loggerClassName = `${types.attributes.dataType}Logger`
+            template.loggerClassName = `${types.attributes.dataType}Logger`;
             template.datamodelInstanceName = `${types.attributes.dataType}_0`;
             template.headerName = headerName;
             template.libHeaderName = `lib${types.attributes.dataType.toLowerCase()}.h`
@@ -144,49 +198,48 @@ class Template
             template.datamodel.libStructName = "lib" + types.attributes.dataType;
             template.datamodel.handleName = "h_" + types.attributes.dataType;
     
-            for (let child of types.children) {
-                let object = {};
-                object["structName"] = child.attributes.name;
-                object["varName"] = child.attributes.name.toLowerCase() + (child.attributes.name == child.attributes.name.toLowerCase() ? "_dataset" : "");
-                object["dataType"] = child.attributes.dataType;
-                object["libDataType"] = template.datamodel.libStructName + child.attributes.name;
-                if (typeof child.attributes.arraySize === "number") {
-                    object["arraySize"] = child.attributes.arraySize;
-                } else {
-                    object["arraySize"] = 0;
-                }
-                object["comment"] = child.attributes.comment;
-                if (typeof child.attributes.comment === "string") {
-                    if(Linux)
-                    {
-                        object["isPub"] = child.attributes.comment.includes("SUB");
-                        object["isSub"] = child.attributes.comment.includes("PUB");
-                    }
-                    else
-                    {
-                        object["isPub"] = child.attributes.comment.includes("PUB");
-                        object["isSub"] = child.attributes.comment.includes("SUB");
-                    }
-                    object["isPrivate"] = child.attributes.comment.includes("private");
-                } else {
-                    object["comment"] = "";
-                    object["isPub"] = false;
-                    object["isSub"] = false;
-                    object["isPrivate"] = false;
-                }
-                if (child.attributes.hasOwnProperty("stringLength")) { object["stringLength"] = child.attributes.stringLength; }
-                template.datasets.push(object);
-            }
+            readDatasets(template.datasets,types, recurse);
         
             return template;
         }
 
         this.isLinux = Linux;
         this.datamodel = datamodel;
-        this.template = configTemplate(this.datamodel.dataset, this.datamodel.headerFile.name, Linux);
+        this.template = configTemplate(this.datamodel.dataset, this.datamodel.headerFile.name, Linux, recurse);
     }
 
-    
+}
+
+const fs = require('fs');
+const path = require('path');
+
+if (require.main === module) {
+
+    process.stdout.write(`exOS Template \n`);
+
+    if (process.argv.length > 3) {
+
+        let fileName = process.argv[2];
+        let structName = process.argv[3];
+
+        if (fs.existsSync(fileName)) {
+
+                let datamodel = new Datamodel(fileName, structName, [`${structName}.h`]);
+                let outDir = path.join(__dirname,path.dirname(fileName));
+                let template = new Template(datamodel, true, true);
+
+                process.stdout.write(`Writing ${structName} to folder: ${outDir}\r\n`);
+
+                fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.json`),JSON.stringify(template.template,null,4));
+
+        } else {
+            process.stderr.write(`file '${fileName}' not found.`);
+        }
+
+    }
+    else {
+        process.stderr.write("usage: ./template.js <filename.typ> <structname>\r\n");
+    }
 }
 
 module.exports = {Template};

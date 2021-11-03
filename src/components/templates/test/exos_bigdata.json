@@ -1,0 +1,85 @@
+{
+    "headerName": "exos_bigdata.h",
+    "datamodelInstanceName": "BigData_0",
+    "logname": "logger",
+    "aliasName": "gBigData_0",
+    "loggerClassName": "BigDataLogger",
+    "datasetClassName": "",
+    "handle": {
+        "dataType": "BigDataHandle_t",
+        "name": "handle"
+    },
+    "libHeaderName": "libbigdata.h",
+    "datamodel": {
+        "structName": "BigData",
+        "varName": "bigdata",
+        "dataType": "BigData",
+        "comment": "",
+        "libStructName": "libBigData",
+        "handleName": "h_BigData",
+        "className": "BigDataDatamodel",
+        "datasetClassName": "BigDataDataset"
+    },
+    "datasets": [
+        {
+            "type": "struct",
+            "structName": "Command",
+            "varName": "command",
+            "dataType": "BigDataCommand",
+            "libDataType": "libBigDataCommand",
+            "arraySize": 0,
+            "comment": "SUB",
+            "isPub": true,
+            "isSub": false,
+            "isPrivate": false
+        },
+        {
+            "type": "struct",
+            "structName": "Buffer",
+            "varName": "buffer",
+            "dataType": "BigDataBuffer",
+            "libDataType": "libBigDataBuffer",
+            "arraySize": 0,
+            "comment": "PUB SUB",
+            "isPub": true,
+            "isSub": true,
+            "isPrivate": false
+        },
+        {
+            "type": "struct",
+            "structName": "ValueBuffer",
+            "varName": "valuebuffer",
+            "dataType": "BigDataValueBuffer",
+            "libDataType": "libBigDataValueBuffer",
+            "arraySize": 0,
+            "comment": "PUB SUB",
+            "isPub": true,
+            "isSub": true,
+            "isPrivate": false
+        },
+        {
+            "type": "struct",
+            "structName": "Values",
+            "varName": "values",
+            "dataType": "BigDataValue",
+            "libDataType": "libBigDataValues",
+            "arraySize": 1000,
+            "comment": "PUB SUB",
+            "isPub": true,
+            "isSub": true,
+            "isPrivate": false
+        },
+        {
+            "type": "struct",
+            "structName": "DataStruct",
+            "varName": "datastruct",
+            "dataType": "BigDataStruct",
+            "libDataType": "libBigDataDataStruct",
+            "arraySize": 0,
+            "comment": "PUB SUB",
+            "isPub": true,
+            "isSub": true,
+            "isPrivate": false
+        }
+    ]
+}
