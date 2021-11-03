@@ -51,8 +51,6 @@ class ExosComponentNAPI extends ExosComponentAR {
 
     makeComponent(location) {
         
-        let linuxBuild = this._exospackage.exospkg.getNewWSLBuildCommand("Linux", this._templateBuild.buildScript.name);
-
         this._templateBuild.options.napi.enable = true;
         this._templateBuild.options.napi.includeNodeModules = this._options.includeNodeModules;
         this._templateBuild.options.napi.sourceFiles = [this._templateNAPI.indexJs.name, this._templateNAPI.packageJson.name, this._templateNAPI.packageLockJson.name];
@@ -60,9 +58,14 @@ class ExosComponentNAPI extends ExosComponentAR {
         this._templateBuild.options.debPackage.destination = this._options.destinationDirectory;
         this._templateBuild.makeBuildFiles();
 
-        this._linuxPackage.addNewBuildFileObj(linuxBuild,this._templateBuild.CMakeLists);
-        this._linuxPackage.addNewBuildFileObj(linuxBuild,this._templateBuild.buildScript);
-        this._linuxPackage.addNewBuildFileObj(linuxBuild,this._templateNAPI.librarySource);
+        this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateBuild.CMakeLists);
+        this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateBuild.buildScript);
+        this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateNAPI.librarySource);
+        this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateNAPI.gypFile);
+        this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateNAPI.packageJson);
+        this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateNAPI.packageLockJson);
+        this._linuxPackage.addExistingFile(this._templateBuild.options.napi.nodeFileName, `${this._typeName} node module`);
+        
         this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName, this._templateBuild.options.debPackage.packageName, `${this._typeName} debian package`);
         this._linuxPackage.addNewTransferFileObj(this._templateNAPI.indexJs,"Restart");
         this._exospackage.exospkg.addService("Startup", `cp ${this._templateNAPI.indexJs.name} ${this._templateBuild.options.debPackage.destination}`);

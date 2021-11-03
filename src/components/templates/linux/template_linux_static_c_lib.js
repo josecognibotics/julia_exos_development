@@ -48,7 +48,7 @@ class TemplateLinuxStaticCLib extends TemplateStaticCLib {
          * @param {string} legend 
          * @returns 
          */
-        function generateMain(template, PubSubSwap, legend, terminationHeaderName) {
+        function generateMain(template, legend, terminationHeaderName) {
             let out = "";
             let prepend = "// ";
             if(process.env.VSCODE_DEBUG_MODE) {
@@ -73,7 +73,7 @@ class TemplateLinuxStaticCLib extends TemplateStaticCLib {
             //out += `static void on_operational_${template.datamodel.varName}(void)\n{\n}\n\n`;
         
             for (let dataset of template.datasets) {
-                if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                if (dataset.isSub) {
                     out += `static void on_change_${dataset.varName}(void)\n`;
                     out += `{\n`;
                     out += `   ${template.datamodel.varName}->log.verbose("${template.datamodel.varName}->${dataset.structName} changed!");\n`;
@@ -101,7 +101,7 @@ class TemplateLinuxStaticCLib extends TemplateStaticCLib {
             out += `    // ${template.datamodel.varName}->on_operational = .. ;\n`;
         
             for (let dataset of template.datasets) {
-                if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                if (dataset.isSub) {
                     out += `    ${template.datamodel.varName}->${dataset.structName}.on_change = on_change_${dataset.varName};\n`;
                 }
             }
@@ -115,7 +115,7 @@ class TemplateLinuxStaticCLib extends TemplateStaticCLib {
             out += `        // if (${template.datamodel.varName}->is_connected)\n`;
             out += `        // {\n`;
             for (let dataset of template.datasets) {
-                if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                if (dataset.isPub) {
                     out += `        //     ${template.datamodel.varName}->${dataset.structName}.value${dataset.arraySize > 0 ? "[..]" : ""}${Datamodel.isScalarType(dataset.dataType) ? "" : ". .."} = .. ;\n`;
                     out += `        //     ${template.datamodel.varName}->${dataset.structName}.publish();\n`;
                     out += "        \n";
@@ -133,7 +133,7 @@ class TemplateLinuxStaticCLib extends TemplateStaticCLib {
             return out;
         }
 
-        return generateMain(this.template,this.isLinux, this.staticLibraryLegend, this.termination.terminationHeader.name);
+        return generateMain(this.template, this.staticLibraryLegend, this.termination.terminationHeader.name);
     }
 
 }

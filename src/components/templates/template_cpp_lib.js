@@ -401,10 +401,9 @@ class TemplateCppLib extends Template {
          * 
          * @param {ApplicationTemplate} template 
          * @param {string} aliasName 
-         * @param {boolean} PubSubSwap 
          * @returns 
          */
-        function generateExosDataModelCpp(template, PubSubSwap) {
+        function generateExosDataModelCpp(template) {
         
             let out = "";
         
@@ -433,10 +432,10 @@ class TemplateCppLib extends Template {
                 if (dataset.isPub && dataset.isSub) {
                     out += `    ${dataset.structName}.connect((EXOS_DATASET_TYPE)(EXOS_DATASET_PUBLISH+EXOS_DATASET_SUBSCRIBE));\n`;
                 }
-                else if (!PubSubSwap && dataset.isPub || PubSubSwap && dataset.isSub) {
+                else if (dataset.isPub) {
                     out += `    ${dataset.structName}.connect((EXOS_DATASET_TYPE)EXOS_DATASET_PUBLISH);\n`;
                 } 
-                else if(!PubSubSwap && dataset.isSub || PubSubSwap && dataset.isPub) {
+                else if(dataset.isSub) {
                     out += `    ${dataset.structName}.connect((EXOS_DATASET_TYPE)EXOS_DATASET_SUBSCRIBE);\n`;
                 }
             }
@@ -500,7 +499,7 @@ class TemplateCppLib extends Template {
         
             return out;
         }
-        return generateExosDataModelCpp(this.template, this.isLinux);
+        return generateExosDataModelCpp(this.template);
     }
 
     /**
@@ -512,11 +511,11 @@ class TemplateCppLib extends Template {
          * 
          * @param {ApplicationTemplate} template
          * 
-         * @param {boolean} PubSubSwap 
+         * @param {boolean} isLinux 
          * @returns {string}
          */
-        function genenerateLegend(template, PubSubSwap) {
-            let dmDelim = PubSubSwap ? "." : "->";
+        function genenerateLegend(template, isLinux) {
+            let dmDelim = isLinux ? "." : "->";
             let out = "";
         
             out += `/* datamodel features:\n`;
@@ -546,10 +545,10 @@ class TemplateCppLib extends Template {
                 if (dataset.isSub || dataset.isPub) {
                     out += `\ndataset ${dataset.structName}:\n`;
                     
-                    if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                    if (dataset.isPub) {
                         out += `    ${template.datamodel.varName}${dmDelim}${dataset.structName}.publish()\n`;
                     }
-                    if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                    if (dataset.isSub) {
                         out += `    ${template.datamodel.varName}${dmDelim}${dataset.structName}.onChange([&] () {\n`;
                         out += `        ${template.datamodel.varName}${dmDelim}${dataset.structName}.value ...\n`;
                         out += `    })\n`;

@@ -69,7 +69,7 @@ class TemplateLinuxC extends Template {
             out += `        //handle each subscription dataset separately\n`;
             var atleastone = false;
             for (let dataset of template.datasets) {
-                if (dataset.isPub) {
+                if (dataset.isSub) {
                     if (atleastone) {
                         out += `        else `;
                     }
@@ -90,7 +90,7 @@ class TemplateLinuxC extends Template {
             out += `        //handle each published dataset separately\n`;
             atleastone = false;
             for (let dataset of template.datasets) {
-                if (dataset.isSub) {
+                if (dataset.isPub) {
                     if (atleastone) {
                         out += `        else `;
                     }
@@ -111,7 +111,7 @@ class TemplateLinuxC extends Template {
             out += `        //handle each published dataset separately\n`;
             atleastone = false;
             for (let dataset of template.datasets) {
-                if (dataset.isSub) {
+                if (dataset.isPub) {
                     if (atleastone) {
                         out += `        else `;
                     }
@@ -185,7 +185,7 @@ class TemplateLinuxC extends Template {
             out += `    ${template.datamodel.structName} data;\n\n`;
             out += `    exos_datamodel_handle_t ${template.datamodel.varName};\n\n`;
             for (let dataset of template.datasets) {
-                if (dataset.isPub || dataset.isSub) {
+                if (dataset.isSub || dataset.isPub) {
                     out += `    exos_dataset_handle_t ${dataset.varName};\n`;
                 }
             }
@@ -200,7 +200,7 @@ class TemplateLinuxC extends Template {
             out += `    ${template.datamodel.varName}.user_tag = 0; //user defined\n\n`;
         
             for (let dataset of template.datasets) {
-                if (dataset.isPub || dataset.isSub) {
+                if (dataset.isSub || dataset.isPub) {
                     out += `    EXOS_ASSERT_OK(exos_dataset_init(&${dataset.varName}, &${template.datamodel.varName}, "${dataset.structName}", &data.${dataset.structName}, sizeof(data.${dataset.structName})));\n`;
                     out += `    ${dataset.varName}.user_context = NULL; //user defined\n`;
                     out += `    ${dataset.varName}.user_tag = 0; //user defined\n\n`;
@@ -212,15 +212,15 @@ class TemplateLinuxC extends Template {
         
             out += `    //connect datasets\n`;
             for (let dataset of template.datasets) {
-                if (dataset.isPub) {
-                    if (dataset.isSub) {
+                if (dataset.isSub) {
+                    if (dataset.isPub) {
                         out += `    EXOS_ASSERT_OK(exos_dataset_connect(&${dataset.varName}, EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, datasetEvent));\n`;
                     }
                     else {
                         out += `    EXOS_ASSERT_OK(exos_dataset_connect(&${dataset.varName}, EXOS_DATASET_SUBSCRIBE, datasetEvent));\n`;
                     }
                 }
-                else if (dataset.isSub) {
+                else if (dataset.isPub) {
                     out += `    EXOS_ASSERT_OK(exos_dataset_connect(&${dataset.varName}, EXOS_DATASET_PUBLISH, datasetEvent));\n`;
                 }
             }

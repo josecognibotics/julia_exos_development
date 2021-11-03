@@ -1,7 +1,7 @@
 const { TemplateLinuxC } = require('./templates/linux/template_linux_c');
 const { TemplateLinuxStaticCLib } = require('./templates/linux/template_linux_static_c_lib');
 const { TemplateLinuxCpp } = require('./templates/linux/template_linux_cpp');
-const { TemplateLinuxBuild } = require('./templates/linux/template_linux_build');
+const { BuildOptions } = require('./templates/linux/template_linux_build');
 const { ExosComponentAR } = require('./exoscomponent_ar');
 const path = require('path');
 
@@ -63,28 +63,27 @@ class ExosComponentC extends ExosComponentAR {
                 break;
         }
         
-        this._templateBuild = new TemplateLinuxBuild(typeName);      
+            
     }
 
     makeComponent(location) {
 
-        let linuxBuild = this._exospackage.exospkg.getNewWSLBuildCommand("Linux", this._templateBuild.buildScript.name);
         this._templateBuild.options.executable.enable = true;
 
         switch(this._options.templateLinux)
         {
             case "c-static":
-                this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.staticLibraryHeader);
-                this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.staticLibrarySource);
+                this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateLinux.staticLibraryHeader);
+                this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateLinux.staticLibrarySource);
                 this._templateBuild.options.executable.staticLibrary.enable = true;
                 this._templateBuild.options.executable.staticLibrary.sourceFiles = [this._templateLinux.staticLibrarySource.name]
                 break;
             case "cpp":
-                this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.datasetHeader);
-                this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.datamodelHeader);
-                this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.datamodelSource);
-                this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.loggerHeader);
-                this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.loggerSource);
+                this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateLinux.datasetHeader);
+                this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateLinux.datamodelHeader);
+                this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateLinux.datamodelSource);
+                this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateLinux.loggerHeader);
+                this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateLinux.loggerSource);
 
                 this._templateBuild.options.executable.staticLibrary.enable = true;
                 this._templateBuild.options.executable.staticLibrary.sourceFiles = [this._templateLinux.datasetHeader.name,
@@ -98,19 +97,20 @@ class ExosComponentC extends ExosComponentAR {
                 break;
         }
 
-        this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.mainSource);
-        this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.termination.terminationHeader);
-        this._linuxPackage.addNewBuildFileObj(linuxBuild, this._templateLinux.termination.terminationSource);
+        this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateLinux.mainSource);
+        this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateLinux.termination.terminationHeader);
+        this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateLinux.termination.terminationSource);
 
         
-        this._templateBuild.options.executable.sourceFiles = [this._templateLinux.termination.terminationSource.name, this._templateLinux.mainSource.name]
+        this._templateBuild.options.executable.sourceFiles = [this._templateLinux.termination.terminationSource.name, this._templateLinux.mainSource.name, this._datamodel.sourceFile.name]
         this._templateBuild.options.debPackage.enable = true;
         this._templateBuild.options.debPackage.destination = this._options.destinationDirectory;
 
         this._templateBuild.makeBuildFiles();
 
-        this._linuxPackage.addNewBuildFileObj(linuxBuild,this._templateBuild.CMakeLists);
-        this._linuxPackage.addNewBuildFileObj(linuxBuild,this._templateBuild.buildScript);
+        this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateBuild.CMakeLists);
+        this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateBuild.buildScript);
+        this._linuxPackage.addExistingFile(this._templateBuild.options.executable.executableName, `${this._typeName} application`)
         this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName, this._templateBuild.options.debPackage.packageName, `${this._typeName} debian package`);
 
         /* Additional exospkg settings */

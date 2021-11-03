@@ -96,7 +96,7 @@ class TemplateLinuxNAPI extends Template {
      */
     constructor(datamodel) {
         super(datamodel, true, true); //create recursive template.dataset info
-        this.gypFile = {name:"bidning.gyp", contents:this._generateGyp(), description:`${this.datamodel.typeName} build file`};
+        this.gypFile = {name:"binding.gyp", contents:this._generateGyp(), description:`${this.datamodel.typeName} build file`};
         this.librarySource = {name:`lib${this.datamodel.typeName.toLowerCase()}.c`, contents:this._generateLibTemplate(), description:`${this.datamodel.typeName} N-API wrapper`};
         this.indexJs = {name:"index.js", contents:this._generateIndexJS(), description:`${this.datamodel.typeName} main javascript application`};
         this.packageJson = {name:"package.json", contents:this._generatePackageJSON(), description:`${this.datamodel.typeName} package information`};
@@ -104,7 +104,7 @@ class TemplateLinuxNAPI extends Template {
     }
 
     _generateGyp() {
-        function generateGyp(typName) {
+        function generateGyp(typName, sourceFileName) {
             let out = "";
         
             out += `{\n`;
@@ -112,7 +112,8 @@ class TemplateLinuxNAPI extends Template {
             out += `    {\n`;
             out += `      "target_name": "l_${typName}",\n`;
             out += `      "sources": [\n`;
-            out += `        "lib${typName.toLowerCase()}.c"\n`;
+            out += `        "lib${typName.toLowerCase()}.c",\n`;
+            out += `        "${sourceFileName}"\n`;
             out += `      ],\n`;
             out += `      "include_dirs": [\n`;
             out += `        '/usr/include'\n`;
@@ -129,7 +130,7 @@ class TemplateLinuxNAPI extends Template {
         
             return out;
         }
-        return generateGyp(this.datamodel.typeName);
+        return generateGyp(this.datamodel.typeName, this.datamodel.sourceFile.name);
     }
 
     _generatePackageLockJSON() {
@@ -208,7 +209,7 @@ class TemplateLinuxNAPI extends Template {
                 out += `    ${template.datamodel.varName}.log.debug(string)\n`;
                 out += `    ${template.datamodel.varName}.log.verbose(string)\n`;
                 for (let dataset of template.datasets) {
-                    if (dataset.isSub || dataset.isPub) {
+                    if (dataset.isPub || dataset.isSub) {
                         out += `\ndataset ${dataset.structName}:\n`;
             
                         out += `    ${template.datamodel.varName}.dataModel.${dataset.structName}.value : (${Datamodel.convertPlcType(dataset.dataType)}`;
@@ -228,10 +229,10 @@ class TemplateLinuxNAPI extends Template {
                             out += `s\n`;
                         }
             
-                        if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                        if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
                             out += `    ${template.datamodel.varName}.dataModel.${dataset.structName}.publish()\n`;
                         }
-                        if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                        if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
                             out += `    ${template.datamodel.varName}.dataModel.${dataset.structName}.onChange(() => {\n`;
                             out += `        ${template.datamodel.varName}.dataModel.${dataset.structName}.value ...\n`;
                             out += `        ${template.datamodel.varName}.dataModel.${dataset.structName}.nettime : (int32_t) nettime @ time of publish\n`;
@@ -267,7 +268,7 @@ class TemplateLinuxNAPI extends Template {
             out += `    }\n`;
             out += `});\n`;
             for (let i = 0; i < template.datasets.length; i++) {
-                if (template.datasets[i].isPub || template.datasets[i].isSub) {
+                if (template.datasets[i].isSub || template.datasets[i].isPub) {
                     out += `${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.onConnectionChange(() => {\n`;
                     out += `    // switch (${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.connectionState) ...\n`;
                     out += `});\n`;
@@ -278,7 +279,7 @@ class TemplateLinuxNAPI extends Template {
         
             out += `//value change events\n`;
             for (let i = 0; i < template.datasets.length; i++) {
-                if (template.datasets[i].isPub) {
+                if (template.datasets[i].isSub) {
                     out += `${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.onChange(() => {\n`;
                     out += `    //${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.value..\n`;
                     out += `});\n`;
@@ -292,7 +293,7 @@ class TemplateLinuxNAPI extends Template {
             out += `    //Publish values\n`;
             out += `    //if (${template.datamodel.varName}.isConnected) {\n`;
             for (let i = 0; i < template.datasets.length; i++) {
-                if (template.datasets[i].isSub) {
+                if (template.datasets[i].isPub) {
                     out += `        //${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.value = ..\n`;
                     out += `        //${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.publish();\n`;
                 }
@@ -325,7 +326,7 @@ class TemplateLinuxNAPI extends Template {
                 out += `        VERBOSE("dataset %s updated! latency (us):%i", dataset->name, (exos_datamodel_get_nettime(dataset->datamodel) - dataset->nettime));\n`;
                 var atleastone = false;
                 for (let dataset of template.datasets) {
-                    if (dataset.isPub) {
+                    if (dataset.isSub) {
                         if (atleastone) {
                             out += `        else `;
                         }
@@ -353,7 +354,7 @@ class TemplateLinuxNAPI extends Template {
                 out += `        if (event_type == EXOS_DATASET_EVENT_DELIVERED) { VERBOSE("dataset %s delivered!", dataset->name); }\n\n`;
                 atleastone = false;
                 for (let dataset of template.datasets) {
-                    if (dataset.isSub) {
+                    if (dataset.isPub) {
                         if (atleastone) {
                             out += `        else `;
                         }
@@ -373,7 +374,7 @@ class TemplateLinuxNAPI extends Template {
                 out += `        VERBOSE("dataset %s connecton changed to: %s", dataset->name, exos_get_state_string(dataset->connection_state));\n\n`;
                 atleastone = false;
                 for (let dataset of template.datasets) {
-                    if (dataset.isPub || dataset.isSub) {
+                    if (dataset.isSub || dataset.isPub) {
                         if (atleastone) {
                             out += `        else `;
                         }
@@ -574,7 +575,7 @@ class TemplateLinuxNAPI extends Template {
             
                 //datasets
                 for (let dataset of template.datasets) {
-                    if (dataset.isSub || dataset.isPub) {
+                    if (dataset.isPub || dataset.isSub) {
                         out += `static void ${dataset.structName}_connonchange_js_cb(napi_env env, napi_value js_cb, void *context, void *data)\n`;
                         out += `{\n`;
                         out += `    const char *string = data;\n`;
@@ -751,7 +752,7 @@ class TemplateLinuxNAPI extends Template {
                 let atleastone = false;
 
                 for (let dataset of template.datasets) {
-                    if (dataset.isPub) {
+                    if (dataset.isSub) {
                         if (atleastone === false) {
                             out += `// js value callbacks\n`;;
                             atleastone = true;
@@ -828,7 +829,7 @@ class TemplateLinuxNAPI extends Template {
                 out += `}\n\n`;
             
                 for (let dataset of template.datasets) {
-                    if (dataset.isPub || dataset.isSub) {
+                    if (dataset.isSub || dataset.isPub) {
                         out += `static napi_value ${dataset.structName}_connonchange_init(napi_env env, napi_callback_info info)\n`;
                         out += `{\n`;
                         out += `    return init_napi_onchange(env, info, "${dataset.structName} connection change", ${dataset.structName}_connonchange_js_cb, &${dataset.structName}.connectiononchange_cb);\n`;
@@ -837,7 +838,7 @@ class TemplateLinuxNAPI extends Template {
                 }
             
                 for (let dataset of template.datasets) {
-                    if (dataset.isPub) {
+                    if (dataset.isSub) {
                         out += `static napi_value ${dataset.structName}_onchange_init(napi_env env, napi_callback_info info)\n`;
                         out += `{\n`;
                         out += `    return init_napi_onchange(env, info, "${dataset.structName} dataset change", ${dataset.structName}_onchange_js_cb, &${dataset.structName}.onchange_cb);\n`;
@@ -997,7 +998,7 @@ class TemplateLinuxNAPI extends Template {
                 let atleastone = false;
 
                 for (let dataset of template.datasets) {
-                    if (dataset.isSub) {
+                    if (dataset.isPub) {
                         if (atleastone === false) {
                             out += `// publish methods\n`;
                             atleastone = true;
@@ -1341,17 +1342,17 @@ class TemplateLinuxNAPI extends Template {
                 //generate .value object structures
                 for (let dataset of template.datasets) {
                     out2 = out3 = "";
-                    if (dataset.isPub) {
+                    if (dataset.isSub) {
                         out2 += `    napi_create_function(env, NULL, 0, ${dataset.structName}_onchange_init, NULL, &${dataset.structName}_onchange);\n`;
                         out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "onChange", ${dataset.structName}_onchange);\n`;
                         out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "nettime", undefined);\n`;
                         out2 += `    napi_set_named_property(env, ${dataset.structName}.value, "latency", undefined);\n`;
                     }
-                    if (dataset.isSub) {
+                    if (dataset.isPub) {
                         out3 += `    napi_create_function(env, NULL, 0, ${dataset.structName}_publish_method, NULL, &${dataset.structName}_publish);\n`;
                         out3 += `    napi_set_named_property(env, ${dataset.structName}.value, "publish", ${dataset.structName}_publish);\n`;
                     }
-                    if (dataset.isPub || dataset.isSub) {
+                    if (dataset.isSub || dataset.isPub) {
                         iterator.reset();
                         objectIdx.i = 0;
                         out1 = generateDataSetStructures(true, `exos_data.${dataset.structName}`, `${dataset.structName}_value`, dataset);
@@ -1375,7 +1376,7 @@ class TemplateLinuxNAPI extends Template {
                 out += `${template.datamodel.varName}_conn_change, ${template.datamodel.varName}_onprocessed,`;
                 let atleastone = false;
                 for (let i = 0; i < template.datasets.length; i++) {
-                    if (template.datasets[i].isPub || template.datasets[i].isSub) {
+                    if (template.datasets[i].isSub || template.datasets[i].isPub) {
                         if (atleastone == true) {
                             out += `,`;
                         }
@@ -1387,7 +1388,7 @@ class TemplateLinuxNAPI extends Template {
             
                 atleastone = false;
                 for (let i = 0; i < template.datasets.length; i++) {
-                    if (template.datasets[i].isPub) {
+                    if (template.datasets[i].isSub) {
                         if (atleastone == true) {
                             out += `,`;
                         }
@@ -1404,7 +1405,7 @@ class TemplateLinuxNAPI extends Template {
                 }
             
                 for (let i = 0; i < template.datasets.length; i++) {
-                    if (template.datasets[i].isSub) {
+                    if (template.datasets[i].isPub) {
                         if (atleastone == true) {
                             out += `,`;
                         }
@@ -1421,7 +1422,7 @@ class TemplateLinuxNAPI extends Template {
                 }
             
                 for (let i = 0; i < template.datasets.length; i++) {
-                    if (template.datasets[i].isSub || template.datasets[i].isPub) {
+                    if (template.datasets[i].isPub || template.datasets[i].isSub) {
                         if (atleastone == true) {
                             out += `,`;
                         }
@@ -1468,7 +1469,7 @@ class TemplateLinuxNAPI extends Template {
                 out += `    if (napi_ok != napi_create_object(env, &${template.datamodel.varName}.value)) \n        return NULL; \n\n`;
             
                 for (let i = 0; i < template.datasets.length; i++) {
-                    if (template.datasets[i].isPub || template.datasets[i].isSub) { out += `    if (napi_ok != napi_create_object(env, &${template.datasets[i].structName}.value)) \n        return NULL; \n\n`; }
+                    if (template.datasets[i].isSub || template.datasets[i].isPub) { out += `    if (napi_ok != napi_create_object(env, &${template.datasets[i].structName}.value)) \n        return NULL; \n\n`; }
                 }
             
                 //insert build structures
@@ -1493,7 +1494,7 @@ class TemplateLinuxNAPI extends Template {
                 //bind topics to datamodel
                 out += `\n    // bind dataset objects to datamodel object\n`;
                 for (let i = 0; i < template.datasets.length; i++) {
-                    if (template.datasets[i].isPub || template.datasets[i].isSub) { out += `    napi_set_named_property(env, dataModel, "${template.datasets[i].structName}", ${template.datasets[i].structName}.value); \n`; }
+                    if (template.datasets[i].isSub || template.datasets[i].isPub) { out += `    napi_set_named_property(env, dataModel, "${template.datasets[i].structName}", ${template.datasets[i].structName}.value); \n`; }
                 }
                 out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "dataModel", dataModel); \n`;
                 out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_connonchange_init, NULL, &${template.datamodel.varName}_conn_change); \n`;
@@ -1520,7 +1521,7 @@ class TemplateLinuxNAPI extends Template {
                 out += `        return NULL; \n`;
                 out += `    } \n`;
                 for (let i = 0; i < template.datasets.length; i++) {
-                    if (template.datasets[i].isPub || template.datasets[i].isSub) {
+                    if (template.datasets[i].isSub || template.datasets[i].isPub) {
                         out += `    if (napi_ok != napi_create_reference(env, ${template.datasets[i].structName}.value, ${template.datasets[i].structName}.ref_count, &${template.datasets[i].structName}.ref)) \n`;
                         out += `    {\n`;
                         out += `        napi_throw_error(env, "EINVAL", "Can't create ${template.datasets[i].structName} reference"); \n`;
@@ -1550,7 +1551,7 @@ class TemplateLinuxNAPI extends Template {
                 out += `    ${template.datamodel.varName}_datamodel.user_tag = 0; \n\n`;
             
                 for (let i = 0; i < template.datasets.length; i++) {
-                    if (template.datasets[i].isPub || template.datasets[i].isSub) {
+                    if (template.datasets[i].isSub || template.datasets[i].isPub) {
                         out += `    if (EXOS_ERROR_OK != exos_dataset_init(&${template.datasets[i].structName}_dataset, &${template.datamodel.varName}_datamodel, "${template.datasets[i].structName}", &exos_data.${template.datasets[i].structName}, sizeof(exos_data.${template.datasets[i].structName}))) \n`;
                         out += `    {\n`;
                         out += `        napi_throw_error(env, "EINVAL", "Can't initialize ${template.datasets[i].structName}"); \n`;
@@ -1575,11 +1576,11 @@ class TemplateLinuxNAPI extends Template {
                 // register datasets
                 out += `    // exOS register datasets\n`;
                 for (let i = 0; i < template.datasets.length; i++) {
-                    if (template.datasets[i].isPub || template.datasets[i].isSub) {
+                    if (template.datasets[i].isSub || template.datasets[i].isPub) {
                         out += `    if (EXOS_ERROR_OK != exos_dataset_connect(&${template.datasets[i].structName}_dataset, `;
-                        if (template.datasets[i].isPub) {
+                        if (template.datasets[i].isSub) {
                             out += `EXOS_DATASET_SUBSCRIBE`;
-                            if (template.datasets[i].isSub) {
+                            if (template.datasets[i].isPub) {
                                 out += ` + EXOS_DATASET_PUBLISH`;
                             }
                         } else {
@@ -1661,7 +1662,7 @@ class TemplateLinuxNAPI extends Template {
             out += `\n`;
             out += `obj_handles ${template.datamodel.varName} = {};\n`;
             for (let dataset of template.datasets) {
-                if (dataset.isPub || dataset.isSub) { out += `obj_handles ${dataset.structName} = {};\n`; }
+                if (dataset.isSub || dataset.isPub) { out += `obj_handles ${dataset.structName} = {};\n`; }
             }
             out += `\n`;
             out += `napi_deferred deferred = NULL;\n`;
@@ -1670,7 +1671,7 @@ class TemplateLinuxNAPI extends Template {
             out += `${template.datamodel.dataType} exos_data = {};\n`;
             out += `exos_datamodel_handle_t ${template.datamodel.varName}_datamodel;\n`;
             for (let dataset of template.datasets) {
-                if (dataset.isPub || dataset.isSub) { out += `exos_dataset_handle_t ${dataset.structName}_dataset;\n`; }
+                if (dataset.isSub || dataset.isPub) { out += `exos_dataset_handle_t ${dataset.structName}_dataset;\n`; }
             }
             out += `\n`;
             out += `// error handling (Node.js)\n`;

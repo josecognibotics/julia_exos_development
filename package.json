@@ -85,11 +85,6 @@
 				},
 				{
 					"when": "filesExplorerFocus && resourceExtname == .typ",
-					"command": "exos-component-extension.createComponent",
-					"group": "2_workspace"
-				},
-				{
-					"when": "filesExplorerFocus && resourceExtname == .typ",
 					"command": "exos-component-extension.generateTemplate",
 					"group": "2_workspace"
 				},

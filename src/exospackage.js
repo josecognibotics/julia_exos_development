@@ -115,15 +115,15 @@ class Package {
      * The package file contents (this._pkgFile.contents) must be populated first
      * */
     _createPackage(location) {
-        console.log(`Creating package folder: ${path.join(location,this._folderName)}`);
+        //console.log(`Creating package folder: ${path.join(location,this._folderName)}`);
         fs.mkdirSync(path.join(location,this._folderName));
 
-        console.log(`Creating package file: ${path.join(location,this._pkgFile.name)}`);
+        //console.log(`Creating package file: ${path.join(location,this._pkgFile.name)}`);
         fs.writeFileSync(path.join(location,this._folderName,this._pkgFile.name),this._pkgFile.contents);
 
         for (const obj of this._objects) {
             if(obj.type == "File") {
-                console.log(`Creating file: ${path.join(location,obj.name)}`);
+                //console.log(`Creating file: ${path.join(location,obj.name)}`);
                 fs.writeFileSync(path.join(location,this._folderName,obj.name), obj.contents);
             }
         }

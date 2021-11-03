@@ -68,7 +68,7 @@ class TemplateLinuxCpp extends TemplateCppLib {
             out += `    });\n`;
             out += `\n`;
             for (let dataset of template.datasets) {
-                if (dataset.isPub) {
+                if (dataset.isSub) {
                     out += `    ${template.datamodel.varName}.${dataset.structName}.onChange([&] () {\n`;
                     out += `        // ${template.datamodel.varName}.${dataset.structName}.value ...\n`;
                     out += `    });\n`;
@@ -83,7 +83,7 @@ class TemplateLinuxCpp extends TemplateCppLib {
             out += `        // publish datasets\n`;
             out += `        \n`;
             for (let dataset of template.datasets) {
-                if (dataset.isSub) {
+                if (dataset.isPub) {
                     out += `        // ${template.datamodel.varName}.${dataset.structName}.value = ...\n`;
                     out += `        // ${template.datamodel.varName}.${dataset.structName}.publish();\n`;
                     out += `        \n`;

@@ -42,11 +42,10 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
         /**
          * 
          * @param {ApplicationTemplate} template 
-         * @param {boolean} PubSubSwap 
          * @param {string} dataTypeCodeSWIG 
          * @returns {string}
          */
-        function generateSwigInclude(template, PubSubSwap, dataTypeCodeSWIG) {
+        function generateSwigInclude(template, dataTypeCodeSWIG) {
 
             function generateSwigArrayinfo(json) {
                 let out = ``;
@@ -149,7 +148,7 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
             out += `    virtual void on_disconnected(void) {}\n`;
             out += `    virtual void on_operational(void) {}\n\n`;
             for (let dataset of template.datasets) {
-                if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                if (dataset.isSub) {
                     out += `    virtual void on_change_${dataset.structName}() {}\n`;
                 }
             }
@@ -177,7 +176,7 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
             out += `}\n\n`;
         
             for (let dataset of template.datasets) {
-                if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                if (dataset.isSub) {
                     out += `static void ${template.datamodel.libStructName}_on_change_${dataset.structName}()\n`;
                     out += `{\n`;
                     out += `    p${template.datamodel.dataType}EventHandler->on_change_${dataset.structName}();\n`;
@@ -196,7 +195,7 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
             out += `    ${template.datamodel.varName}->on_operational = &${template.datamodel.libStructName}_on_operational;\n`;
             out += `    \n`;
             for (let dataset of template.datasets) {
-                if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                if (dataset.isSub) {
                     out += `    ${template.datamodel.varName}->${dataset.structName}.on_change = &${template.datamodel.libStructName}_on_change_${dataset.structName};\n`;
                 }
             }
@@ -254,10 +253,10 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
         
                     out += `typedef struct ${dataset.libDataType}\n`;
                     out += `{\n`;
-                    if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                    if (dataset.isPub) {
                         out += `    void publish(void);\n`;
                     }
-                    if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                    if (dataset.isSub) {
                         out += `    void on_change(void);\n`;
                         out += `    int32_t nettime;\n`;
                     }
@@ -318,21 +317,19 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
             return out;
         }
 
-        return generateSwigInclude(this.template, this.isLinux, this.datamodel.dataTypeCodeSWIG);
+        return generateSwigInclude(this.template, this.datamodel.dataTypeCodeSWIG);
     }
 
     _generatePythonMain() {
         /**
          * @param {ApplicationTemplate} template 
-         * @param {boolean} PubSubSwap 
          */
-        function generatePythonMain(template, PubSubSwap) {
+        function generatePythonMain(template) {
 
             /**
              * @param {ApplicationTemplate} template 
-             * @param {boolean} PubSubSwap 
              */
-            function genenerateLegend(template, PubSubSwap) {
+            function genenerateLegend(template) {
                 let out = "";
             
                 out += `"""\n${template.datamodel.libStructName} datamodel features:\n`;
@@ -367,10 +364,10 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
                     if (dataset.isSub || dataset.isPub) {
                         out += `\ndataset ${dataset.structName}:\n`;
                         
-                        if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                        if (dataset.isPub) {
                             out += `    ${template.datamodel.varName}.${dataset.structName}.publish()\n`;
                         }
-                        if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                        if (dataset.isSub) {
                             out += `    ${template.datamodel.dataType}EventHandler:on_change_${dataset.structName} : void(void) user callback function\n`;
                             out += `    ${template.datamodel.varName}.${dataset.structName}.nettime : (int32_t) nettime @ time of publish\n`;
                         }
@@ -406,7 +403,7 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
             out += `${prepend}sys.path.insert(1, '${template.datamodel.dataType}_py/Linux')\n`;
             out += `import ${template.datamodel.libStructName}\n\n`;
         
-            out += genenerateLegend(template, PubSubSwap);
+            out += genenerateLegend(template);
         
             out += `class ${template.datamodel.dataType}EventHandler(${template.datamodel.libStructName}.${template.datamodel.dataType}EventHandler):\n`;
             out += `\n`;
@@ -423,7 +420,7 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
             out += `    #     self.${template.datamodel.varName}. ..\n`;
             out += `\n`;
             for (let dataset of template.datasets) {
-                if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                if (dataset.isSub) {
                     out += `    def on_change_${dataset.structName}(self):\n`;
                     out += `        self.${template.datamodel.varName}.log.verbose("python dataset ${dataset.structName} changed!")\n`;
         
@@ -459,7 +456,7 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
             out += `        # if ${template.datamodel.varName}.is_connected:\n`;
         
             for (let dataset of template.datasets) {
-                if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                if (dataset.isPub) {
                     out += `            # ${template.datamodel.varName}.${dataset.structName}.value${dataset.arraySize > 0 ? "[..]" : ""}${Datamodel.isScalarType(dataset.dataType) ? "" : ". .."} = .. \n`;
                     out += `            # ${template.datamodel.varName}.${dataset.structName}.publish()\n`;
                     out += "            \n";
@@ -475,7 +472,7 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
             return out;
         }
 
-        return generatePythonMain(this.template, this.isLinux);
+        return generatePythonMain(this.template);
     }
 }
 

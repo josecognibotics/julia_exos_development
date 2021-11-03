@@ -46,10 +46,9 @@ class TemplateStaticCLib extends Template {
         /**
          * 
          * @param {ApplicationTemplate} template 
-         * @param {boolean} PubSubSwap set to true if Linux (swap the pub and sub)
          * @returns {string} generated static library c code
          */
-        function generateTemplate(template, PubSubSwap) {
+        function generateTemplate(template) {
             let out = "";
                 
             //includes
@@ -86,7 +85,7 @@ class TemplateStaticCLib extends Template {
             out += `        //handle each subscription dataset separately\n`;
             var atleastone = false;
             for (let dataset of template.datasets) {
-                if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                if (dataset.isSub) {
                     if (atleastone) {
                         out += `        else `;
                     }
@@ -161,7 +160,7 @@ class TemplateStaticCLib extends Template {
         
         
             for (let dataset of template.datasets) {
-                if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                if (dataset.isPub) {
                     out += `static void ${template.datamodel.libStructName}_publish_${dataset.varName}(void)\n`;
                     out += `{\n`;
                     out += `    exos_dataset_publish(&${template.datamodel.handleName}.${dataset.varName});\n`;
@@ -178,8 +177,8 @@ class TemplateStaticCLib extends Template {
         
             out += `    //connect datasets\n`;
             for (let dataset of template.datasets) {
-                if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
-                    if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                if (dataset.isSub) {
+                    if (dataset.isPub) {
                         out += `    EXOS_ASSERT_OK(exos_dataset_connect(&(${template.datamodel.handleName}.${dataset.varName}), EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, ${template.datamodel.libStructName}_datasetEvent));\n`;
                     }
                     else {
@@ -187,7 +186,7 @@ class TemplateStaticCLib extends Template {
                     }
                 }
                 else {
-                    if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                    if (dataset.isPub) {
                         out += `    EXOS_ASSERT_OK(exos_dataset_connect(&(${template.datamodel.handleName}.${dataset.varName}), EXOS_DATASET_PUBLISH, ${template.datamodel.libStructName}_datasetEvent));\n`;
                     }
                 }
@@ -261,7 +260,7 @@ class TemplateStaticCLib extends Template {
             out += `    memset(&${template.datamodel.handleName}, 0, sizeof(${template.datamodel.handleName}));\n\n`;
         
             for (let dataset of template.datasets) {
-                if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                if (dataset.isPub) {
                     out += `    ${template.datamodel.handleName}.ext_${template.datamodel.varName}.${dataset.structName}.publish = ${template.datamodel.libStructName}_publish_${dataset.varName};\n`;
                 }
             }
@@ -305,7 +304,7 @@ class TemplateStaticCLib extends Template {
             return out;
         }
 
-        return generateTemplate(this.template, this.isLinux);
+        return generateTemplate(this.template);
 
     }
 
@@ -314,10 +313,9 @@ class TemplateStaticCLib extends Template {
         /**
          * 
          * @param {ApplicationTemplate} template 
-         * @param {boolean} PubSubSwap set to true if Linux (swap the pub and sub)
          * @returns {string} generated static library header
          */
-        function genenerateLibHeader(template, PubSubSwap) {
+        function genenerateLibHeader(template) {
             let out = "";
         
             out += `#ifndef _${template.libHeaderName.toUpperCase().replace('.', '_')}_\n`;
@@ -334,10 +332,10 @@ class TemplateStaticCLib extends Template {
                 if (dataset.isSub || dataset.isPub) {
                     out += `typedef struct ${dataset.libDataType}\n`;
                     out += `{\n`;
-                    if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                    if (dataset.isPub) {
                         out += `    ${template.datamodel.libStructName}_method_fn publish;\n`;
                     }
-                    if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                    if (dataset.isSub) {
                         out += `    ${template.datamodel.libStructName}_event_cb on_change;\n`;
                         out += `    int32_t nettime;\n`;
                     }
@@ -399,17 +397,16 @@ class TemplateStaticCLib extends Template {
             return out;
         }
 
-        return genenerateLibHeader(this.template, this.isLinux);
+        return genenerateLibHeader(this.template);
     }
 
     _generateLegend() {
         /**
          * 
          * @param {ApplicationTemplate} template 
-         * @param {boolean} PubSubSwap set to true if Linux (swap the pub and sub)
          * @returns {string} comment section with help for programmers
          */
-        function genenerateLegend(template, PubSubSwap) {
+        function genenerateLegend(template) {
             let out = "";
         
             out += `/* ${template.datamodel.libStructName}_t datamodel features:\n`;
@@ -439,10 +436,10 @@ class TemplateStaticCLib extends Template {
                 if (dataset.isSub || dataset.isPub) {
                     out += `\ndataset ${dataset.structName}:\n`;
                     
-                    if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                    if (dataset.isPub) {
                         out += `    ${template.datamodel.varName}->${dataset.structName}.publish()\n`;
                     }
-                    if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                    if (dataset.isSub) {
                         out += `    ${template.datamodel.varName}->${dataset.structName}.on_change : void(void) user callback function\n`;
                         out += `    ${template.datamodel.varName}->${dataset.structName}.nettime : (int32_t) nettime @ time of publish\n`;
                     }
@@ -468,7 +465,7 @@ class TemplateStaticCLib extends Template {
         
             return out;
         }
-        return genenerateLegend(this.template, this.isLinux);
+        return genenerateLegend(this.template);
     }
 }
 

@@ -212,8 +212,8 @@ class TemplateLinuxBuild {
             if(this.options.debPackage.enable) {
                 out += `\n`;
                 out += `set(${this.name.toUpperCase()}_MODULE_FILES\n`;
-                out += `    ${this.options.swigPython.soFileName}\n`;
-                out += `    ${this.options.swigPython.pyFileName}\n`;
+                out += `    build/${this.options.swigPython.soFileName}\n`;
+                out += `    build/${this.options.swigPython.pyFileName}\n`;
                 out += `    )\n`;
                 out += `\n`;
                 out += `install(FILES \${${this.name.toUpperCase()}_MODULE_FILES} DESTINATION ${this.options.debPackage.destination})\n`;
@@ -286,6 +286,7 @@ class TemplateLinuxBuild {
         if(this.options.napi.enable) {
             
             out += `finalize() {\n`;
+            out += `    cd ..\n`;
             out += `    rm -rf build/*\n`;
             out += `    rm -rf node_modules/*\n`;
             out += `    rm -f Makefile\n`;
@@ -300,6 +301,7 @@ class TemplateLinuxBuild {
         
             out += `npm install\n`;
             out += `if [ "$?" -ne 0 ] ; then\n`;
+            out += `    cd build\n\n`;
             out += `    finalize 1\n`;
             out += `fi\n\n`;
         
@@ -357,20 +359,14 @@ class TemplateLinuxBuild {
             out += `fi\n\n`;
             out += `cp -f ${this.options.debPackage.fileName} ..\n\n`;
         }
+        
+        if(this.options.swigPython.enable) {
+            out += `cp -f ${this.options.swigPython.soFileName} ..\n\n`;
+            out += `cp -f ${this.options.swigPython.pyFileName} ..\n\n`;
+        }
         else {
-            if(this.options.napi.enable) {
-                out += `cp -f ${this.options.napi.nodeFileName} ..\n\n`;
-            }
-            else {
-                if(this.options.swigPython.enable) {
-                    out += `cp -f ${this.options.swigPython.soFileName} ..\n\n`;
-                    out += `cp -f ${this.options.swigPython.pyFileName} ..\n\n`;
-                }
-                else {
-                    if(this.options.executable.enable) {
-                        out += `cp -f ${this.options.executable.executableName} ..\n\n`;
-                    }
-                }
+            if(this.options.executable.enable) {
+                out += `cp -f ${this.options.executable.executableName} ..\n\n`;
             }
         }
 
