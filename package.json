@@ -115,6 +115,16 @@
 				},
 				{
 					"when": "filesExplorerFocus && resourceExtname == .exospkg",
+					"command": "exos-component-extension.runPackage",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .exospkg",
+					"command": "exos-component-extension.buildPackage",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .exospkg",
 					"command": "exos-component-extension.updateCLib",
 					"group": "2_workspace"
 				},
@@ -158,6 +168,7 @@
 		"vscode-test": "^1.4.0"
 	},
 	"dependencies": {
+		"child_process": "^1.0.2",
 		"fs-extra": "^9.1.0",
 		"xml-parser": "^1.2.1"
 	}
