@@ -1,7 +1,7 @@
 const header = require('../exos_header');
 const fs = require('fs');
 
-function generateTemplate(fileName, typName, PubSubSwap, userAlias, dynamic) {
+function generateTemplate(fileName, typName, PubSubSwap, userAlias) {
     let out = "";
 
     let template = configTemplate(fileName, typName);
@@ -12,9 +12,6 @@ function generateTemplate(fileName, typName, PubSubSwap, userAlias, dynamic) {
 
     out += `#define EXOS_ASSERT_LOG &${template.logname}\n`;
     out += `#include "exos_log.h"\n`;
-    if (dynamic === undefined || dynamic == false) {
-        out += `#define EXOS_STATIC_INCLUDE\n`
-    }
     out += `#include "${template.libHeaderName}"\n\n`;
 
     out += `#define SUCCESS(_format_, ...) exos_log_success(&${template.logname}, EXOS_LOG_TYPE_USER, _format_, ##__VA_ARGS__);\n`;

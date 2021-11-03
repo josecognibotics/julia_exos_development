@@ -1,4 +1,4 @@
-
+﻿
 const version = "0.7.1";
 
 //limit constants - generates error of exceeded
@@ -675,7 +675,7 @@ function infoChildren(children, parent, parentArray) {
 }
 
 // Generate a register function with INFO for each type 
-// Not used at the moment, enable be removing outcomment in function generateHeader:
+// Not used at the moment, enable be removing outcomment in function generateDatamodel:
 // out += generateStructRegister(typName, types.children);
 var generatedStructTypes = [];
 function generateStructRegister(typName, children) {
@@ -708,7 +708,7 @@ function generateStructRegister(typName, children) {
     return out;
 }
 
-function generateHeader(fileName, typName, SG4Includes) {
+function generateDatamodel(fileName, typName, SG4Includes) {
 
     nestingDepth = 0;
     structNestingDepth = 0;
@@ -719,17 +719,17 @@ function generateHeader(fileName, typName, SG4Includes) {
     types.attributes.info = "<infoId" + infoId + ">"; // top level
     let info = infoChildren(types.children, "", ""); // needs to be called before JSON.stringify to generate infoId
 
+    // Generate the h file
     let out = "";
     out = `/*Automatically generated header file from ${path.basename(fileName)}*/\n\n`;
 
     out += `#ifndef _EXOS_COMP_${typName.toUpperCase()}_H_\n`;
     out += `#define _EXOS_COMP_${typName.toUpperCase()}_H_\n\n`;
-    out += `#ifndef EXOS_INCLUDE_ONLY_DATATYPE\n`;
     out += `#include "exos_api.h"\n`;
-    out += `#endif\n\n`;
+
 
     if (Array.isArray(SG4Includes)) {
-        out += `#if defined(_SG4) && !defined(EXOS_STATIC_INCLUDE)\n`;
+        out += `#if defined(_SG4)\n`;
         for (let SG4Include of SG4Includes) {
             out += `#include <${SG4Include}>\n`;
         }
@@ -742,7 +742,7 @@ function generateHeader(fileName, typName, SG4Includes) {
     out += convertTyp2Struct(fileName);
 
     if (Array.isArray(SG4Includes)) {
-        out += `#endif // _SG4 && !EXOS_STATIC_INCLUDE\n\n`;
+        out += `#endif // _SG4\n\n`;
     }
 
     // Replacer function to clean out unecessary thing when stringifying
@@ -757,36 +757,35 @@ function generateHeader(fileName, typName, SG4Includes) {
     let jsonConfig = JSON.stringify(types, replacer).split('"').join('\\"');
     if (jsonConfig.length > MAX_CONFIG_LENGTH) throw (`JSON config (${jsonConfig.length} chars) is longer than maximum (${MAX_CONFIG_LENGTH}).`);
 
-    out += `#ifndef EXOS_INCLUDE_ONLY_DATATYPE\n`;
-    out += `#ifdef EXOS_STATIC_INCLUDE\n`;
-    out += `EXOS_ERROR_CODE exos_datamodel_connect_${typName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback);\n`;
-    out += `#else\n`;
-    out += `const char config_${typName.toLowerCase()}[] = "${jsonConfig}";\n\n`; // one liner with escapes on "
-    //out += `const char config_${typName.toLowerCase()}[] = "${JSON.stringify(types,null,4).split('"').join('\\"').split('\n').join(' \\\n')}";\n\n`; // pretty print with escapes on " and \ for multiline string
-    //out += `const char config_${typName.toLowerCase()}[] = "${JSON.stringify(types,null,4)}";\n\n`; // pretty print without escapes (wont compile)
-
-    out += `/*Connect the ${typName} datamodel to the server*/\n`;
-    out += `EXOS_ERROR_CODE exos_datamodel_connect_${typName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback)\n{\n`;
-    out += `    ${typName} data;\n`;
-    out += `    exos_dataset_info_t datasets[] = {\n`;
-    out += `        {EXOS_DATASET_BROWSE_NAME_INIT,{}},\n`;
-    out += info;
-    out = out.slice(0, -2); //remove the last ,\n
-    out += `\n`;
-    out += `    };\n\n`;
-
-
-    out += `    exos_datamodel_calc_dataset_info(datasets,sizeof(datasets));\n\n`;
-
-    out += `    return exos_datamodel_connect(datamodel, config_${typName.toLowerCase()}, datasets, sizeof(datasets), datamodel_event_callback);\n`;
-    out += `}\n\n`;
-
-    //register function with INFO for each type: out += generateStructRegister(typName, types.children);
-    out += `#endif // EXOS_STATIC_INCLUDE\n`
-    out += `#endif // EXOS_INCLUDE_ONLY_DATATYPE\n`;
+    out += `EXOS_ERROR_CODE exos_datamodel_connect_${typName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback);\n\n`;
     out += `#endif // _EXOS_COMP_${typName.toUpperCase()}_H_\n`
 
-    return out;
+    // Generate the c file
+    let out2 = "";
+    out2 = `/*Automatically generated c file from ${path.basename(fileName)}*/\n\n`;
+
+    out2 += `#include "exos_${typName.toLowerCase()}.h"\n\n`;
+
+    out2 += `const char config_${typName.toLowerCase()}[] = "${jsonConfig}";\n\n`; // one liner with escapes on "
+    //out2 += `const char config_${typName.toLowerCase()}[] = "${JSON.stringify(types,null,4).split('"').join('\\"').split('\n').join(' \\\n')}";\n\n`; // pretty print with escapes on " and \ for multiline string
+    //out2 += `const char config_${typName.toLowerCase()}[] = "${JSON.stringify(types,null,4)}";\n\n`; // pretty print without escapes (wont compile)
+
+    out2 += `/*Connect the ${typName} datamodel to the server*/\n`;
+    out2 += `EXOS_ERROR_CODE exos_datamodel_connect_${typName.toLowerCase()}(exos_datamodel_handle_t *datamodel, exos_datamodel_event_cb datamodel_event_callback)\n{\n`;
+    out2 += `    ${typName} data;\n`;
+    out2 += `    exos_dataset_info_t datasets[] = {\n`;
+    out2 += `        {EXOS_DATASET_BROWSE_NAME_INIT,{}},\n`;
+    out2 += info;
+    out2 = out2.slice(0, -2); //remove the last ,\n
+    out2 += `\n`;
+    out2 += `    };\n\n`;
+
+    out2 += `    exos_datamodel_calc_dataset_info(datasets, sizeof(datasets));\n\n`;
+
+    out2 += `    return exos_datamodel_connect(datamodel, config_${typName.toLowerCase()}, datasets, sizeof(datasets), datamodel_event_callback);\n`;
+    out2 += `}\n`;
+
+    return [out, out2];
 }
 
 
@@ -807,7 +806,7 @@ if (require.main === module) {
 
             try {
 
-                let out = generateHeader(fileName, structName);
+                let out = generateDatamodel(fileName, structName);
                 fs.writeFileSync(`${outPath}/exos_${structName.toLowerCase()}.h`, out);
                 process.stdout.write(`${outPath}/exos_${structName.toLowerCase()}.h generated`);
 
@@ -827,7 +826,7 @@ if (require.main === module) {
 
 module.exports = {
     parseTypFile,
-    generateHeader,
+    generateDatamodel,
     convertPlcType,
     convertPlcTypePrintf,
     isScalarType,
