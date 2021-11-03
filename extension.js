@@ -149,6 +149,14 @@ function activate(context) {
 	});
 	context.subscriptions.push(createComponent);
 
+	let exportComponent  = vscode.commands.registerCommand('exos-component-extension.exportComponent', function (uri) {
+		vscode.window.showOpenDialog({title:"Create binary export", defaultUri: uri, canSelectFolders:true, openLabel:"Create binary export" }).then(selectedUri => {
+			for(let selected of selectedUri) {
+				vscode.window.showInformationMessage(`Exported component to: ${selected.fsPath}`);
+			}
+		});
+	});
+	context.subscriptions.push(exportComponent);
 
 	let generateTemplate = vscode.commands.registerCommand('exos-component-extension.generateTemplate', function (uri) {
 		// The code you place here will be executed every time your command is executed
