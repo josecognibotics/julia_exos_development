@@ -26,22 +26,24 @@ class ExosComponentNAPI extends ExosComponentAR {
       * @param {ExosComponentNAPIOptions} options 
       */
      constructor(fileName, typeName, options) {
-        this._options = {destinationDirectory: `/home/user/${typeName.toLowerCase()}`, templateAR: "c-api", includeNodeModules: true};
+        let _options = {destinationDirectory: `/home/user/${typeName.toLowerCase()}`, templateAR: "c-api", includeNodeModules: true};
 
         if(options) {
             if(options.destinationDirectory) {
-                this._options.destinationDirectory = options.destinationDirectory;
+                _options.destinationDirectory = options.destinationDirectory;
             }
             if(options.templateAR) {
-                this._options.templateAR = options.templateAR;
+                _options.templateAR = options.templateAR;
             }
             if(options.includeNodeModules)
             {
-                this._options.includeNodeModules = options.includeNodeModules;
+                _options.includeNodeModules = options.includeNodeModules;
             }
         }
 
-        super(fileName, typeName, this._options.templateAR);
+        super(fileName, typeName, _options.templateAR);
+
+        this._options = _options;
 
         this._templateBuild = new TemplateLinuxBuild(typeName);
         this._templateNAPI = new TemplateLinuxNAPI(this._datamodel);

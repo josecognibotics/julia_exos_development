@@ -98,23 +98,42 @@ function activate(context) {
 					
 					vscode.window.showQuickPick(pickLinuxType,{title:`Using datamodel: ${selectedStructure.label} - Select which template to use for Linux`}).then(selectedLinuxType => {
 					
-						vscode.window.showInformationMessage(`Creating component ${selectedStructure.label} AS: ${selectedASType.label} Linux: ${selectedLinuxType.label}`);
-					
-						switch(selectedLinuxType.label) {
-							case "C API":
-							case "C Interface":
-							case "C++ Class":
-								let template = new ExosComponentC(uri.fsPath, selectedStructure.label, {
+						vscode.window.showInputBox({prompt:"Select the target destination of the .deb package:", value:`/home/user/${selectedStructure.label.toLowerCase()}`}).then(destination => {
+
+							switch(selectedLinuxType.label) {
+								case "C API":
+								case "C Interface":
+								case "C++ Class":
+									let templateC = new ExosComponentC(uri.fsPath, selectedStructure.label, {
 										templateLinux:convertLabel2Teplate(selectedLinuxType.label), 
-										templateAR:convertLabel2Teplate(selectedASType.label)});
-								template.makeComponent(path.dirname(uri.fsPath));
-								break;
-							case "Python Module":
-							case "JavaScript Module":
-								break;
-							default:
-								vscode.window.showErrorMessage(`The selected template for linux: ${selectedLinuxType.label} not found!`);
-						}
+										templateAR:convertLabel2Teplate(selectedASType.label),
+										destinationDirectory:destination
+									});
+									templateC.makeComponent(path.dirname(uri.fsPath));
+									break;
+								case "Python Module":
+									let templateSWIG = new ExosComponentSWIG(uri.fsPath, selectedStructure.label,{
+										templateAR:convertLabel2Teplate(selectedASType.label),
+										destinationDirectory:destination
+									});
+									templateSWIG.makeComponent(path.dirname(uri.fsPath));
+									break;
+								case "JavaScript Module":
+									let templateNAPI = new ExosComponentNAPI(uri.fsPath, selectedStructure.label,{
+										templateAR:convertLabel2Teplate(selectedASType.label),
+										destinationDirectory:destination
+									});
+									templateNAPI.makeComponent(path.dirname(uri.fsPath));
+									break;
+								default:
+									vscode.window.showErrorMessage(`The selected template for linux: ${selectedLinuxType.label} not found!`);
+							}
+
+							vscode.window.showInformationMessage(`Created component ${selectedStructure.label} AS: ${selectedASType.label} Linux: ${selectedLinuxType.label}`);
+
+
+						});
+						
 
 					})
 

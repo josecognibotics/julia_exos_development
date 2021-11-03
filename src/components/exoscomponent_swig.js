@@ -27,19 +27,19 @@ class ExosComponentSWIG extends ExosComponentAR {
      */
     constructor(fileName, typeName, options) {
 
-        this._options = {destinationDirectory: `/home/user/${typeName.toLowerCase()}`, templateAR: "c-static"};
+        let _options = {destinationDirectory: `/home/user/${typeName.toLowerCase()}`, templateAR: "c-static"};
 
         if(options) {
             if(options.destinationDirectory) {
-                this._options.destinationDirectory = options.destinationDirectory;
+                _options.destinationDirectory = options.destinationDirectory;
             }
             if(options.templateAR) {
-                this._options.templateAR = options.templateAR;
+                _options.templateAR = options.templateAR;
             }
         }
 
-
-        super(fileName, typeName, this._options.templateAR);
+        super(fileName, typeName, _options.templateAR);
+        this._options = _options;
 
         this._templateBuild = new TemplateLinuxBuild(typeName);
         this._templateSWIG = new TemplateLinuxSWIG(this._datamodel);
