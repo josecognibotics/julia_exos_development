@@ -92,7 +92,96 @@ const EXOSPKG_VERSION = "1.1.0";
         switch(exosPkgJson.root.attributes.Version) {
             case "1.1.0":
                 //TODO populate after new syntax
-                return {parseErrors:0, originalVersion:"1.1.0", fileParsed:false};
+                if(exosPkgJson.root.attributes.ErrorHandling) {
+                    this.errorHandling = exosPkgJson.root.attributes.ErrorHandling;
+                }
+                if(exosPkgJson.root.attributes.StartupTimeout) {
+                    this.startupTimeout = exosPkgJson.root.attributes.StartupTimeout;
+                }
+                if(!exosPkgJson.root.children)
+                    break;
+                
+                for(let child of exosPkgJson.root.children) {
+                    if(child.name == "File") {
+                        if(!child.attributes || !child.attributes.FileName) {
+                            parseErrors ++;
+                            continue;
+                        }
+                        let changeEvent = "Ignore";
+                        if(child.attributes.ChangeEvent) {
+                            changeEvent = child.attributes.ChangeEvent;
+                        }
+                        this.addFile(child.attributes.FileName,changeEvent);
+                    }
+                    else if(child.name == "Service") {
+                        if(!child.attributes || !child.attributes.Type || !child.attributes.Command) {
+                            parseErrors ++;
+                            continue;
+                        }
+
+                        //WorkingDirectory can be undefined, thats ok
+                        this.addService(child.attributes.Type,child.attributes.Command,child.attributes.WorkingDirectory);
+                    }
+                    else if(child.name == "DatamodelInstance") {
+                        if(!child.attributes || !child.attributes.Name) {
+                            parseErrors ++;
+                            continue;
+                        }
+                        this.addDatamodelInstance(child.attributes.Name);
+                    }
+                    else if (child.name == "Build") {
+                        if(!child.children)
+                            continue;
+                        for (let build of child.children) {
+                            if(build.name == "GenerateDatamodel") {
+                                if(!build.attributes || !build.attributes.FileName || !build.attributes.TypeName) {
+                                    parseErrors ++;
+                                    continue;
+                                }
+                                let SG4Includes = [];
+                                let outputPaths = [];
+                                if(build.children) {
+                                    for(let args of build.children) {
+                                        if(args.name == "SG4") {
+                                            if(!args.attributes || !args.attributes.Include) {
+                                                parseErrors ++;
+                                                continue;
+                                            }
+                                            SG4Includes.push(args.attributes.Include);
+                                        }
+                                        else if(args.name == "Output") {
+                                            if(!args.attributes || !args.attributes.Path) {
+                                                parseErrors ++;
+                                                continue;
+                                            }
+                                            outputPaths.push(args.attributes.Path);
+                                        }
+                                    }
+                                }
+                                this.addGenerateDatamodel(build.attributes.FileName,build.attributes.TypeName,SG4Includes,outputPaths);
+                            }
+                            else if(build.name == "BuildCommand") {
+                                if(!build.attributes || !build.attributes.Command || !build.attributes.WorkingDirectory || !build.attributes.Arguments) {
+                                    parseErrors ++;
+                                    continue;
+                                }
+                                let builder = this.getNewBuildCommand(build.attributes.Command, build.attributes.WorkingDirectory, build.attributes.Arguments);
+                                if (build.children) {
+                                    for(let dep of build.children) {
+                                        if (dep.name == "Dependency") {
+                                            if(!dep.attributes || !dep.attributes.FileName) {
+                                                parseErrors ++;
+                                                continue;
+                                            }
+                                            this.addBuildDependency(builder, dep.attributes.FileName);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return {parseErrors:parseErrors, originalVersion:exosPkgJson.root.attributes.Version, fileParsed:true};
     
             case "1.0.0":
                 //we have an old version
@@ -180,6 +269,13 @@ const EXOSPKG_VERSION = "1.1.0";
                                 this.addService("Remove", child.attributes.Command, "");
                                 break;
                         }
+                    }
+                    else if(child.name == "DatamodelInstance") {
+                        if(!child.attributes || !child.attributes.Name) {
+                            parseErrors ++;
+                            continue;
+                        }
+                        this.addDatamodelInstance(child.attributes.Name);
                     }
                     else if (child.name == "Build") {
                         if(!child.children)
@@ -415,7 +511,7 @@ const EXOSPKG_VERSION = "1.1.0";
             out += `/>\n`;
         }
         for(const datamodel of this._datamodels) {
-            out += `    <DataModelInstance Name="${datamodel.name}"/>\n`;
+            out += `    <DatamodelInstance Name="${datamodel.name}"/>\n`;
         }
 
         if(this._generateDatamodels.length > 0 || this._buildCommands.length > 0)

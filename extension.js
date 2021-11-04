@@ -183,7 +183,9 @@ function activate(context) {
 			
 				if(result.parseErrors == 0) {
 					vscode.window.showInformationMessage(`Updated ${path.basename(uri.fsPath)} from version ${result.originalVersion} to ${exospkg.version}`);
-					vscode.window.showInformationMessage(`Verify the sequence of the Install and Remove services`);
+					if(result.originalVersion == "1.0.0") {
+						vscode.window.showInformationMessage(`Verify the sequence of the Install and Remove services`);
+					}
 				}
 				else {
 					vscode.window.showErrorMessage(`Caution! ${result.parseErrors} parse errors occured while parsing ${path.basename(uri.fsPath)}!`);
