@@ -16,6 +16,7 @@ const { dir } = require('console');
 
 const isDebugMode = () => process.env.VSCODE_DEBUG_MODE === "true";
 
+const { ExosPkg } = require('./src/exospkg')
 const { Datamodel, DatatypeListItem } = require('./src/datamodel');
 const { ExosComponentC } = require('./src/components/exoscomponent_c');
 const { ExosComponentNAPI } = require('./src/components/exoscomponent_napi');
@@ -157,6 +158,48 @@ function activate(context) {
 		});
 	});
 	context.subscriptions.push(exportComponent);
+
+	let updateExosPkg = vscode.commands.registerCommand('exos-component-extension.updateExosPkg', function (uri) {
+		
+		try {
+			let exospkg = new ExosPkg();
+			let result = exospkg.openFile(uri.fsPath);
+			
+			if(result.fileParsed) 
+			{
+				const editor = vscode.window.activeTextEditor;
+
+				if (editor) {
+					const document = editor.document;
+					editor.edit(editBuilder => {
+						let firstLine = document.lineAt(0);
+						let lastLine = document.lineAt(document.lineCount - 1);
+						let textRange = new vscode.Range(firstLine.range.start, lastLine.range.end);
+
+						editBuilder.replace(textRange,exospkg.getContents());
+						
+					})
+				}
+			
+				if(result.parseErrors == 0) {
+					vscode.window.showInformationMessage(`Updated ${path.basename(uri.fsPath)} from version ${result.originalVersion} to ${exospkg.version}`);
+					vscode.window.showInformationMessage(`Verify the sequence of the Install and Remove services`);
+				}
+				else {
+					vscode.window.showErrorMessage(`Caution! ${result.parseErrors} parse errors occured while parsing ${path.basename(uri.fsPath)}!`);
+					vscode.window.showErrorMessage(`Undo and verify the original file manually!`);
+				}
+			}
+			else {
+				vscode.window.showErrorMessage(`${path.basename(uri.fsPath)} of version ${result.originalVersion} could not be parsed!`);
+			}
+
+		} catch (error) {
+			vscode.window.showErrorMessage(error);	
+		}
+	});
+
+	context.subscriptions.push(updateExosPkg);
 
 	let generateTemplate = vscode.commands.registerCommand('exos-component-extension.generateTemplate', function (uri) {
 		// The code you place here will be executed every time your command is executed

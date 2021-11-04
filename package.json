@@ -19,6 +19,10 @@
 	"contributes": {
 		"commands": [
 			{
+				"command": "exos-component-extension.updateExosPkg",
+				"title": "Update exOS package description file"
+			},
+			{
 				"command": "exos-component-extension.exportComponent",
 				"title": "Export binary exOS Component..."
 			},
@@ -72,6 +76,20 @@
 			}
 		],
 		"menus": {
+			"editor/title/context": [
+				{
+					"when": "resourceExtname == .exospkg",
+					"command": "exos-component-extension.updateExosPkg",
+					"group": "2_workspace"
+				}
+			],
+			"editor/context": [
+				{
+					"when": "resourceExtname == .exospkg",
+					"command": "exos-component-extension.updateExosPkg",
+					"group": "2_workspace"
+				}
+			],
 			"explorer/context": [
 				{
 					"when": "explorerResourceIsFolder",
