@@ -33,19 +33,6 @@ const { ExosComponentSWIG } = require('./src/components/exoscomponent_swig');
  */
 function activate(context) {
 
-	function convertLabel2Teplate(label) {
-		switch(label) {
-			case "C API":
-				return "c-api";
-			case "C Interface":
-				return "c-static";
-			case "C++ Class":
-				return "cpp";
-			default:
-				return "c-api";
-		}
-	}
-
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('Extension "exos-component-extension" is now active! debug is: ' +isDebugMode());
@@ -58,7 +45,53 @@ function activate(context) {
 	// The commandId parameter must match the command field in package.json
 
 	let createComponent = vscode.commands.registerCommand('exos-component-extension.createComponent', function (uri) {
-		// The code you place here will be executed every time your command is executed
+
+		function createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, destination) {
+			function convertLabel2Teplate(label) {
+				switch(label) {
+					case "C API":
+						return "c-api";
+					case "C Interface":
+						return "c-static";
+					case "C++ Class":
+						return "cpp";
+					default:
+						return "c-api";
+				}
+			}
+
+			switch(selectedLinuxType.label) {
+				case "C API":
+				case "C Interface":
+				case "C++ Class":
+					let templateC = new ExosComponentC(uri.fsPath, selectedStructure.label, {
+						packaging:selectedPackaging.label,
+						templateLinux:convertLabel2Teplate(selectedLinuxType.label), 
+						templateAR:convertLabel2Teplate(selectedASType.label),
+						destinationDirectory:destination
+					});
+					templateC.makeComponent(path.dirname(uri.fsPath));
+					break;
+				case "Python Module":
+					let templateSWIG = new ExosComponentSWIG(uri.fsPath, selectedStructure.label,{
+						packaging:selectedPackaging.label,
+						templateAR:convertLabel2Teplate(selectedASType.label),
+						destinationDirectory:destination
+					});
+					templateSWIG.makeComponent(path.dirname(uri.fsPath));
+					break;
+				case "JavaScript Module":
+					let templateNAPI = new ExosComponentNAPI(uri.fsPath, selectedStructure.label,{
+						packaging:selectedPackaging.label,
+						templateAR:convertLabel2Teplate(selectedASType.label),
+						destinationDirectory:destination
+					});
+					templateNAPI.makeComponent(path.dirname(uri.fsPath));
+					break;
+				default:
+					vscode.window.showErrorMessage(`The selected template for linux: ${selectedLinuxType.label} not found!`);
+			}
+		}
 
 		let availableStructures = Datamodel.getDatatypeList(uri.fsPath);
 		if(!Array.isArray(availableStructures) || availableStructures.length == 0)
@@ -99,40 +132,24 @@ function activate(context) {
 					
 					vscode.window.showQuickPick(pickLinuxType,{title:`Using datamodel: ${selectedStructure.label} - Select which template to use for Linux`}).then(selectedLinuxType => {
 					
-						vscode.window.showInputBox({prompt:"Select the target destination of the .deb package:", value:`/home/user/${selectedStructure.label.toLowerCase()}`}).then(destination => {
+						let pickPackaging = [];
+						pickPackaging.push({label: "none", detail:"No packaging - files will run in the deployment folder on the target"});
+						pickPackaging.push({label: "deb", detail:"Debian package - files will be packed and extracted at a given destination folder"});
 
-							switch(selectedLinuxType.label) {
-								case "C API":
-								case "C Interface":
-								case "C++ Class":
-									let templateC = new ExosComponentC(uri.fsPath, selectedStructure.label, {
-										templateLinux:convertLabel2Teplate(selectedLinuxType.label), 
-										templateAR:convertLabel2Teplate(selectedASType.label),
-										destinationDirectory:destination
-									});
-									templateC.makeComponent(path.dirname(uri.fsPath));
-									break;
-								case "Python Module":
-									let templateSWIG = new ExosComponentSWIG(uri.fsPath, selectedStructure.label,{
-										templateAR:convertLabel2Teplate(selectedASType.label),
-										destinationDirectory:destination
-									});
-									templateSWIG.makeComponent(path.dirname(uri.fsPath));
-									break;
-								case "JavaScript Module":
-									let templateNAPI = new ExosComponentNAPI(uri.fsPath, selectedStructure.label,{
-										templateAR:convertLabel2Teplate(selectedASType.label),
-										destinationDirectory:destination
-									});
-									templateNAPI.makeComponent(path.dirname(uri.fsPath));
-									break;
-								default:
-									vscode.window.showErrorMessage(`The selected template for linux: ${selectedLinuxType.label} not found!`);
+						vscode.window.showQuickPick(pickPackaging,{title:`Select which packaging to use for Linux files`}).then(selectedPackaging => {
+						
+							if(selectedPackaging.label == "deb") {
+								vscode.window.showInputBox({prompt:"Set the .deb package destination folder on the target:", value:`/home/user/${selectedStructure.label.toLowerCase()}`}).then(destination => {
+
+									createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, destination);
+									vscode.window.showInformationMessage(`Created component ${selectedStructure.label} AS:[${selectedASType.label}] Linux:[${selectedLinuxType.label}] Packaging:[${selectedPackaging.label}]`);
+
+								});
 							}
-
-							vscode.window.showInformationMessage(`Created component ${selectedStructure.label} AS: ${selectedASType.label} Linux: ${selectedLinuxType.label}`);
-
-
+							else {
+								createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, "");
+								vscode.window.showInformationMessage(`Created component ${selectedStructure.label} AS:[${selectedASType.label}] Linux:[${selectedLinuxType.label}] Packaging:[${selectedPackaging.label}]`);	
+							}
 						});
 						
 
@@ -163,7 +180,7 @@ function activate(context) {
 		
 		try {
 			let exospkg = new ExosPkg();
-			let result = exospkg.openFile(uri.fsPath);
+			let result = exospkg.parseFile(uri.fsPath);
 			
 			if(result.fileParsed) 
 			{

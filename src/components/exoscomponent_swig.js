@@ -1,11 +1,15 @@
 const { ExosComponentAR } = require('./exoscomponent_ar');
 const { TemplateLinuxBuild } = require('./templates/linux/template_linux_build');
 const { TemplateLinuxSWIG } = require('./templates/linux/template_linux_swig');
+const { ExosPkg } = require('../exospkg');
 
 const path = require('path');
 
+const EXOS_COMPONENT_SWIG_VERSION = "1.0.0";
+
 /**
  * @typedef {Object} ExosComponentSWIGOptions
+ * @property {string} packaging  package format: `deb` | `none` - default: `deb`
  * @property {string} destinationDirectory destination of the generated executable in Linux. default: `/home/user/{typeName.toLowerCase()}`
  * @property {string} templateAR template used for AR: `c-static` | `cpp` | `c-api` - default: `c-static` 
  */
@@ -27,7 +31,7 @@ class ExosComponentSWIG extends ExosComponentAR {
      */
     constructor(fileName, typeName, options) {
 
-        let _options = {destinationDirectory: `/home/user/${typeName.toLowerCase()}`, templateAR: "c-static"};
+        let _options = {packaging:"deb", destinationDirectory: `/home/user/${typeName.toLowerCase()}`, templateAR: "c-static"};
 
         if(options) {
             if(options.destinationDirectory) {
@@ -36,10 +40,17 @@ class ExosComponentSWIG extends ExosComponentAR {
             if(options.templateAR) {
                 _options.templateAR = options.templateAR;
             }
+            if(options.packaging) {
+                _options.packaging = options.packaging;
+            }
         }
 
         super(fileName, typeName, _options.templateAR);
         this._options = _options;
+
+        if(this._options.packaging == "none") {
+            this._options.destinationDirectory = undefined;
+        }
 
         this._templateBuild = new TemplateLinuxBuild(typeName);
         this._templateSWIG = new TemplateLinuxSWIG(this._datamodel);
@@ -54,19 +65,36 @@ class ExosComponentSWIG extends ExosComponentAR {
         
         this._templateBuild.options.swigPython.enable = true;
         this._templateBuild.options.swigPython.sourceFiles = [this._templateSWIG.staticLibrarySource.name, this._templateSWIG.swigInclude.name, this._datamodel.sourceFile.name];
-        this._templateBuild.options.debPackage.enable = true;
-        this._templateBuild.options.debPackage.destination = this._options.destinationDirectory;
+        if(this._options.packaging == "deb") {
+            this._templateBuild.options.debPackage.enable = true;
+            this._templateBuild.options.debPackage.destination = this._options.destinationDirectory;
+        }
+        else {
+            this._templateBuild.options.debPackage.enable = false;
+        }
+
         this._templateBuild.makeBuildFiles();
 
         this._linuxPackage.addNewBuildFileObj(this._linuxBuild,this._templateBuild.CMakeLists);
         this._linuxPackage.addNewBuildFileObj(this._linuxBuild,this._templateBuild.buildScript);
-        this._linuxPackage.addExistingFile(this._templateBuild.options.swigPython.pyFileName, `${this._typeName} python module`);
-        this._linuxPackage.addExistingFile(this._templateBuild.options.swigPython.soFileName, `${this._typeName} SWIG library`);
-        this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName, this._templateBuild.options.debPackage.packageName, `${this._typeName} debian package`);
+        
         this._linuxPackage.addNewTransferFileObj(this._templateSWIG.pythonMain,"Restart");
-        this._exospackage.exospkg.addService("Startup", `cp ${this._templateSWIG.pythonMain.name} ${this._templateBuild.options.debPackage.destination}`);
-        this._exospackage.exospkg.addService("Runtime", `python ${this._templateSWIG.pythonMain.name}`, this._templateBuild.options.debPackage.destination);
+
+        if(this._options.packaging == "deb") {
+            this._linuxPackage.addExistingFile(this._templateBuild.options.swigPython.pyFileName, `${this._typeName} python module`);
+            this._linuxPackage.addExistingFile(this._templateBuild.options.swigPython.soFileName, `${this._typeName} SWIG library`);
+            this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName, this._templateBuild.options.debPackage.packageName, `${this._typeName} debian package`);
+            this._exospackage.exospkg.addService("Startup", `cp ${this._templateSWIG.pythonMain.name} ${this._templateBuild.options.debPackage.destination}`);
+            this._exospackage.exospkg.addService("Runtime", `python ${this._templateSWIG.pythonMain.name}`, this._templateBuild.options.debPackage.destination);
+        }
+        else {
+            this._linuxPackage.addExistingTransferFile(this._templateBuild.options.swigPython.pyFileName, "Restart", `${this._typeName} python module`);
+            this._linuxPackage.addExistingTransferFile(this._templateBuild.options.swigPython.soFileName, "Restart", `${this._typeName} SWIG library`);
+            this._exospackage.exospkg.addService("Runtime", `python ${this._templateSWIG.pythonMain.name}`);
+        }
         this._exospackage.exospkg.addDatamodelInstance(`${this._templateAR.template.datamodelInstanceName}`);
+
+        this._exospackage.exospkg.setComponentGenerator("ExosComponentSWIG",EXOS_COMPONENT_SWIG_VERSION, ExosPkg.getComponentOptions(this._options));
 
         super.makeComponent(location);
     }

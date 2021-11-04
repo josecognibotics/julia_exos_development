@@ -1,11 +1,15 @@
 const { TemplateLinuxBuild } = require('./templates/linux/template_linux_build');
 const { TemplateLinuxNAPI } = require('./templates/linux/template_linux_napi');
 const { ExosComponentAR } = require('./exoscomponent_ar');
+const { ExosPkg } = require('../exospkg');
 
 const path = require('path');
 
+const EXOS_COMPONENT_NAPI_VERSION = "1.0.0"
+
 /**
  * @typedef {Object} ExosComponentNAPIOptions
+ * @property {string} packaging  package format: `deb` | `none` - default: `deb`. If set to `none`, includeNodeModules will be forced to `false`
  * @property {string} destinationDirectory destination of the generated executable in Linux. default: `/home/user/{typeName.toLowerCase()}`
  * @property {string} templateAR template used for AR: `c-static` | `cpp` | `c-api` - default: `c-api`
  * @property {boolean} includeNodeModules include additional `node_modules` in the package - default: `true`
@@ -26,7 +30,7 @@ class ExosComponentNAPI extends ExosComponentAR {
       * @param {ExosComponentNAPIOptions} options 
       */
      constructor(fileName, typeName, options) {
-        let _options = {destinationDirectory: `/home/user/${typeName.toLowerCase()}`, templateAR: "c-api", includeNodeModules: true};
+        let _options = {packaging:"deb", destinationDirectory: `/home/user/${typeName.toLowerCase()}`, templateAR: "c-api", includeNodeModules: true};
 
         if(options) {
             if(options.destinationDirectory) {
@@ -39,11 +43,19 @@ class ExosComponentNAPI extends ExosComponentAR {
             {
                 _options.includeNodeModules = options.includeNodeModules;
             }
+            if(options.packaging) {
+                _options.packaging = options.packaging;
+            }
         }
 
         super(fileName, typeName, _options.templateAR);
 
         this._options = _options;
+        
+        if(this._options.packaging == "none") {
+            this._options.destinationDirectory = undefined;
+            this._options.includeNodeModules = false;
+        }
 
         this._templateBuild = new TemplateLinuxBuild(typeName);
         this._templateNAPI = new TemplateLinuxNAPI(this._datamodel);
@@ -52,10 +64,18 @@ class ExosComponentNAPI extends ExosComponentAR {
     makeComponent(location) {
         
         this._templateBuild.options.napi.enable = true;
-        this._templateBuild.options.napi.includeNodeModules = this._options.includeNodeModules;
         this._templateBuild.options.napi.sourceFiles = [this._templateNAPI.indexJs.name, this._templateNAPI.packageJson.name, this._templateNAPI.packageLockJson.name];
-        this._templateBuild.options.debPackage.enable = true;
-        this._templateBuild.options.debPackage.destination = this._options.destinationDirectory;
+    
+        if(this._options.packaging == "deb") {
+            this._templateBuild.options.debPackage.enable = true;
+            this._templateBuild.options.napi.includeNodeModules = this._options.includeNodeModules;
+            this._templateBuild.options.debPackage.destination = this._options.destinationDirectory;
+        }
+        else {
+            this._templateBuild.options.debPackage.enable = false;
+            this._templateBuild.options.napi.includeNodeModules = false;
+        }
+
         this._templateBuild.makeBuildFiles();
 
         this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateBuild.CMakeLists);
@@ -64,13 +84,24 @@ class ExosComponentNAPI extends ExosComponentAR {
         this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateNAPI.gypFile);
         this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateNAPI.packageJson);
         this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateNAPI.packageLockJson);
-        this._linuxPackage.addExistingFile(this._templateBuild.options.napi.nodeFileName, `${this._typeName} node module`);
         
-        this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName, this._templateBuild.options.debPackage.packageName, `${this._typeName} debian package`);
-        this._linuxPackage.addNewTransferFileObj(this._templateNAPI.indexJs,"Restart");
-        this._exospackage.exospkg.addService("Startup", `cp ${this._templateNAPI.indexJs.name} ${this._templateBuild.options.debPackage.destination}`);
-        this._exospackage.exospkg.addService("Runtime", `npm start`, this._templateBuild.options.debPackage.destination);
+        if(this._options.packaging == "deb") {
+            this._linuxPackage.addExistingFile(this._templateBuild.options.napi.nodeFileName, `${this._typeName} node module`);
+            this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName, this._templateBuild.options.debPackage.packageName, `${this._typeName} debian package`);
+            this._exospackage.exospkg.addService("Startup", `cp ${this._templateNAPI.indexJs.name} ${this._templateBuild.options.debPackage.destination}`);
+            this._exospackage.exospkg.addService("Runtime", `npm start`, this._templateBuild.options.debPackage.destination);
+        }
+        else {
+            this._linuxPackage.addExistingTransferFile(this._templateBuild.options.napi.nodeFileName, "Restart", `${this._typeName} node module`);
+            this._exospackage.exospkg.addFile(path.join("Linux",this._templateNAPI.packageJson.name), "Restart");
+            this._exospackage.exospkg.addFile(path.join("Linux",this._templateNAPI.packageLockJson.name), "Restart");
+            this._exospackage.exospkg.addService("Runtime", `npm start`);
+        }
+
+        this._linuxPackage.addNewTransferFileObj(this._templateNAPI.indexJs, "Restart");
         this._exospackage.exospkg.addDatamodelInstance(`${this._templateAR.template.datamodelInstanceName}`);
+
+        this._exospackage.exospkg.setComponentGenerator("ExosComponentNAPI", EXOS_COMPONENT_NAPI_VERSION, ExosPkg.getComponentOptions(this._options));
 
         super.makeComponent(location);
     }

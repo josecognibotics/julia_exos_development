@@ -13,27 +13,73 @@ if (!Array.prototype.last){
 const EXOSPKG_VERSION = "1.1.0";
 
 /**
- * Class for the .exospkg file, created within an {@link ExosPackage} and accessed via {@link ExosPackage.exospkg}
- * It contains metods to populate the contents of an .exospkg, and returns the XML contents
- * via {@link getContents} - whereas this function is called implicitly by the {@link ExosPackage.makePackage}
  * 
- * @example
- * let myPackage = new ExosPackage("MyPackage");
- * myPackage.exospkg.addService("Runtime","/home/user/myexecutable");
- * myPackage.makePackage("C:\\Temp");
+ * @typedef ExosPkgOpenFileResult
+ * @property {number} parseErrors number of errors occured while parsing
+ * @property {string} originalVersion the original version of the file, empty if no version could be found
+ * @property {boolean} fileParsed whether or not the ExosPkg class could be populated
+ * 
+ * @typedef ExosPkgComponentGeneratorOption
+ * @property {string} name component specific name for this option
+ * @property {string} value value of this option
  * 
  */
  class ExosPkg {
 
-    //all items in the exospkg are added as json objects, which are parsed out in the getContents()
+    /**
+     * User specific name of the component class that generated this package
+     * @type {string}
+     */
+    componentClass;
+
+    /**
+     * User specific version of the component that generated this package, in the format X.X.X
+     * @type {string}
+     */
+    componentVersion;
+
+    /**
+     * Component specific options from the generator
+     * @type {ExosPkgComponentGeneratorOption[]}
+     */
+    componentOptions;
+
+    /**
+     * Class for the .exospkg file, created within an {@link ExosPackage} and accessed via {@link ExosPackage.exospkg}
+     * It contains metods to populate the contents of an .exospkg, and returns the XML contents
+     * via {@link getContents} - whereas this function is called implicitly by the {@link ExosPackage.makePackage}
+     * 
+     * It can also be created out of a file using the {@link parseFile}
+     * 
+     * @example
+     * //make new from ExosPackage
+     * let myPackage = new ExosPackage("MyPackage");
+     * myPackage.exospkg.addService("Runtime","/home/user/myexecutable");
+     * myPackage.makePackage("C:\\Temp");
+     * 
+     * //read from file
+     * let myExosPkg = new ExosPkg();
+     * let result = myExosPkg.parseFile("C:\\Temp\\MyPackage\\MyPackage.exospkg")
+     * if(result.fileParsed) {
+     *      ..
+     * }
+     */
     constructor() {
+        this._initialize();
+    }
+
+    _initialize() {
         this._files = [];
         this._services = [];
         this._datamodels = [];
         this._generateDatamodels = [];
         this._buildCommands = [];
         this._startupTimeout = "0";
-        this._errorHandling = "Component"
+        this._errorHandling = "Component";
+        this._restartEvent = undefined;
+        this.componentClass = undefined;
+        this.componentVersion = undefined;
+        this.componentOptions = [];
     }
 
     set startupTimeout(value) {
@@ -60,6 +106,20 @@ const EXOSPKG_VERSION = "1.1.0";
         }
     }
 
+    get restartEvent() {
+        return this._restartEvent;
+    }
+
+    set restartEvent(value) {
+        switch(value) {
+            case "Ignore":
+            case "Component":
+            case "Target":
+                this._restartEvent = value;
+                break;
+        }
+    }
+
     /**
      * @returns {string} version of the ExosPkg file
      */
@@ -68,18 +128,15 @@ const EXOSPKG_VERSION = "1.1.0";
     }
 
     /**
-     * Open an existing .exospkg file and populate its contents 
-     * This can be used to open older versions of the package file and convert them to new ones
+     * Open an existing .exospkg file and populate the contents of the ExosPkg class.
      * 
-     * @typedef ExosPkgOpenFileResult
-     * @property {number} parseErrors number of errors occured while parsing
-     * @property {string} originalVersion the original version of the file, empty if no version could be found
-     * @property {boolean} fileParsed whether or not the ExosPkg class could be populated
+     * This can be used to open older versions of the package file and convert them to new ones,
+     * or simply to get a data representation of the current .exospkg file
      * 
      * @param {string} fileName 
-     * @returns {ExosPkgOpenFileResult} number of errors occured while parsing the file. -1 if the file is up to date
+     * @returns {ExosPkgOpenFileResult} results of parsing the file
      */
-    openFile(fileName) {
+    parseFile(fileName) {
 
         let exosPkgFileContents = fs.readFileSync(fileName).toString();
         let exosPkgJson = parser(exosPkgFileContents);
@@ -87,6 +144,8 @@ const EXOSPKG_VERSION = "1.1.0";
         if(!exosPkgJson.root || !exosPkgJson.root.attributes || !exosPkgJson.root.attributes.Version) {
             return {parseErrors:0, originalVersion:"", fileParsed:false};
         }
+
+        this._initialize();
         let parseErrors = 0;
 
         switch(exosPkgJson.root.attributes.Version) {
@@ -128,6 +187,21 @@ const EXOSPKG_VERSION = "1.1.0";
                             continue;
                         }
                         this.addDatamodelInstance(child.attributes.Name);
+                    }
+                    else if(child.name == "ComponentGenerator") {
+                        if(!child.attributes || !child.attributes.Class || !child.attributes.Version) {
+                            parseErrors ++;
+                            continue;
+                        }
+                        let options = [];
+                        if(child.children) {
+                            for(let option of child.children) {
+                                if(option.name == "Option" && option.attributes && option.attributes.Name && option.attributes.Value) {
+                                    options.push({name:option.attributes.Name, value:option.attributes.Value})
+                                }
+                            }
+                        }
+                        this.setComponentGenerator(child.attributes.Class, child.attributes.Version, options);
                     }
                     else if (child.name == "Build") {
                         if(!child.children)
@@ -479,6 +553,65 @@ const EXOSPKG_VERSION = "1.1.0";
     }
 
     /**
+     * Function to generate a {@linkcode ExosPkgComponentGeneratorOption} compatible list from an object
+     * 
+     * @example
+     * let myObj = {width:10, flat:true};
+     * let options = ExosPkg.getComponentOptions(myObj);
+     * console.log(options);
+     * //Output:
+     * //[{name:'width', value:'10'},{name:'flat', value:'true'}]
+     * 
+     * @param {object} optionObject any kind of flat option structure, with members
+     * @returns {ExosPkgComponentGeneratorOption[]} componentOptions list that can be used in the {@linkcode setComponentGenerator}
+     */
+    static getComponentOptions(optionObject) {
+        let options = [];
+
+        for(const [key, value] of Object.entries(optionObject))
+        {
+            //dont push undefined members (keys) in the options array
+            if(value) {
+                options.push({name:key,value:value.toString()});
+            }
+        }
+
+        return options;
+    }
+
+
+    /**
+     * Specify which Component was used to generate this package. This allows to make updates and exports of the package (by reproducing the initial setting).
+     * 
+     * There can only be one ComponentGenerator per ExosPkg, so its set rather than added. options is a prefilled struct array of name/value pairs
+     * 
+     * The fields can be accessed via
+     * - {@linkcode ExosPkg.componentClass}
+     * - {@linkcode ExosPkg.componentVersion}
+     * - {@linkcode ExosPkg.componentOptions}
+     * 
+     * @example
+     * let myPackage = new ExosPackage("MyPackage");
+     * myPackage.exospkg.setComponentGenerator("MyComponentClass", "1.0.0", [{name:'width', value:'10'},{name:'flat', value:'true'}]);
+     * console.log(myPackage.exospkg.componentOptions)
+     * 
+     * 
+     * @param {string} componentClass mandatory. Component class name
+     * @param {string} componentVersion mandatory. Version in the form "X.X.X"
+     * @param {ExosPkgComponentGeneratorOption[]} componentOptions mandatory 
+     */
+    setComponentGenerator(componentClass, componentVersion, componentOptions) {
+        if(!componentClass || !componentVersion || !componentOptions || !Array.isArray(componentOptions)) {
+            return;
+        }
+
+        this.componentClass = componentClass;
+        this.componentVersion = componentVersion;
+        this.componentOptions = componentOptions;
+    }
+
+
+    /**
      * When all files, services, datamodels etc. have been added, the .exospkg file can be created using {@link getContents()}.
      * This function is called implicitly by {@link ExosPackage.makePackage}, which contains an internal ExosPkg object.
      * It can be used for custom `ExosPkg` objects, or just to get the contents of the file
@@ -495,7 +628,11 @@ const EXOSPKG_VERSION = "1.1.0";
         let out = ``;
 
         out += `<?xml version="1.0" encoding="utf-8"?>\n`;
-        out += `<ComponentPackage Version="${EXOSPKG_VERSION}" ErrorHandling="${this._errorHandling}" StartupTimeout="${this._startupTimeout}">\n`;
+        out += `<ComponentPackage Version="${EXOSPKG_VERSION}" ErrorHandling="${this._errorHandling}" StartupTimeout="${this._startupTimeout}"`
+        if(this._restartEvent) {
+            out += `RestartEvent="${this._restartEvent}"`;
+        }
+        out += `>\n`;
         for(const file of this._files) {
             out += `    <File FileName="${file.fileName}"`;
             if(file.changeEvent !== undefined) {
@@ -536,6 +673,16 @@ const EXOSPKG_VERSION = "1.1.0";
             }
             
             out += `    </Build>\n`;
+        }
+
+        if(this.componentClass && this.componentVersion) {
+            out += `    <ComponentGenerator Class="${this.componentClass}" Version="${this.componentVersion}">\n`;
+            for(let option of this.componentOptions) {
+                if(option.name && option.value) {
+                    out += `        <Option Name="${option.name}" Value="${option.value}"/>\n`;
+                }
+            }
+            out += `    </ComponentGenerator>\n`;
         }
         out += `</ComponentPackage>\n`;
         return out;

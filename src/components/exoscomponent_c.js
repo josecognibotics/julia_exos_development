@@ -3,11 +3,16 @@ const { TemplateLinuxStaticCLib } = require('./templates/linux/template_linux_st
 const { TemplateLinuxCpp } = require('./templates/linux/template_linux_cpp');
 const { BuildOptions } = require('./templates/linux/template_linux_build');
 const { ExosComponentAR } = require('./exoscomponent_ar');
+const { ExosPkg } = require('../exospkg');
+
 const path = require('path');
+
+const EXOS_COMPONENT_C_VERSION = "1.0.0"
 
 /**
  * @typedef {Object} ExosComponentCOptions
- * @property {string} destinationDirectory destination of the generated executable in Linux. default: `/home/user/{typeName.toLowerCase()}`
+ * @property {string} packaging  package format: `deb` | `none` - default: `none`
+ * @property {string} destinationDirectory destination for the packaging. default: `/home/user/{typeName.toLowerCase()}`
  * @property {string} templateAR template used for AR: `c-static` | `cpp` | `c-api` - default: `c-api`
  * @property {string} templateLinux template used for Linux: `c-static` | `cpp` | `c-api` - default: `c-api`
  */
@@ -32,7 +37,7 @@ class ExosComponentC extends ExosComponentAR {
      */
     constructor(fileName, typeName, options) {
         
-        let _options = {destinationDirectory: `/home/user/${typeName.toLowerCase()}`, templateAR: "c-api", templateLinux: "c-api"};
+        let _options = {packaging: `none`, destinationDirectory: `/home/user/${typeName.toLowerCase()}`, templateAR: "c-api", templateLinux: "c-api"};
 
         if(options) {
             if(options.destinationDirectory) {
@@ -44,10 +49,17 @@ class ExosComponentC extends ExosComponentAR {
             if(options.templateLinux) {
                 _options.templateLinux = options.templateLinux;
             }
+            if(options.packaging) {
+                _options.packaging = options.packaging;
+            }
         }
 
         super(fileName, typeName, _options.templateAR);
         this._options = _options;
+
+        if(this._options.packaging == "none") {
+            this._options.destinationDirectory = undefined;
+        }
 
         switch(this._options.templateLinux)
         {
@@ -103,20 +115,33 @@ class ExosComponentC extends ExosComponentAR {
 
         
         this._templateBuild.options.executable.sourceFiles = [this._templateLinux.termination.terminationSource.name, this._templateLinux.mainSource.name, this._datamodel.sourceFile.name]
-        this._templateBuild.options.debPackage.enable = true;
-        this._templateBuild.options.debPackage.destination = this._options.destinationDirectory;
+        if(this._options.packaging == "deb") {
+            this._templateBuild.options.debPackage.enable = true;
+            this._templateBuild.options.debPackage.destination = this._options.destinationDirectory;
+            this._exospackage.exospkg.addService("Runtime", `./${this._templateBuild.options.executable.executableName}`, this._templateBuild.options.debPackage.destination);
+        }
+        else {
+            this._templateBuild.options.debPackage.enable = false;
+            this._exospackage.exospkg.addService("Startup", `chmod +x ${this._templateBuild.options.executable.executableName}`);
+            this._exospackage.exospkg.addService("Runtime", `./${this._templateBuild.options.executable.executableName}`);
+        }
 
         this._templateBuild.makeBuildFiles();
 
         this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateBuild.CMakeLists);
         this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateBuild.buildScript);
-        this._linuxPackage.addExistingFile(this._templateBuild.options.executable.executableName, `${this._typeName} application`)
-        this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName, this._templateBuild.options.debPackage.packageName, `${this._typeName} debian package`);
+        
+        if(this._options.packaging == "deb") {
+            this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName, this._templateBuild.options.debPackage.packageName, `${this._typeName} debian package`);
+            this._linuxPackage.addExistingFile(this._templateBuild.options.executable.executableName, `${this._typeName} application`)
+        }
+        else {
+            this._linuxPackage.addExistingTransferFile(this._templateBuild.options.executable.executableName, "Restart", `${this._typeName} application`);
+        }
 
-        /* Additional exospkg settings */
-
-        this._exospackage.exospkg.addService("Runtime", `./${this._templateBuild.options.executable.executableName}`, this._templateBuild.options.debPackage.destination);
         this._exospackage.exospkg.addDatamodelInstance(`${this._templateAR.template.datamodelInstanceName}`);
+
+        this._exospackage.exospkg.setComponentGenerator("ExosComponentC", EXOS_COMPONENT_C_VERSION, ExosPkg.getComponentOptions(this._options));
 
         super.makeComponent(location);
     }
