@@ -46,6 +46,8 @@ function activate(context) {
 
 	let createComponent = vscode.commands.registerCommand('exos-component-extension.createComponent', function (uri) {
 
+		
+
 		function createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, destination) {
 			function convertLabel2Teplate(label) {
 				switch(label) {
@@ -58,6 +60,46 @@ function activate(context) {
 					default:
 						return "c-api";
 				}
+			}
+
+			/**
+			 * Update the Package file if were in an AS project, so that we delete the typ file and replace the 
+			 * Package file with the new exos package folder (we created in createComponent)
+			 * 
+			 * @param {*} fsPath path to the .typ file
+			 * @param {*} typeName name of the new package (the struct name everything is based on)
+			 * @returns {boolean} true if the .typ file was replaced and the Package file updated, otherwise false
+			 */
+			function replaceTypWithPackage(fsPath, typeName) {
+
+				let pkgFileName = `${path.dirname(fsPath)}/Package.pkg`;
+				pkgFileName = path.normalize(pkgFileName);
+				
+				if (fs.existsSync(pkgFileName)) {
+					let lines = fs.readFileSync(pkgFileName).toString();
+					packageHasTypFile = false;
+					lines = lines.split("\r").join("");
+					lines = lines.split("\n");
+					let out = "";
+					for(let line of lines) 
+					{
+						if(line.includes(path.basename(fsPath)) && line.includes("Object") && line.includes("File")) {
+							out += `    <Object Type="Package">${typeName}</Object>\r\n`;
+							packageHasTypFile = true;
+						}
+						else {
+							out += `${line}\r\n`;
+						}
+					}
+			
+					if(packageHasTypFile)
+					{
+						fs.writeFileSync(pkgFileName,out);
+						fs.unlinkSync(fsPath);
+						return true;
+					}
+				}   
+				return false;
 			}
 
 			switch(selectedLinuxType.label) {
@@ -90,7 +132,14 @@ function activate(context) {
 					break;
 				default:
 					vscode.window.showErrorMessage(`The selected template for linux: ${selectedLinuxType.label} not found!`);
+					return;
 			}
+
+			vscode.window.showInformationMessage(`Created component ${selectedStructure.label}`);
+			if(replaceTypWithPackage(uri.fsPath, selectedStructure.label)) {
+				vscode.window.showInformationMessage(`The file ${path.basename(uri.fsPath)} was replaced the ${selectedStructure.label} exOS package`);
+			}
+
 		}
 
 		let availableStructures = Datamodel.getDatatypeList(uri.fsPath);
@@ -140,15 +189,11 @@ function activate(context) {
 						
 							if(selectedPackaging.label == "deb") {
 								vscode.window.showInputBox({prompt:"Set the .deb package destination folder on the target:", value:`/home/user/${selectedStructure.label.toLowerCase()}`}).then(destination => {
-
 									createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, destination);
-									vscode.window.showInformationMessage(`Created component ${selectedStructure.label} AS:[${selectedASType.label}] Linux:[${selectedLinuxType.label}] Packaging:[${selectedPackaging.label}]`);
-
 								});
 							}
 							else {
 								createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, "");
-								vscode.window.showInformationMessage(`Created component ${selectedStructure.label} AS:[${selectedASType.label}] Linux:[${selectedLinuxType.label}] Packaging:[${selectedPackaging.label}]`);	
 							}
 						});
 						
