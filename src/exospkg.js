@@ -579,6 +579,22 @@ const EXOSPKG_VERSION = "1.1.0";
         return options;
     }
 
+    /**
+     * Add an additional option to the ComponentGenerator section.
+     * 
+     * This can be helpful if not all options are available at the time of calling the {@linkcode setComponentGenerator}
+     * 
+     * Note that the {@linkcode setComponentGenerator} needs to be called in order to have any option information in the .exospkg file.
+     * It can however be called before or after this method.
+     * 
+     * @param {string} name 
+     * @param {string} value 
+     */
+    addGeneratorOption(name, value) {
+        if(name && value) {
+            this.componentOptions.push({name:name,value:value.toString()});
+        }
+    }
 
     /**
      * Specify which Component was used to generate this package. This allows to make updates and exports of the package (by reproducing the initial setting).
@@ -676,6 +692,7 @@ const EXOSPKG_VERSION = "1.1.0";
         }
 
         if(this.componentClass && this.componentVersion) {
+            out += `    <!-- ComponentGenerator info - do not change! -->\n`;
             out += `    <ComponentGenerator Class="${this.componentClass}" Version="${this.componentVersion}">\n`;
             for(let option of this.componentOptions) {
                 if(option.name && option.value) {
