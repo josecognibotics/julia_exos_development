@@ -108,9 +108,9 @@ class ExosComponent extends Component {
         this._datamodel = new Datamodel(fileName, typeName, [`${typeName}.h`])
         this._exospackage.exospkg.addGenerateDatamodel(`${typeName}/${typeName}.typ`, typeName, [`${typeName}.h`], [typeName, "Linux"]);
 
-        this._iecProgram = this._exospackage.getNewIECProgram(`${typeName}_0`,`${typeName} application`);
+        this._iecProgram = this._exospackage.getNewIECProgram(`${typeName.substr(0,10)}_0`,`${typeName} application`);
 
-        this._cLibrary = this._exospackage.getNewCLibrary(typeName, `${typeName} exOS library`);
+        this._cLibrary = this._exospackage.getNewCLibrary(typeName.substr(0,10), `${typeName} exOS library`);
         this._cLibrary.addNewFileObj(this._typFile);
         this._cLibrary.addNewFileObj(this._datamodel.headerFile);
         this._cLibrary.addNewFileObj(this._datamodel.sourceFile);

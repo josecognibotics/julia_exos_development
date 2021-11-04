@@ -756,14 +756,17 @@ class Datamodel {
                 if(this.sortedStructs[i].name ==struct.name) {
                     this.sortedStructs[i].dependencies = struct.depends;
 
+                    // find and extract all swig array info stuff and add them last to be able to replace it correctly in swig template generator
                     if (swig !== undefined && swig) {
-                        // find and extract all swig array info stuff and add them last to be able to replace it correctly in swig template generator
-                        let swigInfo = ""
-                        let matches = struct.out.matchAll(/<sai>(.*)<\/sai>/g);
-                        let swigInfoResult = Array.from(matches, x => x[1]);
-                        if (swigInfoResult.length > 0)
-                            swigInfo = `<sai>{"swiginfo": [` + swigInfoResult.join(",") + `]}</sai>`;
-                        out += struct.out.replace(/<sai>.*<\/sai>/g, "") + swigInfo;
+                        // do not include the last one (top-level struct) as it already exists as struct lib<typname>
+                        if(i < this.sortedStructs.length-1) {
+                            let swigInfo = ""
+                            let matches = struct.out.matchAll(/<sai>(.*)<\/sai>/g);
+                            let swigInfoResult = Array.from(matches, x => x[1]);
+                            if (swigInfoResult.length > 0)
+                                swigInfo = `<sai>{"swiginfo": [` + swigInfoResult.join(",") + `]}</sai>`;
+                            out += struct.out.replace(/<sai>.*<\/sai>/g, "") + swigInfo;
+                        }
                     }
                     else {
                         out += struct.out;

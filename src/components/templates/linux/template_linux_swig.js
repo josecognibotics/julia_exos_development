@@ -128,7 +128,6 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
         
             out += `%module(directors="1") ${template.datamodel.libStructName}\n`;
             out += `%{\n`;
-            out += `#define EXOS_INCLUDE_ONLY_DATATYPE\n`;
             out += `#include <stddef.h>\n`;
             out += `#include <stdint.h>\n`;
             out += `#include <stdbool.h>\n`;
@@ -209,7 +208,6 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
         
         
             out += `/* Handle arrays in substructures, structs could be exposed using these two lines:\n`;
-            out += `     #define EXOS_INCLUDE_ONLY_DATATYPE\n`;
             out += `     %include "${template.headerName}"\n`;
             out += `   But we need to disable the array members and add them again with the wrapped_array\n`;
             out += `*/\n`;
@@ -428,7 +426,7 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
                         if(Datamodel.isScalarType(dataset.dataType, false)) {
                             out += `        ${prepend}self.${template.datamodel.varName}.log.debug("on_change: ${template.datamodel.varName}.${dataset.structName}: " + str(self.${template.datamodel.varName}.${dataset.structName}.value))\n`;
                         } else {
-                            out += `        ${prepend}self.${template.datamodel.varName}.log.debug("on_change: ${template.datamodel.varName}.${dataset.structName}: " + self.${template.datamodel.varName}.${dataset.structName}.value)\n`;
+                            out += `        ${prepend}self.${template.datamodel.varName}.log.debug("on_change: ${template.datamodel.varName}.${dataset.structName}: " + str(self.${template.datamodel.varName}.${dataset.structName}.value))\n`;
                         }
                     } else {
                         out += `        ${prepend}self.${template.datamodel.varName}.log.debug("on_change: ${template.datamodel.varName}.${dataset.structName}: Array of ${Datamodel.convertPlcType(dataset.dataType)}${dataset.dataType.includes("STRING")?"[]":""}")\n`;
@@ -436,7 +434,7 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
                         out += `        ${prepend}    self.${template.datamodel.varName}.log.debug(str(index) + ": " + str(self.${template.datamodel.varName}.${dataset.structName}.value[index]))\n`;
                         out += `        ## alternatively:\n`;
                         out += `        ## for item in self.${template.datamodel.varName}.${dataset.structName}.value:\n`;
-                        out += `        ##    self.${template.datamodel.varName}.log.debugself.${template.datamodel.varName}.log.debug("  " + str(item))\n`;
+                        out += `        ##    self.${template.datamodel.varName}.log.debug("  " + str(item))\n`;
                     }
                     out += `        \n`;
                     out += `        # Your code here...\n`;
