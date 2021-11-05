@@ -24,7 +24,7 @@
 			},
 			{
 				"command": "exos-component-extension.updateComponent",
-				"title": "Update exOS Component"
+				"title": "Update exOS Component..."
 			},
 			{
 				"command": "exos-component-extension.exportComponent",
