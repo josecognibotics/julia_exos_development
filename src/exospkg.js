@@ -150,7 +150,7 @@ const EXOSPKG_VERSION = "2.0.0";
         /**
          * @type {ExosPkgParseFileResults}
          */
-        let parseResults = {parseErrors:0, originalVersion:"", fileParsed:false, componentFound:false, componentErrors:[]};
+        let parseResults = {parseErrors:0, originalVersion:"n/a", fileParsed:false, componentFound:false, componentErrors:[]};
         let exosPkgFileContents = fs.readFileSync(fileName).toString();
         let exosPkgJson = parser(exosPkgFileContents);
 

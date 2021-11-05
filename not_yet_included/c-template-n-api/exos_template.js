@@ -7,7 +7,7 @@ const ar = require('../template/ar');
 const template_ar = require('../c-template/exos_template_ar');
 const template_linux = require('./exos_template_linux_n_api');
 const path = require('path');
-var XMLparse = require('../node_modules/xml-parser');
+var XMLparse = require('xml-parser');
 
 function generateTemplate(fileName, structName, outPath) {
 
