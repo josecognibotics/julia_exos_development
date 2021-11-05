@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const fse = require('fs-extra');
 const { dir } = require('console');
+const os = require('os');
 
 const isDebugMode = () => process.env.VSCODE_DEBUG_MODE === "true";
 
@@ -14,6 +15,7 @@ const { UpdateComponentResults } = require('./src/components/exoscomponent');
 const { ExosComponentC, ExosComponentCUpdate } = require('./src/components/exoscomponent_c');
 const { ExosComponentNAPI, ExosComponentNAPIUpdate } = require('./src/components/exoscomponent_napi');
 const { ExosComponentSWIG, ExosComponentSWIGUpdate } = require('./src/components/exoscomponent_swig');
+const { ExosExport } = require('./src/exosexport');
 
 /**
  * @param {vscode.ExtensionContext} context
@@ -219,11 +221,24 @@ function activate(context) {
 	context.subscriptions.push(createPackage);
 
 	let exportPackage  = vscode.commands.registerCommand('exos-component-extension.exportPackage', function (uri) {
-		vscode.window.showOpenDialog({title:"Create binary export", defaultUri: uri, canSelectFolders:true, openLabel:"Create binary export" }).then(selectedUri => {
-			for(let selected of selectedUri) {
-				vscode.window.showInformationMessage(`Exported component to: ${selected.fsPath}`);
-			}
-		});
+		
+		try {
+			
+			let exosExport = new ExosExport(uri.fsPath);
+
+			let homeFolder = vscode.Uri.file(os.homedir());
+			vscode.window.showOpenDialog({title:"Create binary export", defaultUri: homeFolder, canSelectFolders:true, openLabel:"Create binary export" }).then(selectedUri => {
+					
+				for(let selected of selectedUri) {
+					vscode.window.showInformationMessage(`--not yet implemented -- Exported component to: ${selected.fsPath}`);
+				}
+				
+			});
+
+		} catch (error) {
+			vscode.window.showErrorMessage(error);
+		}
+		
 	});
 	context.subscriptions.push(exportPackage);
 
