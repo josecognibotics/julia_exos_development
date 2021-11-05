@@ -1,11 +1,10 @@
-const { ExosComponentAR } = require('./exoscomponent_ar');
+const { ExosComponentAR, ExosComponentARUpdate } = require('./exoscomponent_ar');
 const { TemplateLinuxBuild } = require('./templates/linux/template_linux_build');
 const { TemplateLinuxSWIG } = require('./templates/linux/template_linux_swig');
+const { EXOS_COMPONENT_VERSION } = require("./exoscomponent");
 const { ExosPkg } = require('../exospkg');
 
 const path = require('path');
-
-const EXOS_COMPONENT_SWIG_VERSION = "1.0.0";
 
 /**
  * @typedef {Object} ExosComponentSWIGOptions
@@ -94,10 +93,30 @@ class ExosComponentSWIG extends ExosComponentAR {
         }
         this._exospackage.exospkg.addDatamodelInstance(`${this._templateAR.template.datamodelInstanceName}`);
 
-        this._exospackage.exospkg.setComponentGenerator("ExosComponentSWIG",EXOS_COMPONENT_SWIG_VERSION, ExosPkg.getComponentOptions(this._options));
+        this._exospackage.exospkg.setComponentGenerator("ExosComponentSWIG", EXOS_COMPONENT_VERSION, []);
 
         super.makeComponent(location);
     }
+}
+
+class ExosComponentSWIGUpdate extends ExosComponentARUpdate {
+
+    /**
+     * Update class for SWIG applications, only updates the sourcefile of the datamodel-wrapper
+     * @param {string} exospkgFileName absolute path to the .exospkg file stored on disk
+     */
+     constructor(exospkgFileName) {
+        super(exospkgFileName);
+     
+        if(this._exosPkgParseResults.componentFound == true && this._exosPkgParseResults.componentErrors.length == 0) {
+            this._templateSWIG = new TemplateLinuxSWIG(this._datamodel);
+
+            this._linuxPackage.addNewFileObj(this._templateSWIG.staticLibraryHeader);
+            this._linuxPackage.addNewFileObj(this._templateSWIG.staticLibrarySource);
+            
+            this._linuxPackage.addNewFileObj(this._templateSWIG.swigInclude);
+        }
+     }
 }
 
 if (require.main === module) {
@@ -121,4 +140,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = {ExosComponentSWIG}
+module.exports = {ExosComponentSWIG, ExosComponentSWIGUpdate}

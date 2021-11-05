@@ -23,6 +23,10 @@
 				"title": "Update exOS package description file"
 			},
 			{
+				"command": "exos-component-extension.updateComponent",
+				"title": "Update exOS Component"
+			},
+			{
 				"command": "exos-component-extension.exportComponent",
 				"title": "Export binary exOS Component..."
 			},
@@ -102,6 +106,11 @@
 					"group": "2_workspace"
 				},
 				{
+					"when": "filesExplorerFocus && resourceExtname == .exospkg",
+					"command": "exos-component-extension.updateComponent",
+					"group": "2_workspace"
+				},
+				{
 					"when": "filesExplorerFocus && resourceExtname == .typ",
 					"command": "exos-component-extension.generateTemplate",
 					"group": "2_workspace"
@@ -129,16 +138,6 @@
 				{
 					"when": "filesExplorerFocus && resourceExtname == .typ && exos-component-extension.isDebugMode",
 					"command": "exos-component-extension.generateEverythingDebug",
-					"group": "2_workspace"
-				},
-				{
-					"when": "filesExplorerFocus && resourceExtname == .exospkg",
-					"command": "exos-component-extension.runPackage",
-					"group": "2_workspace"
-				},
-				{
-					"when": "filesExplorerFocus && resourceExtname == .exospkg",
-					"command": "exos-component-extension.buildPackage",
 					"group": "2_workspace"
 				},
 				{

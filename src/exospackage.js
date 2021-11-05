@@ -13,12 +13,27 @@ if (!Array.prototype.last){
 /**
  * Base class for Packages, used for inheritance
  * 
+ * @typedef {Object} UpdatePackageResults
+ * @property {number} filesUpdated number of files updated
+ * @property {number} filesNotFound number of files that could not be found
+ * @property {number} foldersNotFound number of folders that could not be found
+ * 
  */
 class Package {
 
+    /**
+     * 
+     * @param {string} name Name of the folcer in which this package is created. If not specifiec, the _folderName will be set to an empty string
+     */
     constructor(name) {
 
-        this._folderName = name;
+        if(name) {
+            this._folderName = name;
+        }
+        else {
+            this._folderName = "";
+        }
+        
         this._objects = [];
         this._pkgFile = {};
         this._header = "";
@@ -129,6 +144,42 @@ class Package {
                 fs.writeFileSync(path.join(location,this._folderName,obj.name), obj.contents);
             }
         }
+    }
+
+    /**
+     * internal function to update a package with its file (contents) if the file and the folder exist.
+     * 
+     * If the file doesnt exist, the function returns
+     * NOT including Package.pkg or or ANSIC.lby etc, because these are not entirely controlled
+     * by the Package if its just being updated, meaning the pkg/lby/iec files can have been
+     * changed in AS, and we dont know about that here 
+     * @returns {UpdatePackageResults} Information about this update (files updated, files found..)
+     */
+    _updatePackage(location) {
+        /**
+         * @type {UpdatePackageResults}
+         */
+        let result = {filesUpdated:0, filesNotFound:0, foldersNotFound:0};
+        if(fs.existsSync(path.join(location,this._folderName))) {
+            for (const obj of this._objects) {
+                if(obj.type == "File") {
+                    
+                    //update the file if it exists
+                    if(fs.existsSync(path.join(location,this._folderName,obj.name))) {
+                        fs.writeFileSync(path.join(location,this._folderName,obj.name), obj.contents);
+                        result.filesUpdated++;
+                    }
+                    else {
+                        result.filesNotFound++;
+                    }
+                    
+                }
+            }   
+        }
+        else {
+            result.foldersNotFound++;
+        }
+        return result;
     }
 }
 
@@ -561,6 +612,36 @@ class ExosPackage extends Package {
                 obj._object.makePackage(path.join(location,this._folderName));
             }
         }
+    }
+
+    /**
+     * Update the ExosPackage by writing all files that already exist on disk
+     * 
+     * The location is the same that is used in {@linkcode makePackage}, that is the location of the `ExosPackage` **folder**.
+     * 
+     * for example `C:\Temp` if we previously created a `MyPackage` there with the contents in `C:\Temp\MyPackage`
+     * 
+     * @param {string} location path where this package and all its sub packages (folders + files) is located
+     * @returns {UpdatePackageResults} information about how many files were updated, and how many failed.
+     */
+    updatePackage(location) {
+        /**
+         * @type {UpdatePackageResults}
+         */
+        let result = {filesUpdated:0, filesNotFound:0, foldersNotFound:0};
+        for (const obj of this._objects) {
+            if(obj.type == "Library" || obj.type == "Program" || obj.type == "Package")
+            {
+                /**
+                 * @type {UpdatePackageResults}
+                 */
+                let objResult = obj._object._updatePackage(path.join(location,this._folderName));
+                result.filesNotFound += objResult.filesNotFound;
+                result.filesUpdated += objResult.filesUpdated;
+                result.foldersNotFound += objResult.foldersNotFound;
+            }
+        }
+        return result;
     }
 
     /**

@@ -18,9 +18,10 @@ const isDebugMode = () => process.env.VSCODE_DEBUG_MODE === "true";
 
 const { ExosPkg } = require('./src/exospkg')
 const { Datamodel, DatatypeListItem } = require('./src/datamodel');
-const { ExosComponentC } = require('./src/components/exoscomponent_c');
-const { ExosComponentNAPI } = require('./src/components/exoscomponent_napi');
-const { ExosComponentSWIG } = require('./src/components/exoscomponent_swig');
+const { UpdateComponentResults } = require('./src/components/exoscomponent');
+const { ExosComponentC, ExosComponentCUpdate } = require('./src/components/exoscomponent_c');
+const { ExosComponentNAPI, ExosComponentNAPIUpdate } = require('./src/components/exoscomponent_napi');
+const { ExosComponentSWIG, ExosComponentSWIGUpdate } = require('./src/components/exoscomponent_swig');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -45,8 +46,6 @@ function activate(context) {
 	// The commandId parameter must match the command field in package.json
 
 	let createComponent = vscode.commands.registerCommand('exos-component-extension.createComponent', function (uri) {
-
-		
 
 		function createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, destination) {
 			function convertLabel2Teplate(label) {
@@ -262,8 +261,78 @@ function activate(context) {
 			vscode.window.showErrorMessage(error);	
 		}
 	});
-
 	context.subscriptions.push(updateExosPkg);
+
+	let updateComponent = vscode.commands.registerCommand('exos-component-extension.updateComponent', function (uri) {
+		let exospkg = new ExosPkg();
+		let result = exospkg.parseFile(uri.fsPath);
+		
+		if(result.fileParsed == true && result.parseErrors == 0) 
+		{
+			if(result.componentFound == true) {
+				console.log(exospkg.componentOptions);
+				console.log(exospkg.componentClass);
+
+				/**
+				 * @type {UpdateComponentResults}
+				 */
+				let results = {};
+				let componentName = "";
+				switch(exospkg.componentClass) {
+					case "ExosComponentC":
+						{
+							let component = new ExosComponentCUpdate(uri.fsPath);
+							componentName = component._name;
+							results = component.updateComponent();
+						}
+						break;
+					case "ExosComponentNAPI":
+						{
+							let component = new ExosComponentNAPIUpdate(uri.fsPath);
+							componentName = component._name;
+							results = component.updateComponent();
+						}
+						break;
+					case "ExosComponentSWIG":
+						{
+							let component = new ExosComponentSWIGUpdate(uri.fsPath);
+							componentName = component._name;
+							results = component.updateComponent();
+						}
+						break;
+					default:
+						vscode.window.showErrorMessage(`Component can not be updated: class ${exospkg.componentClass} can not be found`);
+						return;
+				}
+
+				if(results.parseResults.componentErrors.length > 0) {
+					vscode.window.showErrorMessage(`Component ${componentName} can not be updated: Errors encountered during update`);
+					for(let error of results.parseResults.componentErrors) {
+						vscode.window.showErrorMessage(error);
+					}
+				}
+				else {
+					vscode.window.showInformationMessage(`Component ${componentName} updated - ${results.updateResults.filesUpdated} files updated`);
+
+					if(results.updateResults.filesNotFound > 0) {
+						vscode.window.showErrorMessage(`During the update, ${results.updateResults.filesNotFound} files could not be found`);
+					}
+
+					if(results.updateResults.foldersNotFound > 0) {
+						vscode.window.showErrorMessage(`During the update, ${results.updateResults.foldersNotFound} folders could not be found`);
+					}
+				}
+
+			}
+			else {
+				vscode.window.showErrorMessage(`Component can not be updated: missing ComponentGenerator entries`);	
+			}
+		}
+		else {
+			vscode.window.showErrorMessage(`File ${path.basename(uri.fsPath)} can not be parsed! Parse errors: ${result.parseErrors}`);
+		}
+	});
+	context.subscriptions.push(updateComponent);
 
 	let generateTemplate = vscode.commands.registerCommand('exos-component-extension.generateTemplate', function (uri) {
 		// The code you place here will be executed every time your command is executed

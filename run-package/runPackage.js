@@ -130,6 +130,20 @@ const {spawn} = require('child_process');
 const path = require('path');
 const os = require('os');
 
+/*
+add this to package.json
+        {
+					"when": "filesExplorerFocus && resourceExtname == .exospkg",
+					"command": "exos-component-extension.runPackage",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .exospkg",
+					"command": "exos-component-extension.buildPackage",
+					"group": "2_workspace"
+				},
+
+*/
 class runPackage
 {
     //trows exceptions

@@ -1,11 +1,10 @@
 const { TemplateLinuxBuild } = require('./templates/linux/template_linux_build');
 const { TemplateLinuxNAPI } = require('./templates/linux/template_linux_napi');
-const { ExosComponentAR } = require('./exoscomponent_ar');
+const { ExosComponentAR, ExosComponentARUpdate } = require('./exoscomponent_ar');
+const { EXOS_COMPONENT_VERSION } = require("./exoscomponent");
 const { ExosPkg } = require('../exospkg');
 
 const path = require('path');
-
-const EXOS_COMPONENT_NAPI_VERSION = "1.0.0"
 
 /**
  * @typedef {Object} ExosComponentNAPIOptions
@@ -101,10 +100,26 @@ class ExosComponentNAPI extends ExosComponentAR {
         this._linuxPackage.addNewTransferFileObj(this._templateNAPI.indexJs, "Restart");
         this._exospackage.exospkg.addDatamodelInstance(`${this._templateAR.template.datamodelInstanceName}`);
 
-        this._exospackage.exospkg.setComponentGenerator("ExosComponentNAPI", EXOS_COMPONENT_NAPI_VERSION, ExosPkg.getComponentOptions(this._options));
+        this._exospackage.exospkg.setComponentGenerator("ExosComponentNAPI", EXOS_COMPONENT_VERSION, []);
 
         super.makeComponent(location);
     }
+}
+
+class ExosComponentNAPIUpdate extends ExosComponentARUpdate {
+
+    /**
+     * Update class for N-API applications, only updates the sourcefile of the datamodel-wrapper
+     * @param {string} exospkgFileName absolute path to the .exospkg file stored on disk
+     */
+     constructor(exospkgFileName) {
+        super(exospkgFileName);
+     
+        if(this._exosPkgParseResults.componentFound == true && this._exosPkgParseResults.componentErrors.length == 0) {
+            this._templateNAPI = new TemplateLinuxNAPI(this._datamodel);
+            this._linuxPackage.addNewFileObj(this._linuxBuild, this._templateNAPI.librarySource);
+        }
+     }
 }
 
 if (require.main === module) {
@@ -128,4 +143,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = {ExosComponentNAPI};
+module.exports = {ExosComponentNAPI, ExosComponentNAPIUpdate};

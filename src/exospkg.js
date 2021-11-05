@@ -14,10 +14,12 @@ const EXOSPKG_VERSION = "1.1.0";
 
 /**
  * 
- * @typedef ExosPkgOpenFileResult
+ * @typedef ExosPkgParseFileResults
  * @property {number} parseErrors number of errors occured while parsing
  * @property {string} originalVersion the original version of the file, empty if no version could be found
  * @property {boolean} fileParsed whether or not the ExosPkg class could be populated
+ * @property {boolean} componentFound set if the .exospkgFile if the ComponentGenerator section is found, and the corresopinding `component..` fields have been populated
+ * @property {string[]} componentErrors list of errors that occured within the different Component classes when creating components from the ComponentGenerator section
  * 
  * @typedef ExosPkgComponentGeneratorOption
  * @property {string} name component specific name for this option
@@ -39,8 +41,11 @@ const EXOSPKG_VERSION = "1.1.0";
     componentVersion;
 
     /**
-     * Component specific options from the generator
-     * @type {ExosPkgComponentGeneratorOption[]}
+     * Component specific options from the generator. This is stored as a normal object for simpler access, meaning
+     * if the option `{name:'length', value:'10'}` is set via {@link setComponentGenerator} or {@link addGeneratorOption},
+     * then this option is retrieved via `componentOptions.length`
+     * 
+     * @type {object}
      */
     componentOptions;
 
@@ -79,7 +84,7 @@ const EXOSPKG_VERSION = "1.1.0";
         this._restartEvent = undefined;
         this.componentClass = undefined;
         this.componentVersion = undefined;
-        this.componentOptions = [];
+        this.componentOptions = {};
     }
 
     set startupTimeout(value) {
@@ -134,19 +139,23 @@ const EXOSPKG_VERSION = "1.1.0";
      * or simply to get a data representation of the current .exospkg file
      * 
      * @param {string} fileName 
-     * @returns {ExosPkgOpenFileResult} results of parsing the file
+     * @returns {ExosPkgParseFileResults} results of parsing the file
      */
     parseFile(fileName) {
 
+        /**
+         * @type {ExosPkgParseFileResults}
+         */
+        let parseResults = {parseErrors:0, originalVersion:"", fileParsed:false, componentFound:false, componentErrors:[]};
         let exosPkgFileContents = fs.readFileSync(fileName).toString();
         let exosPkgJson = parser(exosPkgFileContents);
 
         if(!exosPkgJson.root || !exosPkgJson.root.attributes || !exosPkgJson.root.attributes.Version) {
-            return {parseErrors:0, originalVersion:"", fileParsed:false};
+            return parseResults;
         }
 
         this._initialize();
-        let parseErrors = 0;
+        parseResults.originalVersion = exosPkgJson.root.attributes.Version;
 
         switch(exosPkgJson.root.attributes.Version) {
             case "1.1.0":
@@ -157,13 +166,16 @@ const EXOSPKG_VERSION = "1.1.0";
                 if(exosPkgJson.root.attributes.StartupTimeout) {
                     this.startupTimeout = exosPkgJson.root.attributes.StartupTimeout;
                 }
+
+                parseResults.fileParsed = true;
+
                 if(!exosPkgJson.root.children)
                     break;
                 
                 for(let child of exosPkgJson.root.children) {
                     if(child.name == "File") {
                         if(!child.attributes || !child.attributes.FileName) {
-                            parseErrors ++;
+                            parseResults.parseErrors ++;
                             continue;
                         }
                         let changeEvent = "Ignore";
@@ -174,7 +186,7 @@ const EXOSPKG_VERSION = "1.1.0";
                     }
                     else if(child.name == "Service") {
                         if(!child.attributes || !child.attributes.Type || !child.attributes.Command) {
-                            parseErrors ++;
+                            parseResults.parseErrors ++;
                             continue;
                         }
 
@@ -183,14 +195,14 @@ const EXOSPKG_VERSION = "1.1.0";
                     }
                     else if(child.name == "DatamodelInstance") {
                         if(!child.attributes || !child.attributes.Name) {
-                            parseErrors ++;
+                            parseResults.parseErrors ++;
                             continue;
                         }
                         this.addDatamodelInstance(child.attributes.Name);
                     }
                     else if(child.name == "ComponentGenerator") {
                         if(!child.attributes || !child.attributes.Class || !child.attributes.Version) {
-                            parseErrors ++;
+                            parseResults.parseErrors ++;
                             continue;
                         }
                         let options = [];
@@ -202,6 +214,7 @@ const EXOSPKG_VERSION = "1.1.0";
                             }
                         }
                         this.setComponentGenerator(child.attributes.Class, child.attributes.Version, options);
+                        parseResults.componentFound = true;
                     }
                     else if (child.name == "Build") {
                         if(!child.children)
@@ -209,7 +222,7 @@ const EXOSPKG_VERSION = "1.1.0";
                         for (let build of child.children) {
                             if(build.name == "GenerateDatamodel") {
                                 if(!build.attributes || !build.attributes.FileName || !build.attributes.TypeName) {
-                                    parseErrors ++;
+                                    parseResults.parseErrors ++;
                                     continue;
                                 }
                                 let SG4Includes = [];
@@ -218,14 +231,14 @@ const EXOSPKG_VERSION = "1.1.0";
                                     for(let args of build.children) {
                                         if(args.name == "SG4") {
                                             if(!args.attributes || !args.attributes.Include) {
-                                                parseErrors ++;
+                                                parseResults.parseErrors ++;
                                                 continue;
                                             }
                                             SG4Includes.push(args.attributes.Include);
                                         }
                                         else if(args.name == "Output") {
                                             if(!args.attributes || !args.attributes.Path) {
-                                                parseErrors ++;
+                                                parseResults.parseErrors ++;
                                                 continue;
                                             }
                                             outputPaths.push(args.attributes.Path);
@@ -236,7 +249,7 @@ const EXOSPKG_VERSION = "1.1.0";
                             }
                             else if(build.name == "BuildCommand") {
                                 if(!build.attributes || !build.attributes.Command || !build.attributes.WorkingDirectory || !build.attributes.Arguments) {
-                                    parseErrors ++;
+                                    parseResults.parseErrors ++;
                                     continue;
                                 }
                                 let builder = this.getNewBuildCommand(build.attributes.Command, build.attributes.WorkingDirectory, build.attributes.Arguments);
@@ -244,7 +257,7 @@ const EXOSPKG_VERSION = "1.1.0";
                                     for(let dep of build.children) {
                                         if (dep.name == "Dependency") {
                                             if(!dep.attributes || !dep.attributes.FileName) {
-                                                parseErrors ++;
+                                                parseResults.parseErrors ++;
                                                 continue;
                                             }
                                             this.addBuildDependency(builder, dep.attributes.FileName);
@@ -255,7 +268,7 @@ const EXOSPKG_VERSION = "1.1.0";
                         }
                     }
                 }
-                return {parseErrors:parseErrors, originalVersion:exosPkgJson.root.attributes.Version, fileParsed:true};
+                break;
     
             case "1.0.0":
                 //we have an old version
@@ -277,20 +290,23 @@ const EXOSPKG_VERSION = "1.1.0";
                     this.startupTimeout = exosPkgJson.root.attributes.StartupTimeout;
                 }
 
+                parseResults.fileParsed = true;
+
                 if(!exosPkgJson.root.children)
                     break;
+
                 for(let child of exosPkgJson.root.children) {
                     //check for files
                     if(child.name == "File") {
                         if(!child.attributes || !child.attributes.FileName) {
-                            parseErrors ++;
+                            parseResults.parseErrors ++;
                             continue;
                         }
                         
                         //check if it is the special .deb thing
                         if(child.attributes.FileName.endsWith(".deb")) {
                             if(!child.attributes.Name) {
-                                parseErrors ++;
+                                parseResults.parseErrors ++;
                                 continue;
                             }
                             this.addFile(child.attributes.FileName,"Reinstall");
@@ -307,7 +323,7 @@ const EXOSPKG_VERSION = "1.1.0";
                     //check for runtime services
                     else if(child.name == "Service") {
                         if(!child.attributes || !child.attributes.Executable) {
-                            parseErrors ++;
+                            parseResults.parseErrors ++;
                             continue;
                         }
 
@@ -322,7 +338,7 @@ const EXOSPKG_VERSION = "1.1.0";
                     //check for other services
                     else if(child.Name == "Installation") {
                         if(!child.attributes || !child.attributes.Type || !child.attributes.Command) {
-                            parseErrors ++;
+                            parseResults.parseErrors ++;
                             continue;
                         }
                         
@@ -346,7 +362,7 @@ const EXOSPKG_VERSION = "1.1.0";
                     }
                     else if(child.name == "DatamodelInstance") {
                         if(!child.attributes || !child.attributes.Name) {
-                            parseErrors ++;
+                            parseResults.parseErrors ++;
                             continue;
                         }
                         this.addDatamodelInstance(child.attributes.Name);
@@ -357,7 +373,7 @@ const EXOSPKG_VERSION = "1.1.0";
                         for (let build of child.children) {
                             if(build.name == "GenerateHeader" || build.name == "GenerateDatamodel") { //we have a strange mix here.. allow both
                                 if(!build.attributes || !build.attributes.FileName || !build.attributes.TypeName) {
-                                    parseErrors ++;
+                                    parseResults.parseErrors ++;
                                     continue;
                                 }
                                 let SG4Includes = [];
@@ -366,14 +382,14 @@ const EXOSPKG_VERSION = "1.1.0";
                                     for(let args of build.children) {
                                         if(args.name == "SG4") {
                                             if(!args.attributes || !args.attributes.Include) {
-                                                parseErrors ++;
+                                                parseResults.parseErrors ++;
                                                 continue;
                                             }
                                             SG4Includes.push(args.attributes.Include);
                                         }
                                         else if(args.name == "Output") {
                                             if(!args.attributes || !args.attributes.Path) {
-                                                parseErrors ++;
+                                                parseResults.parseErrors ++;
                                                 continue;
                                             }
                                             outputPaths.push(args.attributes.Path);
@@ -384,7 +400,7 @@ const EXOSPKG_VERSION = "1.1.0";
                             }
                             else if(build.name == "BuildCommand") {
                                 if(!build.attributes || !build.attributes.Command || !build.attributes.WorkingDirectory || !build.attributes.Arguments) {
-                                    parseErrors ++;
+                                    parseResults.parseErrors ++;
                                     continue;
                                 }
                                 let builder = this.getNewBuildCommand(build.attributes.Command, build.attributes.WorkingDirectory, build.attributes.Arguments);
@@ -392,7 +408,7 @@ const EXOSPKG_VERSION = "1.1.0";
                                     for(let dep of build.children) {
                                         if (dep.name == "Dependency") {
                                             if(!dep.attributes || !dep.attributes.FileName) {
-                                                parseErrors ++;
+                                                parseResults.parseErrors ++;
                                                 continue;
                                             }
                                             this.addBuildDependency(builder, dep.attributes.FileName);
@@ -403,11 +419,13 @@ const EXOSPKG_VERSION = "1.1.0";
                         }
                     }
                 }
-                return {parseErrors:parseErrors, originalVersion:exosPkgJson.root.attributes.Version, fileParsed:true};
+                break;
             
             default:
-                return {parseErrors:0, originalVersion:exosPkgJson.root.attributes.Version, fileParsed:false};
+                break;
         }
+
+        return parseResults;
     }
 
 
@@ -563,16 +581,16 @@ const EXOSPKG_VERSION = "1.1.0";
      * //[{name:'width', value:'10'},{name:'flat', value:'true'}]
      * 
      * @param {object} optionObject any kind of flat option structure, with members
-     * @returns {ExosPkgComponentGeneratorOption[]} componentOptions list that can be used in the {@linkcode setComponentGenerator}
+     * @returns {ExosPkgComponentGeneratorOption[]} componentOptions list that can be used in the {@linkcode setComponentGenerator} or {@linkcode addGeneratorOption}
      */
     static getComponentOptions(optionObject) {
         let options = [];
 
-        for(const [key, value] of Object.entries(optionObject))
+        for(const [name, value] of Object.entries(optionObject))
         {
             //dont push undefined members (keys) in the options array
             if(value) {
-                options.push({name:key,value:value.toString()});
+                options.push({name:name,value:value.toString()});
             }
         }
 
@@ -592,7 +610,8 @@ const EXOSPKG_VERSION = "1.1.0";
      */
     addGeneratorOption(name, value) {
         if(name && value) {
-            this.componentOptions.push({name:name,value:value.toString()});
+
+            this.componentOptions[name] = value.toString();
         }
     }
 
@@ -623,7 +642,11 @@ const EXOSPKG_VERSION = "1.1.0";
 
         this.componentClass = componentClass;
         this.componentVersion = componentVersion;
-        this.componentOptions = componentOptions;
+        for(let option of componentOptions) {
+            if(option.name && option.value) {
+                this.componentOptions[option.name] = option.value.toString();
+            }
+        }
     }
 
 
@@ -694,9 +717,9 @@ const EXOSPKG_VERSION = "1.1.0";
         if(this.componentClass && this.componentVersion) {
             out += `    <!-- ComponentGenerator info - do not change! -->\n`;
             out += `    <ComponentGenerator Class="${this.componentClass}" Version="${this.componentVersion}">\n`;
-            for(let option of this.componentOptions) {
-                if(option.name && option.value) {
-                    out += `        <Option Name="${option.name}" Value="${option.value}"/>\n`;
+            for(const [name, value] of Object.entries(this.componentOptions)) {
+                if(name && value) {
+                    out += `        <Option Name="${name}" Value="${value}"/>\n`;
                 }
             }
             out += `    </ComponentGenerator>\n`;

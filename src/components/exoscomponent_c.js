@@ -2,12 +2,11 @@ const { TemplateLinuxC } = require('./templates/linux/template_linux_c');
 const { TemplateLinuxStaticCLib } = require('./templates/linux/template_linux_static_c_lib');
 const { TemplateLinuxCpp } = require('./templates/linux/template_linux_cpp');
 const { BuildOptions } = require('./templates/linux/template_linux_build');
-const { ExosComponentAR } = require('./exoscomponent_ar');
+const { ExosComponentAR, ExosComponentARUpdate } = require('./exoscomponent_ar');
+const { EXOS_COMPONENT_VERSION } = require("./exoscomponent");
 const { ExosPkg } = require('../exospkg');
 
 const path = require('path');
-
-const EXOS_COMPONENT_C_VERSION = "1.0.0"
 
 /**
  * @typedef {Object} ExosComponentCOptions
@@ -141,9 +140,62 @@ class ExosComponentC extends ExosComponentAR {
 
         this._exospackage.exospkg.addDatamodelInstance(`${this._templateAR.template.datamodelInstanceName}`);
 
-        this._exospackage.exospkg.setComponentGenerator("ExosComponentC", EXOS_COMPONENT_C_VERSION, ExosPkg.getComponentOptions(this._options));
+        this._exospackage.exospkg.setComponentGenerator("ExosComponentC", EXOS_COMPONENT_VERSION, []);
+        this._exospackage.exospkg.addGeneratorOption("templateLinux",this._options.templateLinux);
+
 
         super.makeComponent(location);
+    }
+}
+
+class ExosComponentCUpdate extends ExosComponentARUpdate {
+
+    /**
+     * @type {TemplateLinuxStaticCLib | TemplateLinuxCpp | TemplateLinuxC}
+     */
+    _templateLinux;
+
+    /**
+     * @type {ExosComponentCOptions}
+     */
+    _options;
+
+    /**
+     * Update class for Linux C/C++ applications, only updates the sourcefiles of the datamodel-wrappers
+     * @param {string} exospkgFileName absolute path to the .exospkg file stored on disk
+     */
+    constructor(exospkgFileName) {
+        super(exospkgFileName);
+     
+        if(this._exosPkgParseResults.componentFound == true && this._exosPkgParseResults.componentErrors.length == 0) {
+            if(this._exospackage.exospkg.componentOptions.templateLinux) {
+                this._options = {packaging: "", destinationDirectory: "", templateAR: "", templateLinux: this._exospackage.exospkg.componentOptions.templateLinux};
+               
+                switch(this._options.templateLinux)
+                {
+                    case "c-static":
+                        this._templateLinux = new TemplateLinuxStaticCLib(this._datamodel);
+                        this._linuxPackage.addNewFileObj(this._templateLinux.staticLibraryHeader);
+                        this._linuxPackage.addNewFileObj(this._templateLinux.staticLibrarySource);
+                        break;
+                    case "cpp":
+                        this._templateLinux = new TemplateLinuxCpp(this._datamodel);
+                        this._linuxPackage.addNewFileObj(this._templateLinux.datasetHeader);
+                        this._linuxPackage.addNewFileObj(this._templateLinux.datamodelHeader);
+                        this._linuxPackage.addNewFileObj(this._templateLinux.datamodelSource);
+                        this._linuxPackage.addNewFileObj(this._templateLinux.loggerHeader);
+                        this._linuxPackage.addNewFileObj(this._templateLinux.loggerSource);
+                        break;
+                    case "c-api":
+                    default:
+                        break;
+                }
+                
+            }
+            else {
+                this._exosPkgParseResults.componentErrors.push("ExosComponentCUpdate: missing option: templateLinux");
+            }
+        }
     }
 }
 
@@ -160,14 +212,17 @@ if (require.main === module) {
         let outDir = path.join(__dirname,path.dirname(fileName));
 
         process.stdout.write(`Writing ${structName} to folder: ${outDir}\n`);
-        template.options.generateLinuxStaticLib = true;
-        template.options.generateARStaticLib = true;
         
-        template.makeComponent(outDir);     
+        template.makeComponent(outDir);
+
+        let updater = new ExosComponentCUpdate(path.join(outDir,structName,`${structName}.exospkg`));
+        let results  = updater.updateComponent();
+        console.log(results);
+
     }
     else {
-        process.stderr.write("usage: ./exoscomponent_c_template.js <filename.typ> <structname>\n");
+        process.stderr.write("usage: ./exoscomponent_c.js <filename.typ> <structname>\n");
     }
 }
 
-module.exports = {ExosComponentC};
+module.exports = {ExosComponentC, ExosComponentCUpdate};
