@@ -6,7 +6,7 @@ const { Datamodel } = require('../datamodel');
 const path = require('path')
 const fs = require('fs')
 
-const EXOS_COMPONENT_VERSION = "1.0.0"
+const EXOS_COMPONENT_VERSION = "2.0.0"
 
 class Component {
 
@@ -119,6 +119,8 @@ class ComponentUpdate {
      * @returns {UpdateComponentResults} information refagarding the update
      */
     updateComponent(createFiles) {
+        this._exospackage.exospkg.addGeneratorOption("ComponentUpdate",EXOS_COMPONENT_VERSION);
+
         if(this._exosPkgParseResults.componentFound == true && this._exosPkgParseResults.componentErrors.length == 0) {
             return {parseResults:this._exosPkgParseResults, updateResults: this._exospackage.updatePackage(this._location, createFiles)};
         }

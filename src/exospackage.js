@@ -642,6 +642,11 @@ class ExosPackage extends Package {
          * @type {UpdatePackageResults}
          */
         let result = {filesUpdated:0, filesNotFound:0, foldersNotFound:0};
+        
+        this._exosPkgFile.contents = this._exosPkg.getContents();
+
+        this._updatePackage(location, createFiles);
+
         for (const obj of this._objects) {
             if(obj.type == "Library" || obj.type == "Program" || obj.type == "Package")
             {

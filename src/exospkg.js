@@ -10,7 +10,7 @@ if (!Array.prototype.last){
     };
 };
 
-const EXOSPKG_VERSION = "1.1.0";
+const EXOSPKG_VERSION = "2.0.0";
 
 /**
  * 
@@ -163,6 +163,7 @@ const EXOSPKG_VERSION = "1.1.0";
 
         switch(exosPkgJson.root.attributes.Version) {
             case "1.1.0":
+            case "2.0.0":
                 //TODO populate after new syntax
                 if(exosPkgJson.root.attributes.ErrorHandling) {
                     this.errorHandling = exosPkgJson.root.attributes.ErrorHandling;
