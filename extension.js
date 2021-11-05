@@ -270,58 +270,68 @@ function activate(context) {
 		if(result.fileParsed == true && result.parseErrors == 0) 
 		{
 			if(result.componentFound == true) {
-				console.log(exospkg.componentOptions);
-				console.log(exospkg.componentClass);
+				
+				let pickForceOption = []
+				pickForceOption.push({label: "Update", detail: "Update existing files"});
+				pickForceOption.push({label: "Force Update", detail: "Update existing files, and create files if they do not exist"});
 
-				/**
-				 * @type {UpdateComponentResults}
-				 */
-				let results = {};
-				let componentName = "";
-				switch(exospkg.componentClass) {
-					case "ExosComponentC":
-						{
-							let component = new ExosComponentCUpdate(uri.fsPath);
-							componentName = component._name;
-							results = component.updateComponent();
-						}
-						break;
-					case "ExosComponentNAPI":
-						{
-							let component = new ExosComponentNAPIUpdate(uri.fsPath);
-							componentName = component._name;
-							results = component.updateComponent();
-						}
-						break;
-					case "ExosComponentSWIG":
-						{
-							let component = new ExosComponentSWIGUpdate(uri.fsPath);
-							componentName = component._name;
-							results = component.updateComponent();
-						}
-						break;
-					default:
-						vscode.window.showErrorMessage(`Component can not be updated: class ${exospkg.componentClass} can not be found`);
-						return;
-				}
+				vscode.window.showQuickPick(pickForceOption,{title:"Select datatype which becomes the new component datamodel"}).then(selectedForceOption => {
 
-				if(results.parseResults.componentErrors.length > 0) {
-					vscode.window.showErrorMessage(`Component ${componentName} can not be updated: Errors encountered during update`);
-					for(let error of results.parseResults.componentErrors) {
-						vscode.window.showErrorMessage(error);
-					}
-				}
-				else {
-					vscode.window.showInformationMessage(`Component ${componentName} updated - ${results.updateResults.filesUpdated} files updated`);
-
-					if(results.updateResults.filesNotFound > 0) {
-						vscode.window.showErrorMessage(`During the update, ${results.updateResults.filesNotFound} files could not be found`);
+					let force = false;
+					if(selectedForceOption.label == "Force Update") {
+						force = true;
 					}
 
-					if(results.updateResults.foldersNotFound > 0) {
-						vscode.window.showErrorMessage(`During the update, ${results.updateResults.foldersNotFound} folders could not be found`);
+					/**
+					 * @type {UpdateComponentResults}
+					 */
+					let results = {};
+					let componentName = "";
+					switch(exospkg.componentClass) {
+						case "ExosComponentC":
+							{
+								let component = new ExosComponentCUpdate(uri.fsPath);
+								componentName = component._name;
+								results = component.updateComponent(force);
+							}
+							break;
+						case "ExosComponentNAPI":
+							{
+								let component = new ExosComponentNAPIUpdate(uri.fsPath);
+								componentName = component._name;
+								results = component.updateComponent(force);
+							}
+							break;
+						case "ExosComponentSWIG":
+							{
+								let component = new ExosComponentSWIGUpdate(uri.fsPath);
+								componentName = component._name;
+								results = component.updateComponent(force);
+							}
+							break;
+						default:
+							vscode.window.showErrorMessage(`Component can not be updated: class ${exospkg.componentClass} can not be found`);
+							return;
 					}
-				}
+
+					if(results.parseResults.componentErrors.length > 0) {
+						vscode.window.showErrorMessage(`Component ${componentName} can not be updated: Errors encountered during update`);
+						for(let error of results.parseResults.componentErrors) {
+							vscode.window.showErrorMessage(error);
+						}
+					}
+					else {
+						vscode.window.showInformationMessage(`Component ${componentName} updated - ${results.updateResults.filesUpdated} files updated`);
+
+						if(results.updateResults.filesNotFound > 0) {
+							vscode.window.showErrorMessage(`During the update, ${results.updateResults.filesNotFound} files could not be found`);
+						}
+
+						if(results.updateResults.foldersNotFound > 0) {
+							vscode.window.showErrorMessage(`During the update, ${results.updateResults.foldersNotFound} folders could not be found`);
+						}
+					}
+				});
 
 			}
 			else {

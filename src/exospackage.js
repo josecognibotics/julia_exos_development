@@ -153,9 +153,12 @@ class Package {
      * NOT including Package.pkg or or ANSIC.lby etc, because these are not entirely controlled
      * by the Package if its just being updated, meaning the pkg/lby/iec files can have been
      * changed in AS, and we dont know about that here 
+     * 
+     * @param {boolean} createFiles create files if they do not yet exist (dont create folders)
+     * 
      * @returns {UpdatePackageResults} Information about this update (files updated, files found..)
      */
-    _updatePackage(location) {
+    _updatePackage(location, createFiles) {
         /**
          * @type {UpdatePackageResults}
          */
@@ -165,7 +168,7 @@ class Package {
                 if(obj.type == "File") {
                     
                     //update the file if it exists
-                    if(fs.existsSync(path.join(location,this._folderName,obj.name))) {
+                    if(createFiles || fs.existsSync(path.join(location,this._folderName,obj.name))) {
                         fs.writeFileSync(path.join(location,this._folderName,obj.name), obj.contents);
                         result.filesUpdated++;
                     }
@@ -622,9 +625,11 @@ class ExosPackage extends Package {
      * for example `C:\Temp` if we previously created a `MyPackage` there with the contents in `C:\Temp\MyPackage`
      * 
      * @param {string} location path where this package and all its sub packages (folders + files) is located
+     * @param {boolean} createFiles create files if they do not yet exist (dont create folders)
+     * 
      * @returns {UpdatePackageResults} information about how many files were updated, and how many failed.
      */
-    updatePackage(location) {
+    updatePackage(location, createFiles) {
         /**
          * @type {UpdatePackageResults}
          */
@@ -635,7 +640,7 @@ class ExosPackage extends Package {
                 /**
                  * @type {UpdatePackageResults}
                  */
-                let objResult = obj._object._updatePackage(path.join(location,this._folderName));
+                let objResult = obj._object._updatePackage(path.join(location,this._folderName), createFiles);
                 result.filesNotFound += objResult.filesNotFound;
                 result.filesUpdated += objResult.filesUpdated;
                 result.foldersNotFound += objResult.foldersNotFound;

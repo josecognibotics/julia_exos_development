@@ -114,11 +114,13 @@ class ComponentUpdate {
      *      }
      * }
      * 
+     * @param {boolean} createFiles create files if they do not yet exist (dont create folders)
+     * 
      * @returns {UpdateComponentResults} information refagarding the update
      */
-    updateComponent() {
+    updateComponent(createFiles) {
         if(this._exosPkgParseResults.componentFound == true && this._exosPkgParseResults.componentErrors.length == 0) {
-            return {parseResults:this._exosPkgParseResults, updateResults: this._exospackage.updatePackage(this._location)};
+            return {parseResults:this._exosPkgParseResults, updateResults: this._exospackage.updatePackage(this._location, createFiles)};
         }
         else {
             return {parseResults:this._exosPkgParseResults, updateResults: {filesNotFound:0, filesUpdated:0, foldersNotFound:0}};
