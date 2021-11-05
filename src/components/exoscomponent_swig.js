@@ -74,10 +74,10 @@ class ExosComponentSWIG extends ExosComponentAR {
 
         this._templateBuild.makeBuildFiles();
 
-        this._linuxPackage.addNewBuildFileObj(this._linuxBuild,this._templateBuild.CMakeLists);
-        this._linuxPackage.addNewBuildFileObj(this._linuxBuild,this._templateBuild.buildScript);
+        this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateBuild.CMakeLists);
+        this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateBuild.buildScript);
         
-        this._linuxPackage.addNewTransferFileObj(this._templateSWIG.pythonMain,"Restart");
+        this._linuxPackage.addNewTransferFileObj(this._templateSWIG.pythonMain, "Restart");
 
         if(this._options.packaging == "deb") {
             this._linuxPackage.addExistingFile(this._templateBuild.options.swigPython.pyFileName, `${this._typeName} python module`);
@@ -104,17 +104,21 @@ class ExosComponentSWIGUpdate extends ExosComponentARUpdate {
     /**
      * Update class for SWIG applications, only updates the sourcefile of the datamodel-wrapper
      * @param {string} exospkgFileName absolute path to the .exospkg file stored on disk
+     * @param {boolean} reset update main application sources as well
      */
-     constructor(exospkgFileName) {
-        super(exospkgFileName);
+     constructor(exospkgFileName, reset) {
+        super(exospkgFileName, reset);
      
         if(this._exosPkgParseResults.componentFound == true && this._exosPkgParseResults.componentErrors.length == 0) {
             this._templateSWIG = new TemplateLinuxSWIG(this._datamodel);
 
             this._linuxPackage.addNewFileObj(this._templateSWIG.staticLibraryHeader);
             this._linuxPackage.addNewFileObj(this._templateSWIG.staticLibrarySource);
-            
             this._linuxPackage.addNewFileObj(this._templateSWIG.swigInclude);
+
+            if(reset) {
+                this._linuxPackage.addNewFileObj(this._templateSWIG.pythonMain);
+            }
         }
      }
 }

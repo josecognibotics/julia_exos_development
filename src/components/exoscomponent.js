@@ -325,9 +325,12 @@ class ExosComponentUpdate extends ComponentUpdate {
                 this._iecProgram = this._exospackage.getNewIECProgram(`${this._typeName.substr(0,10)}_0`,`${this._typeName} application`);
                 this._cLibrary = this._exospackage.getNewCLibrary(this._typeName.substr(0,10), `${this._typeName} exOS library`);
                 this._linuxPackage = this._exospackage.getNewLinuxPackage("Linux",`${this._typeName} Linux resources`);
+
+                this._cLibrary.addNewFileObj(this._datamodel.headerFile);
+                this._cLibrary.addNewFileObj(this._datamodel.sourceFile);
+                this._linuxPackage.addNewFileObj(this._datamodel.headerFile);
+                this._linuxPackage.addNewFileObj(this._datamodel.sourceFile);
             }
-
-
         }
 
     }

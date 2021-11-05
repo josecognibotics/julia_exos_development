@@ -163,9 +163,10 @@ class ExosComponentCUpdate extends ExosComponentARUpdate {
     /**
      * Update class for Linux C/C++ applications, only updates the sourcefiles of the datamodel-wrappers
      * @param {string} exospkgFileName absolute path to the .exospkg file stored on disk
+     * @param {boolean} reset update main application sources as well
      */
-    constructor(exospkgFileName) {
-        super(exospkgFileName);
+    constructor(exospkgFileName, reset) {
+        super(exospkgFileName, reset);
      
         if(this._exosPkgParseResults.componentFound == true && this._exosPkgParseResults.componentErrors.length == 0) {
             if(this._exospackage.exospkg.componentOptions.templateLinux) {
@@ -177,6 +178,9 @@ class ExosComponentCUpdate extends ExosComponentARUpdate {
                         this._templateLinux = new TemplateLinuxStaticCLib(this._datamodel);
                         this._linuxPackage.addNewFileObj(this._templateLinux.staticLibraryHeader);
                         this._linuxPackage.addNewFileObj(this._templateLinux.staticLibrarySource);
+                        if(reset) {
+                            this._linuxPackage.addNewFileObj(this._templateLinux.mainSource);
+                        }
                         break;
                     case "cpp":
                         this._templateLinux = new TemplateLinuxCpp(this._datamodel);
@@ -185,8 +189,15 @@ class ExosComponentCUpdate extends ExosComponentARUpdate {
                         this._linuxPackage.addNewFileObj(this._templateLinux.datamodelSource);
                         this._linuxPackage.addNewFileObj(this._templateLinux.loggerHeader);
                         this._linuxPackage.addNewFileObj(this._templateLinux.loggerSource);
+                        if(reset) {
+                            this._linuxPackage.addNewFileObj(this._templateLinux.mainSource);
+                        }
                         break;
                     case "c-api":
+                        if(reset) {
+                            this._templateLinux = new TemplateLinuxC(this._datamodel);
+                            this._linuxPackage.addNewFileObj(this._templateLinux.mainSource);
+                        }
                     default:
                         break;
                 }
@@ -215,7 +226,7 @@ if (require.main === module) {
         
         template.makeComponent(outDir);
 
-        let updater = new ExosComponentCUpdate(path.join(outDir,structName,`${structName}.exospkg`));
+        let updater = new ExosComponentCUpdate(path.join(outDir,structName,`${structName}.exospkg`),true);
         let results  = updater.updateComponent();
         console.log(results);
 

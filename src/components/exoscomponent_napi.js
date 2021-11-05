@@ -111,13 +111,18 @@ class ExosComponentNAPIUpdate extends ExosComponentARUpdate {
     /**
      * Update class for N-API applications, only updates the sourcefile of the datamodel-wrapper
      * @param {string} exospkgFileName absolute path to the .exospkg file stored on disk
+     * @param {boolean} reset update main application sources as well
+     * 
      */
-     constructor(exospkgFileName) {
-        super(exospkgFileName);
+     constructor(exospkgFileName, reset) {
+        super(exospkgFileName, reset);
      
         if(this._exosPkgParseResults.componentFound == true && this._exosPkgParseResults.componentErrors.length == 0) {
             this._templateNAPI = new TemplateLinuxNAPI(this._datamodel);
-            this._linuxPackage.addNewFileObj(this._linuxBuild, this._templateNAPI.librarySource);
+            this._linuxPackage.addNewFileObj(this._templateNAPI.librarySource);
+            if(reset) {
+                this._linuxPackage.addNewFileObj(this._templateNAPI.indexJs);
+            }
         }
      }
 }

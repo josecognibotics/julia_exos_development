@@ -296,14 +296,21 @@ function activate(context) {
 				let pickForceOption = []
 				pickForceOption.push({label: "Update", detail: "Update existing files"});
 				pickForceOption.push({label: "Force Update", detail: "Update existing files, and create files if they do not exist"});
+				pickForceOption.push({label: "Reset", detail: "Update existing files including main library/application sources"});
+				pickForceOption.push({label: "Force Reset", detail: "Update existing files including main library/application sources, and create files if they do not exist"});
 
 				vscode.window.showQuickPick(pickForceOption,{title:"Select datatype which becomes the new component datamodel"}).then(selectedForceOption => {
 
 					if(!selectedForceOption)
 						return;
 
+					let reset = false;
+					if(selectedForceOption.label.includes("Reset")) {
+						reset = true;
+					}
+
 					let force = false;
-					if(selectedForceOption.label == "Force Update") {
+					if(selectedForceOption.label.includes("Force")) {
 						force = true;
 					}
 
@@ -317,21 +324,21 @@ function activate(context) {
 						switch(exospkg.componentClass) {
 							case "ExosComponentC":
 								{
-									let component = new ExosComponentCUpdate(uri.fsPath);
+									let component = new ExosComponentCUpdate(uri.fsPath,reset);
 									componentName = component._name;
 									results = component.updateComponent(force);
 								}
 								break;
 							case "ExosComponentNAPI":
 								{
-									let component = new ExosComponentNAPIUpdate(uri.fsPath);
+									let component = new ExosComponentNAPIUpdate(uri.fsPath,reset);
 									componentName = component._name;
 									results = component.updateComponent(force);
 								}
 								break;
 							case "ExosComponentSWIG":
 								{
-									let component = new ExosComponentSWIGUpdate(uri.fsPath);
+									let component = new ExosComponentSWIGUpdate(uri.fsPath,reset);
 									componentName = component._name;
 									results = component.updateComponent(force);
 								}
@@ -367,7 +374,7 @@ function activate(context) {
 
 			}
 			else {
-				vscode.window.showErrorMessage(`Component can not be updated: missing ComponentGenerator entries`);	
+				vscode.window.showErrorMessage(`Component can not be updated: missing ComponentGenerator entry`);	
 			}
 		}
 		else {

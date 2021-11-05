@@ -86,7 +86,11 @@ class ExosComponentARUpdate extends ExosComponentUpdate {
      */
     _templateAR;
 
-    constructor(exospkgFileName) {
+    /**
+     * @param {string} exospkgFileName absolute path to the .exospkg file stored on disk
+     * @param {boolean} reset update main library sources as well
+     */
+    constructor(exospkgFileName, reset) {
         super(exospkgFileName);
 
         if(this._exosPkgParseResults.componentFound == true && this._exosPkgParseResults.componentErrors.length == 0) {
@@ -99,6 +103,9 @@ class ExosComponentARUpdate extends ExosComponentUpdate {
                         this._templateAR = new TemplateARStaticCLib(this._datamodel);
                         this._cLibrary.addNewFileObj(this._templateAR.staticLibraryHeader);
                         this._cLibrary.addNewFileObj(this._templateAR.staticLibrarySource);
+                        if(reset == true) {
+                            this._cLibrary.addNewFileObj(this._templateAR.librarySource);
+                        }        
                         break;
                     case "cpp":
                         this._templateAR = new TemplateARCpp(this._datamodel);
@@ -107,8 +114,15 @@ class ExosComponentARUpdate extends ExosComponentUpdate {
                         this._cLibrary.addNewFileObj(this._templateAR.datamodelSource);
                         this._cLibrary.addNewFileObj(this._templateAR.loggerHeader);
                         this._cLibrary.addNewFileObj(this._templateAR.loggerSource);
+                        if(reset == true) {
+                            this._cLibrary.addNewFileObj(this._templateAR.librarySource);
+                        }        
                         break;
                     case "c-api":
+                        if(reset == true) {
+                            this._templateAR = new TemplateARDynamic(this._datamodel);
+                            this._cLibrary.addNewFileObj(this._templateAR.librarySource);
+                        }     
                     default:
                         break;
                 }
