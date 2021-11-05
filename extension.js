@@ -22,6 +22,7 @@ const { UpdateComponentResults } = require('./src/components/exoscomponent');
 const { ExosComponentC, ExosComponentCUpdate } = require('./src/components/exoscomponent_c');
 const { ExosComponentNAPI, ExosComponentNAPIUpdate } = require('./src/components/exoscomponent_napi');
 const { ExosComponentSWIG, ExosComponentSWIGUpdate } = require('./src/components/exoscomponent_swig');
+const { isCatchClause } = require('typescript');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -101,42 +102,48 @@ function activate(context) {
 				return false;
 			}
 
-			switch(selectedLinuxType.label) {
-				case "C API":
-				case "C Interface":
-				case "C++ Class":
-					let templateC = new ExosComponentC(uri.fsPath, selectedStructure.label, {
-						packaging:selectedPackaging.label,
-						templateLinux:convertLabel2Teplate(selectedLinuxType.label), 
-						templateAR:convertLabel2Teplate(selectedASType.label),
-						destinationDirectory:destination
-					});
-					templateC.makeComponent(path.dirname(uri.fsPath));
-					break;
-				case "Python Module":
-					let templateSWIG = new ExosComponentSWIG(uri.fsPath, selectedStructure.label,{
-						packaging:selectedPackaging.label,
-						templateAR:convertLabel2Teplate(selectedASType.label),
-						destinationDirectory:destination
-					});
-					templateSWIG.makeComponent(path.dirname(uri.fsPath));
-					break;
-				case "JavaScript Module":
-					let templateNAPI = new ExosComponentNAPI(uri.fsPath, selectedStructure.label,{
-						packaging:selectedPackaging.label,
-						templateAR:convertLabel2Teplate(selectedASType.label),
-						destinationDirectory:destination
-					});
-					templateNAPI.makeComponent(path.dirname(uri.fsPath));
-					break;
-				default:
-					vscode.window.showErrorMessage(`The selected template for linux: ${selectedLinuxType.label} not found!`);
-					return;
+			try
+			{
+				switch(selectedLinuxType.label) {
+					case "C API":
+					case "C Interface":
+					case "C++ Class":
+						let templateC = new ExosComponentC(uri.fsPath, selectedStructure.label, {
+							packaging:selectedPackaging.label,
+							templateLinux:convertLabel2Teplate(selectedLinuxType.label), 
+							templateAR:convertLabel2Teplate(selectedASType.label),
+							destinationDirectory:destination
+						});
+						templateC.makeComponent(path.dirname(uri.fsPath));
+						break;
+					case "Python Module":
+						let templateSWIG = new ExosComponentSWIG(uri.fsPath, selectedStructure.label,{
+							packaging:selectedPackaging.label,
+							templateAR:convertLabel2Teplate(selectedASType.label),
+							destinationDirectory:destination
+						});
+						templateSWIG.makeComponent(path.dirname(uri.fsPath));
+						break;
+					case "JavaScript Module":
+						let templateNAPI = new ExosComponentNAPI(uri.fsPath, selectedStructure.label,{
+							packaging:selectedPackaging.label,
+							templateAR:convertLabel2Teplate(selectedASType.label),
+							destinationDirectory:destination
+						});
+						templateNAPI.makeComponent(path.dirname(uri.fsPath));
+						break;
+					default:
+						vscode.window.showErrorMessage(`The selected template for linux: ${selectedLinuxType.label} not found!`);
+						return;
+				}
+			
+				vscode.window.showInformationMessage(`Created component ${selectedStructure.label}`);
+				if(replaceTypWithPackage(uri.fsPath, selectedStructure.label)) {
+					vscode.window.showInformationMessage(`The file ${path.basename(uri.fsPath)} was replaced the ${selectedStructure.label} exOS package`);
+				}
 			}
-
-			vscode.window.showInformationMessage(`Created component ${selectedStructure.label}`);
-			if(replaceTypWithPackage(uri.fsPath, selectedStructure.label)) {
-				vscode.window.showInformationMessage(`The file ${path.basename(uri.fsPath)} was replaced the ${selectedStructure.label} exOS package`);
+			catch(error) {
+				vscode.window.showErrorMessage(error);
 			}
 
 		}
@@ -159,6 +166,9 @@ function activate(context) {
 			}
 			vscode.window.showQuickPick(pickStructureList,{title:"Select datatype which becomes the new component datamodel"}).then(selectedStructure => {
 
+				if(!selectedStructure)
+					return;
+
 				let pickASType = []
 				pickASType.push({label: "C API", detail:"AR C library direcly using the exOS C-API"});
 				if(selectedStructure.detail)
@@ -169,6 +179,9 @@ function activate(context) {
 
 				vscode.window.showQuickPick(pickASType,{title:`Using datamodel: ${selectedStructure.label} - Select which template to use for Automation Runtime`}).then(selectedASType => {
 					
+					if(!selectedASType)
+						return;
+
 					let pickLinuxType = [];
 					pickLinuxType.push({label: "C API", detail:"C application direcly using the exOS C-API"});
 					if(selectedStructure.detail) {
@@ -179,15 +192,24 @@ function activate(context) {
 					}
 					
 					vscode.window.showQuickPick(pickLinuxType,{title:`Using datamodel: ${selectedStructure.label} - Select which template to use for Linux`}).then(selectedLinuxType => {
+
+						if(!selectedLinuxType)
+							return;
 					
 						let pickPackaging = [];
 						pickPackaging.push({label: "none", detail:"No packaging - files will run in the deployment folder on the target"});
 						pickPackaging.push({label: "deb", detail:"Debian package - files will be packed and extracted at a given destination folder"});
 
 						vscode.window.showQuickPick(pickPackaging,{title:`Select which packaging to use for Linux files`}).then(selectedPackaging => {
+
+							if(!selectedPackaging)
+								return;
 						
 							if(selectedPackaging.label == "deb") {
 								vscode.window.showInputBox({prompt:"Set the .deb package destination folder on the target:", value:`/home/user/${selectedStructure.label.toLowerCase()}`}).then(destination => {
+									if(!destination)
+										return;
+
 									createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, destination);
 								});
 							}
@@ -277,59 +299,69 @@ function activate(context) {
 
 				vscode.window.showQuickPick(pickForceOption,{title:"Select datatype which becomes the new component datamodel"}).then(selectedForceOption => {
 
+					if(!selectedForceOption)
+						return;
+
 					let force = false;
 					if(selectedForceOption.label == "Force Update") {
 						force = true;
 					}
 
-					/**
-					 * @type {UpdateComponentResults}
-					 */
-					let results = {};
-					let componentName = "";
-					switch(exospkg.componentClass) {
-						case "ExosComponentC":
-							{
-								let component = new ExosComponentCUpdate(uri.fsPath);
-								componentName = component._name;
-								results = component.updateComponent(force);
+					try {
+				
+						/**
+						 * @type {UpdateComponentResults}
+						 */
+						let results = {};
+						let componentName = "";
+						switch(exospkg.componentClass) {
+							case "ExosComponentC":
+								{
+									let component = new ExosComponentCUpdate(uri.fsPath);
+									componentName = component._name;
+									results = component.updateComponent(force);
+								}
+								break;
+							case "ExosComponentNAPI":
+								{
+									let component = new ExosComponentNAPIUpdate(uri.fsPath);
+									componentName = component._name;
+									results = component.updateComponent(force);
+								}
+								break;
+							case "ExosComponentSWIG":
+								{
+									let component = new ExosComponentSWIGUpdate(uri.fsPath);
+									componentName = component._name;
+									results = component.updateComponent(force);
+								}
+								break;
+							default:
+								vscode.window.showErrorMessage(`Component can not be updated: class ${exospkg.componentClass} can not be found`);
+								return;
+						}
+
+						if(results.parseResults.componentErrors.length > 0) {
+							vscode.window.showErrorMessage(`Component ${componentName} can not be updated: Errors encountered during update`);
+							for(let error of results.parseResults.componentErrors) {
+								vscode.window.showErrorMessage(error);
 							}
-							break;
-						case "ExosComponentNAPI":
-							{
-								let component = new ExosComponentNAPIUpdate(uri.fsPath);
-								componentName = component._name;
-								results = component.updateComponent(force);
+						}
+						else {
+							vscode.window.showInformationMessage(`Component ${componentName} updated - ${results.updateResults.filesUpdated} files updated`);
+
+							if(results.updateResults.filesNotFound > 0) {
+								vscode.window.showErrorMessage(`During the update, ${results.updateResults.filesNotFound} files could not be found`);
 							}
-							break;
-						case "ExosComponentSWIG":
-							{
-								let component = new ExosComponentSWIGUpdate(uri.fsPath);
-								componentName = component._name;
-								results = component.updateComponent(force);
+
+							if(results.updateResults.foldersNotFound > 0) {
+								vscode.window.showErrorMessage(`During the update, ${results.updateResults.foldersNotFound} folders could not be found`);
 							}
-							break;
-						default:
-							vscode.window.showErrorMessage(`Component can not be updated: class ${exospkg.componentClass} can not be found`);
-							return;
+						}
+
 					}
-
-					if(results.parseResults.componentErrors.length > 0) {
-						vscode.window.showErrorMessage(`Component ${componentName} can not be updated: Errors encountered during update`);
-						for(let error of results.parseResults.componentErrors) {
-							vscode.window.showErrorMessage(error);
-						}
-					}
-					else {
-						vscode.window.showInformationMessage(`Component ${componentName} updated - ${results.updateResults.filesUpdated} files updated`);
-
-						if(results.updateResults.filesNotFound > 0) {
-							vscode.window.showErrorMessage(`During the update, ${results.updateResults.filesNotFound} files could not be found`);
-						}
-
-						if(results.updateResults.foldersNotFound > 0) {
-							vscode.window.showErrorMessage(`During the update, ${results.updateResults.foldersNotFound} folders could not be found`);
-						}
+					catch(error) {
+						vscode.window.showErrorMessage(error);
 					}
 				});
 

@@ -133,6 +133,14 @@ class Package {
      * */
     _createPackage(location) {
         //console.log(`Creating package folder: ${path.join(location,this._folderName)}`);
+        if (!fs.existsSync(location)) {
+            throw(`Package: folder does not exist: ${location}`);
+        }
+        
+        if (fs.existsSync(path.join(location,this._folderName))) {
+            throw(`Package: folder already exists: ${path.join(location,this._folderName)}`);
+        }
+
         fs.mkdirSync(path.join(location,this._folderName));
 
         //console.log(`Creating package file: ${path.join(location,this._pkgFile.name)}`);

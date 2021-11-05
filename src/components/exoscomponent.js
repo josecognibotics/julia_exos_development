@@ -236,7 +236,7 @@ class ExosComponent extends Component {
     makeComponent(location)
     {
         this._exospackage.exospkg.addGeneratorOption("typeName",this._typeName);
-        this._exospackage.exospkg.addGeneratorOption("typeFile",`${this._typeName}/${this._typeName}.typ`);
+        this._exospackage.exospkg.addGeneratorOption("typeFile",`${this._cLibrary._folderName}/${this._typeName}.typ`);
         this._exospackage.exospkg.addGeneratorOption("SG4Includes",this._SG4Includes.join(","));
         super.makeComponent(location);
     }

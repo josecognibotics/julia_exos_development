@@ -181,6 +181,10 @@ class Datamodel {
         this.dataset = [];
         this.sortedStructs = [];
 
+        if (!fs.existsSync(fileName)) {
+            throw(`Datamodel: file does not exist: ${fileName}`);
+        }
+
         //read the file
         this.fileLines = fs.readFileSync(this.fileName).toString();
         //remove stuff we dont want to look at

@@ -143,6 +143,10 @@ const EXOSPKG_VERSION = "1.1.0";
      */
     parseFile(fileName) {
 
+        if (!fs.existsSync(fileName)) {
+            throw(`ExosPkg: file does not exist: ${fileName}`);
+        }
+
         /**
          * @type {ExosPkgParseFileResults}
          */
