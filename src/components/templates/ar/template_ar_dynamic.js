@@ -245,6 +245,9 @@ class TemplateARDynamic extends Template {
             out += `        break;\n\n`;
             out += `    default:\n`;
             out += `        break;\n\n`;
+           
+            out += `    }\n\n`;
+           
             out += `}\n\n`;
         
             return out;

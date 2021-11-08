@@ -235,10 +235,10 @@ function activate(context) {
 
 			for(let configuration of configurations) {
 			
-				pickConfiguration.push({label: configuration.name, description: configuration.cpu, detail: configuration.description});
+				pickConfiguration.push({label: configuration.name, detail: configuration.cpu, description: configuration.description});
 			}
 
-			vscode.window.showQuickPick(pickConfiguration,{title:`Select the configuration where the ${exosExport.name} package has been built`}).then(selectedConfiguration => {
+			vscode.window.showQuickPick(pickConfiguration,{title:`Select the configuration where the ${exosExport.name} package was last built`}).then(selectedConfiguration => {
 			
 				let homeFolder = vscode.Uri.file(os.homedir());
 				vscode.window.showOpenDialog({title:"Create binary export", defaultUri: homeFolder, canSelectFolders:true, openLabel:`Create ${exosExport.name} export here` }).then(selectedUri => {
