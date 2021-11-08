@@ -95,6 +95,16 @@ class ExosComponentSWIG extends ExosComponentAR {
 
         this._exospackage.exospkg.setComponentGenerator("ExosComponentSWIG", EXOS_COMPONENT_VERSION, []);
 
+        if(this._options.packaging == "deb") {
+            this._exospackage.exospkg.addGeneratorOption("exportLinux",[this._templateBuild.options.debPackage.fileName,
+                                                                        this._templateSWIG.pythonMain.name]);
+        }
+        else {
+            this._exospackage.exospkg.addGeneratorOption("exportLinux",[this._templateSWIG.pythonMain.name,
+                                                                        this._templateBuild.options.swigPython.pyFileName,
+                                                                        this._templateBuild.options.swigPython.soFileName]);
+        }
+
         super.makeComponent(location);
     }
 }

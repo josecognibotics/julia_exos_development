@@ -42,8 +42,8 @@ const EXOSPKG_VERSION = "2.0.0";
 
     /**
      * Component specific options from the generator. This is stored as a normal object for simpler access, meaning
-     * if the option `{name:'length', value:'10'}` is set via {@link setComponentGenerator} or {@link addGeneratorOption},
-     * then this option is retrieved via `componentOptions.length`
+     * if the option `{name:'height', value:'10'}` is set via {@link setComponentGenerator} or {@link addGeneratorOption},
+     * then this option is retrieved via `componentOptions.height`
      * 
      * @type {object}
      */
@@ -747,4 +747,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = {ExosPkg};
+module.exports = {ExosPkg, EXOSPKG_VERSION};

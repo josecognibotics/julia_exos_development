@@ -144,6 +144,13 @@ class ExosComponent extends Component {
     */
     _typeName;
 
+   /**
+     * The new name of the IEC datatype file used to generate the datamodel, the name is (possibly) changed to reflect the name of the main datatype (the datamodel)
+     * @type {string}
+    */
+    _typeFileName;
+
+
     /**
      * name of the .typ source file for generating the datamodel 
      * @type {string}
@@ -211,19 +218,21 @@ class ExosComponent extends Component {
 
         this._typeName = typeName;
         this._fileName = fileName;
+        this._typeFileName = `${typeName}.typ`;
 
-        this._typFile = {name:`${typeName}.typ`, contents:fs.readFileSync(fileName).toString(), description:`${typeName} datamodel declaration`}
+        this._typFile = {name:this._typeFileName, contents:fs.readFileSync(fileName).toString(), description:`${typeName} datamodel declaration`}
         this._SG4Includes = [`${typeName}.h`];
 
         this._datamodel = new Datamodel(fileName, typeName, this._SG4Includes);
-        this._exospackage.exospkg.addGenerateDatamodel(`${typeName}/${typeName}.typ`, typeName, this._SG4Includes, [typeName, "Linux"]);
-
+       
         this._iecProgram = this._exospackage.getNewIECProgram(`${typeName.substr(0,10)}_0`,`${typeName} application`);
 
         this._cLibrary = this._exospackage.getNewCLibrary(typeName.substr(0,10), `${typeName} exOS library`);
         this._cLibrary.addNewFileObj(this._typFile);
         this._cLibrary.addNewFileObj(this._datamodel.headerFile);
         this._cLibrary.addNewFileObj(this._datamodel.sourceFile);
+
+        this._exospackage.exospkg.addGenerateDatamodel(path.join(this._cLibrary._folderName,this._typeFileName), typeName, this._SG4Includes, [typeName, "Linux"]);
 
 
         this._templateBuild = new TemplateLinuxBuild(typeName);  
@@ -238,7 +247,7 @@ class ExosComponent extends Component {
     makeComponent(location)
     {
         this._exospackage.exospkg.addGeneratorOption("typeName",this._typeName);
-        this._exospackage.exospkg.addGeneratorOption("typeFile",`${this._cLibrary._folderName}/${this._typeName}.typ`);
+        this._exospackage.exospkg.addGeneratorOption("typeFile",path.join(this._cLibrary._folderName,this._typeFileName));
         this._exospackage.exospkg.addGeneratorOption("SG4Includes",this._SG4Includes.join(","));
         super.makeComponent(location);
     }

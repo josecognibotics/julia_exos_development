@@ -143,7 +143,12 @@ class ExosComponentC extends ExosComponentAR {
         this._exospackage.exospkg.setComponentGenerator("ExosComponentC", EXOS_COMPONENT_VERSION, []);
         this._exospackage.exospkg.addGeneratorOption("templateLinux",this._options.templateLinux);
 
-
+        if(this._options.packaging == "deb") {
+            this._exospackage.exospkg.addGeneratorOption("exportLinux",[this._templateBuild.options.debPackage.fileName]);
+        }
+        else {
+            this._exospackage.exospkg.addGeneratorOption("exportLinux",[this._templateBuild.options.executable.executableName]);
+        }
         super.makeComponent(location);
     }
 }

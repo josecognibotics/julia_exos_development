@@ -18,24 +18,59 @@ if (!Array.prototype.last){
  * @property {number} filesNotFound number of files that could not be found
  * @property {number} foldersNotFound number of folders that could not be found
  * 
+ * @typedef {Object} PackageObject
+ * @property {string} type `File` | `Library` | `Program` | `Package` | `ExistingFile`
+ * @property {string} name fileName of the package/file
+ * @property {string} description description in AS
+ * @property {string} contents contents of the file, only used for `type=File`, written to disk with {@link Package._createPackage},  {@link Package._updatePackage} or {@link Package._exportPackage} 
+ * @property {IECProgram|CLibrary|LinuxPackage} _object objet reference to an object created in @{@link ExosPackage}
+ * 
  */
 class Package {
 
+
+    /**
+     * list of all objects within this package
+     * @type {PackageObject[]}
+     */
+    _objects;
+
+    /**
+     * the hidden package file within the pacakge
+     * @type {PackageObject}
+     */
+    _pkgFile;
+
+    /**
+     * the packagefile XML header
+     * @type {string}
+     */
+    _header;
+
+    /**
+     * the packagefile XML footer
+     * @type {string}
+     */
+    _footer;
+
     /**
      * 
-     * @param {string} name Name of the folcer in which this package is created. If not specifiec, the _folderName will be set to an empty string
+     * @param {string} folderName Name of the folder in which this package is created, like `MyLibrary` or `Linux`. If not specifiec, the _folderName will be set to an empty string
+	 * @param packageFileName name of the xml packagefile used within this package, like `Package.pkg` or `ANSIC.lby`
+     * 
      */
-    constructor(name) {
+    constructor(folderName, packageFileName) {
 
-        if(name) {
-            this._folderName = name;
+        if(folderName) {
+            this._folderName = folderName;
         }
         else {
             this._folderName = "";
         }
         
         this._objects = [];
-        this._pkgFile = {};
+        this._pkgFile = {type:"File", name:packageFileName, contents:""};
+
         this._header = "";
         this._footer = "";
         
@@ -220,7 +255,7 @@ class LinuxPackage extends Package {
 
     constructor(exosPkg, name) {
 
-        super(name);
+        super(name, "Package.pkg");
 
         this._header  += `<?xml version="1.0" encoding="utf-8"?>\n`;
         this._header  += `<?AutomationStudio FileVersion="4.10"?>\n`;
@@ -229,8 +264,6 @@ class LinuxPackage extends Package {
         
         this._footer += `  </Objects>\n`;
         this._footer += `</Package>\n`;
-
-        this._pkgFile = {type:"File", name:"Package.pkg", contents:""};
 
         //the exosPkg is a reference to the ExosPkg object inside ExosPackage
         this._exosPkg = exosPkg;
@@ -439,7 +472,7 @@ class LinuxPackage extends Package {
 class IECProgram extends Package {
     constructor(name) {
 
-        super(name);
+        super(name, "IEC.prg");
 
         this._header  += `<?xml version="1.0" encoding="utf-8"?>\n`;
         this._header  += `<?AutomationStudio FileVersion="4.10"?>\n`;
@@ -448,8 +481,6 @@ class IECProgram extends Package {
         
         this._footer += `  </Files>\n`;
         this._footer += `</Program>\n`;
-
-        this._pkgFile = {type:"File", name:"IEC.prg", contents:""};
     }
 
     /**
@@ -491,7 +522,7 @@ class IECProgram extends Package {
 class CLibrary extends Package {
     constructor(name) {
 
-        super(name);
+        super(name, "ANSIC.lby");
 
         this._header  += `<?xml version="1.0" encoding="utf-8"?>\n`;
         this._header  += `<?AutomationStudio FileVersion="4.10"?>\n`;
@@ -503,8 +534,6 @@ class CLibrary extends Package {
         this._footer += `    <Dependency ObjectName="ExData" />\n`;
         this._footer += `  </Dependencies>\n`;
         this._footer += `</Library>\n`;
-
-        this._pkgFile = {type:"File", name:"ANSIC.lby", contents:""};
     }
 
     /**
@@ -559,7 +588,7 @@ class ExosPackage extends Package {
 
     constructor(name) {
 
-        super(name);
+        super(name, "Package.pkg");
 
         this._header += `<?xml version="1.0" encoding="utf-8"?>\n`;
         this._header += `<?AutomationStudio FileVersion="4.9"?>\n`;
@@ -572,8 +601,6 @@ class ExosPackage extends Package {
 
         this._exosPkgFile = this.getNewFile(`${name}.exospkg`,"exOS package description");
         this._exosPkg = new ExosPkg();
-
-        this._pkgFile = {type:"File", name:"Package.pkg", contents:""};
     }
 
     /**
@@ -792,4 +819,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = {ExosPackage, CLibrary, IECProgram, ExosPkg, LinuxPackage};
+module.exports = {Package, ExosPackage, CLibrary, IECProgram, ExosPkg, LinuxPackage};
