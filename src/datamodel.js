@@ -168,7 +168,7 @@ class Datamodel {
      * 
      * @param {string} fileName name of the file to parse, e.g. ./SomeFolder/MyApplication.typ
      * @param {string} typName name of the data structure, e.g. MyApplication
-     * @param {string[]} SG4Includes (optional) list of include directives within the #ifdef _SG4 part. If left out, theres no #ifdef _SG4
+     * @param {string[]} [SG4Includes] list of include directives within the #ifdef _SG4 part. If left out, theres no #ifdef _SG4
      * 
      * PREVIOUSLY generateHeader
      */

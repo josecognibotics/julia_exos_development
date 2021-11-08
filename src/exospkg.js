@@ -3,13 +3,6 @@ const parser = require('xml-parser');
 const fs = require('fs');
 const path = require('path');
 
-//shortcut to get an arrays last (pushed) element
-if (!Array.prototype.last){
-    Array.prototype.last = function(){
-        return this[this.length - 1];
-    };
-};
-
 const EXOSPKG_VERSION = "2.0.0";
 
 /**
@@ -449,7 +442,7 @@ const EXOSPKG_VERSION = "2.0.0";
      * 
      * @param {string} type `Install` | `Remove` | `Startup` | `Runtime`
      * @param {string} command commandline to be executed, like "/home/user/myexecutable" or "cp myFile.txt /home/user/"
-     * @param {string} workingDirectory (optional) working directory of the service, like "/home/user". If omitted, the deployment directory of the component is used
+     * @param {string} [workingDirectory] working directory of the service, like "/home/user". If omitted, the deployment directory of the component is used
      */
     addService(type, command, workingDirectory) {
         this._services.push({type:type,command:command,workingDirectory:workingDirectory});
@@ -532,7 +525,7 @@ const EXOSPKG_VERSION = "2.0.0";
      */
     getNewBuildCommand(command, workingDirectory, args) {
         this._buildCommands.push({command:command, workingDirectory:workingDirectory, args:args, Dependencies:[]});
-        return this._buildCommands.last();
+        return this._buildCommands[this._buildCommands.length-1];
     }
 
     /**

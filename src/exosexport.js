@@ -30,8 +30,8 @@ class ExportPackage extends Package {
 	 * @param {string} type type of package: `Package` | `Library` | `Program`. throws an exeption if package type doesnt match
 	 * @param {string} subType expected package SubType: `ANSIC` | `IEC` | `exosPackage` | `exosLinuxPackage` . throws an exeption is the subtype found doesnt match
 	 * @param {string} packageFileName name of the xml packagefile used within this package, like `Package.pkg` or `ANSIC.lby`
-	 * @param {string[]} [extensions] (optional) list of file extensions that we ant to include, like `.var` `.typ` - can be used inversed, like `!.deb`, `!.bin` and so on. if left out, all files will be included
-	 * @param {ExosPkgExport} [exosPkg] (optional) exos package that is provided to the `LinuxExport` package 
+	 * @param {string[]} [extensions] list of file extensions that we ant to include, like `.var` `.typ` - can be used inversed, like `!.deb`, `!.bin` and so on. if left out, all files will be included
+	 * @param {ExosPkgExport} [exosPkg] exos package that is provided to the `LinuxExport` package 
 	 * 
 	 * @returns {string} version of the package (if provided) - if no version is provided, an empty string is returned
      */
@@ -131,7 +131,7 @@ class ExportPackage extends Package {
 	
 	/**
  	 * @param {string} fileName filename within this package
-     * @param {string} [description] (optional) description that will appear in AS
+     * @param {string} [description] description that will appear in AS
  	 */
 	addExportFile(fileName, description) {
 		if(description === undefined) {
@@ -241,6 +241,8 @@ class CLibraryExport extends ExportPackage {
 	 */
 	exportPackage(destination, apjPath, configuration) {
 
+		this._pkgFile.name = "Binary.lby";
+
 		this._pkgFile.contents = "";
 		this._pkgFile.contents  += `<?xml version="1.0" encoding="utf-8"?>\n`;
         this._pkgFile.contents  += `<?AutomationStudio FileVersion="4.10"?>\n`;
@@ -262,14 +264,30 @@ class CLibraryExport extends ExportPackage {
 
         this._createPackage(destination);
 
-		//create the binaries and h file folder
+		//copy the Binary stuff into the SG4 folder
 		let _expPath = path.join(destination, this._folderName, "SG4");
 		fs.mkdirSync(_expPath);
 
-		//copy files
-		fs.copyFileSync(path.join(apjPath, "Temp", "Includes", `${this._folderName}.h`), path.join(_expPath, `${this._folderName}.h`));
-		fs.copyFileSync(path.join(apjPath, "Temp", "Archives", configuration.name, configuration.cpu, `lib${this._folderName}.a`), path.join(_expPath, `lib${this._folderName}.a`));
-		fs.copyFileSync(path.join(apjPath, "Binaries", configuration.name, configuration.cpu, `${this._folderName}.br`), path.join(_expPath, `${this._folderName}.br`));
+		let libHeader = path.join(apjPath, "Temp", "Includes", `${this._folderName}.h`);
+		if(!fs.existsSync(libHeader)) {
+			throw(`CLibraryExport: Make sure selected configuration has been built - cannot find Library header: ${libHeader}`)
+		}
+		let libArchive = path.join(apjPath, "Temp", "Archives", configuration.name, configuration.cpu, `lib${this._folderName}.a`);
+		if(!fs.existsSync(libArchive)) {
+			throw(`CLibraryExport: Make sure selected configuration has been built - cannot find Library archive: ${libArchive}`)
+		}
+		let libBr = path.join(apjPath, "Binaries", configuration.name, configuration.cpu, `${this._folderName}.br`);
+		if(!fs.existsSync(libBr)) {
+			throw(`CLibraryExport: Make sure selected configuration has been built - cannot find Library binary: ${libBr}`)
+		}
+		try {
+			fs.copyFileSync(libHeader, path.join(_expPath, `${this._folderName}.h`));
+			fs.copyFileSync(libArchive, path.join(_expPath, `lib${this._folderName}.a`));
+			fs.copyFileSync(libBr, path.join(_expPath, `${this._folderName}.br`));
+		}
+		catch(e) {
+			throw(`CLibraryExport: cannot copy files: ${e}`)
+		}
 	}
 }
 
@@ -334,7 +352,6 @@ class ExosPkgExport extends ExosPkg {
  */
 class ExosExport extends ExportPackage {
 
-
 	/**
 	 * @type {ASConfiguration[]}
 	 */
@@ -397,7 +414,7 @@ class ExosExport extends ExportPackage {
 		this._configurations = [];
 		this._exosPkg = exosPkg;
 		//..we therefore add the .exospkgfile as a new file instead and populate it in the exportPackage()
-		this._exosPkgFile = this.getNewFile(path.basename(exosPkgFileName),"exOS package description");
+		this._exosPkgFile = this.getNewFile(path.basename(exosPkgFileName),"exOS package description",true);
 
 		this._findASExports();
 	}
@@ -455,15 +472,20 @@ class ExosExport extends ExportPackage {
 					currPath = path.dirname(currPath)
 				}
 				
-				if (apjFound && binariesFound && logicalFound && physicalFound && tempFound) {
-					return path.join(currPath, apjFile);
+				if(!apjFound) {
+					throw ("ExosExport: Can't find project root directory");
 				}
-				else {
-					throw ("Can't find project root directory or project is not built")	
+				if(!logicalFound || !physicalFound) {
+					throw (`ExosExport: ${apjFile} is not a valid AS project (missing Logical/Physical)`);
+				}
+				if (!binariesFound || !tempFound) {
+					throw(`ExosExport: ${apjFile} project needs to be built before objects can be exported`);
 				}
 
+				return path.join(currPath, apjFile);
+
 			} catch (e) {
-				throw ("Can't find project root directory or project is not built")
+				throw ("ExosExport: Can't find project root directory")
 			}
 		}
 
@@ -498,7 +520,7 @@ class ExosExport extends ExportPackage {
 
 						if(item.attributes.Type == "Configuration") {	
 
-							//all paths in the Temp are based on the cpu name as well, therefore take out the name of the cpu folder from the Config.pkg within the 
+							//all paths in the Temp are based on the cpu name as well, therefore take out the name of the cpu folder from the Config.pkg within the configuration folder.. 
 							let cpuObjName = path.join(path.dirname(physicalPkgName),item.content,"Config.pkg");
 							if(!fs.existsSync(cpuObjName)) {
 								throw(`Can't find Configuration package ${cpuObjName}`);

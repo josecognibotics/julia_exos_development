@@ -85,7 +85,7 @@ class Template
      *
      * @param {Datamodel} datamodel existing {@link Datamodel} class that should be used for this template 
      * @param {boolean} Linux generate structure for Linux (`true`), otherwise AR (`false`) when used in Linux, the `datasets[].isPub` and `datasets[].isSub` are reversed
-     * @param {boolean} recurse (optional) generate a recursive template structure for datasets (at all sublevels) - with this you get `datasets[].datasets[].datasets[]` and so on
+     * @param {boolean} [recurse] generate a recursive template structure for datasets (at all sublevels) - with this you get `datasets[].datasets[].datasets[]` and so on
      */
     constructor(datamodel, Linux, recurse) {
         
@@ -95,7 +95,7 @@ class Template
          * @param {Dataset} types generated {@link Dataset} structure from the {@link Datamodel} class
          * @param {string} headerName predefined `headerFile.name` from the {@link Datamodel} class
          * @param {boolean} Linux when used in Linux, the `datasets[].isPub` and `datasets[].isSub` are reversed
-         * @param {boolean} recurse (optional) generate a recursive template structure for datasets (at all sublevels)
+         * @param {boolean} [recurse] generate a recursive template structure for datasets (at all sublevels)
          * @returns {ApplicationTemplate}
          */
         function configTemplate(types, headerName, Linux, recurse) {
@@ -103,7 +103,7 @@ class Template
             /**
              * @param {ApplicationTemplateDataset[]} datasets 
              * @param {Dataset} type 
-             * @param {boolean} recurse (optional) generate a recursive template structure for datasets (at all sublevels)
+             * @param {boolean} [recurse] generate a recursive template structure for datasets (at all sublevels)
              */
             function readDatasets(datasets, type, recurse) {
                 for (let child of type.children) {

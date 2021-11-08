@@ -3,13 +3,6 @@ const { ExosPkg } = require('./exospkg')
 const fs = require('fs');
 const path = require('path');
 
-//shortcut to get an arrays last (pushed) element
-if (!Array.prototype.last){
-    Array.prototype.last = function(){
-        return this[this.length - 1];
-    };
-};
-
 /**
  * Base class for Packages, used for inheritance
  * 
@@ -77,6 +70,13 @@ class Package {
     }
 
     /**
+     * @returns {string} name of the package, same as the folder name
+     */
+    get name() {
+        return this._folderName;
+    }
+
+    /**
      * Create a new file in this package and populate its contents
      * Use this method if the complete file contents are already available, 
      * otherwise use the {@link getNewFile} which returns a mutable `FileObj` that can be populated with contents
@@ -88,15 +88,20 @@ class Package {
      * 
      * @param {string} fileName filename within this package
      * @param {string} contents contents of the file that is to be stored on disk e.g. "hello world!\n"
-     * @param {string} description (optional) description that will appear in AS
+     * @param {string} [description] description that will appear in AS
+     * @param {boolean} [insert] in case the file should be placed at the beginning of the package rather than at the end
      * 
      */
-    addNewFile(fileName, contents, description) {
+    addNewFile(fileName, contents, description, insert) {
         if(description === undefined) {
             description = "";
         }
-
-        this._objects.push({type:"File", name:fileName, attributes:"", description:description, contents:contents});
+        if(insert && insert == true) {
+            this._objects.unshift({type:"File", name:fileName, attributes:"", description:description, contents:contents});
+        }
+        else {
+            this._objects.push({type:"File", name:fileName, attributes:"", description:description, contents:contents});
+        }
     }
 
     /**
@@ -104,9 +109,10 @@ class Package {
      * Same as the {@link addNewFile} whereas the `fileObj` contains all information for the file
      * 
      * @param {FileObj} fileObj 
+     * @param {boolean} [insert] in case the file should be placed at the beginning of the package rather than at the end
      */
-    addNewFileObj(fileObj) {
-        this.addNewFile(fileObj.name, fileObj.contents, fileObj.description);
+    addNewFileObj(fileObj, insert) {
+        this.addNewFile(fileObj.name, fileObj.contents, fileObj.description, insert);
     }
 
     /**
@@ -121,16 +127,23 @@ class Package {
      * myPackage.makePackage("C:\\Temp");
      * 
      * @param {string} fileName filename within this package
-     * @param {string} description (optional) description that will appear in AS
+     * @param {string} [description] description that will appear in AS
+     * @param {boolean} [insert] in case the file should be placed at the beginning of the package rather than at the end
      * @returns {FileObj} JSON object with a .content property that can be populated with the file contents
      */
-    getNewFile(fileName, description) {
+    getNewFile(fileName, description, insert) {
         if(description === undefined) {
             description = "";
         }
 
-        this._objects.push({type:"File", name:fileName, attributes:"", description:description, contents:""});
-        return this._objects.last();
+        if(insert && insert == true) {
+            this._objects.unshift({type:"File", name:fileName, attributes:"", description:description, contents:""});
+            return this._objects[0];
+        }
+        else {
+            this._objects.push({type:"File", name:fileName, attributes:"", description:description, contents:""});
+            return this._objects[this._objects.length-1];
+        }
     }
 
     /**
@@ -138,10 +151,11 @@ class Package {
      * Same as the {@link getNewFile} whereas the `fileObj` contains all information for the file
      * 
      * @param {FileObj} fileObj 
+     * @param {boolean} [insert] in case the file should be placed at the beginning of the package rather than at the end
      * @returns {FileObj} the fileobj within this package to be further manipulated
      */
-    getNewFileObj(fileObj) {
-        return this.getNewFile(fileObj.name, fileObj.contents, fileObj.description);
+    getNewFileObj(fileObj, insert) {
+        return this.getNewFile(fileObj.name, fileObj.contents, fileObj.description, insert);
     }
 
     /**
@@ -150,15 +164,21 @@ class Package {
      * is already there, or gets created by some other means (outside the {@link ExosPackage})
      * 
      * @param {string} fileName filename within this package
-     * @param {string} description (optional) description that will appear in AS
+     * @param {string} [description] description that will appear in AS
+     * @param {boolean} [insert] in case the file should be placed at the beginning of the package rather than at the end
      */
-    addExistingFile(fileName, description) {
+    addExistingFile(fileName, description, insert) {
         if(description === undefined) {
             description = "";
         }
 
         //add it as a "ExistingFile", that we dont consider to write the contents at _createPackage as we do with "Files"
-        this._objects.push({type:"ExistingFile", name:fileName, attributes:"", description:description, contents:""});
+        if(insert && insert == true) {
+            this._objects.unshift({type:"ExistingFile", name:fileName, attributes:"", description:description, contents:""});
+        }
+        else {
+            this._objects.push({type:"ExistingFile", name:fileName, attributes:"", description:description, contents:""});
+        }
     }
 
     /** 
@@ -308,16 +328,22 @@ class LinuxPackage extends Package {
      * 
      * @param {string} fileName name of the file (within the Linux package) that should be transferred to the target system
      * @param {string} changeEvent `Ignore` | `Restart` | `Reinstall` - behaviour of the target component when file is added, removed or changed. 
-     * @param {string} description (optional) description that will appear in AS
+     * @param {string} [description] description that will appear in AS
+     * @param {boolean} [insert] in case the file should be placed at the beginning of the package rather than at the end
      */
-    addExistingTransferFile(fileName, changeEvent, description) {
+    addExistingTransferFile(fileName, changeEvent, description, insert) {
         if(description === undefined) {
             description = "";
         }
         //add this file to the exosPackage with a relative path to this package
         this._exosPkg.addFile(path.join(this._folderName,fileName),changeEvent);
         //add it as a "ExistingFile", that the super Package class doesnt consider to write the contents at _createPackage as it does with "Files"
-        this._objects.push({type:"ExistingFile", name:fileName, attributes:"", description:description, contents:""});
+        if(insert && insert == true) {
+            this._objects.unshift({type:"ExistingFile", name:fileName, attributes:"", description:description, contents:""});
+        }
+        else {
+            this._objects.push({type:"ExistingFile", name:fileName, attributes:"", description:description, contents:""});
+        }
     }
     
     /**
@@ -332,17 +358,18 @@ class LinuxPackage extends Package {
      * 
      * @param {string} fileName name of the file (within the Linux package) that should be transferred to the target system
      * @param {string} changeEvent `Ignore` | `Restart` | `Reinstall` - behaviour of the target component when file is added, removed or changed. 
-     * @param {string} description (optional) description that will appear in AS
+     * @param {string} [description] description that will appear in AS
+     * @param {boolean} [insert] in case the file should be placed at the beginning of the package rather than at the end
      * @returns {FileObj} JSON object with a .content property that can be populated with the file contents
      */
-    getNewTransferFile(fileName, changeEvent, description) {
+    getNewTransferFile(fileName, changeEvent, description, insert) {
         if(description === undefined) {
             description = "";
         }
         //add this file to the exosPackage with a relative path to this package
         this._exosPkg.addFile(path.join(this._folderName,fileName),changeEvent);
         //return a new standard file where the contents can be populated
-        return super.getNewFile(fileName,description);
+        return super.getNewFile(fileName, description, insert);
     }
 
     /**
@@ -352,11 +379,12 @@ class LinuxPackage extends Package {
      * 
      * @param {FileObj} fileObj 
      * @param {string} changeEvent 
+     * @param {boolean} [insert] in case the file should be placed at the beginning of the package rather than at the end
      */
-    addNewTransferFileObj(fileObj, changeEvent) {
+    addNewTransferFileObj(fileObj, changeEvent, insert) {
         //add this file to the exosPackage with a relative path to this package
         this._exosPkg.addFile(path.join(this._folderName,fileObj.name),changeEvent);
-        super.addNewFileObj(fileObj);
+        super.addNewFileObj(fileObj, insert);
     }
 
 
@@ -373,9 +401,10 @@ class LinuxPackage extends Package {
      * 
      * @param {string} fileName name of the Debian package file within the Linux Package, e.g. `exos-comp-mouse_1.0.0.deb`
      * @param {string} packageName name of the Debian package once installed on the system, e.g. `exos-comp-mouse`
-     * @param {string} description (optional) description that will appear in AS
+     * @param {string} [description] description that will appear in AS
+     * @param {boolean} [insert] in case the file should be placed at the beginning of the package rather than at the end
      */
-    addExistingTransferDebFile(fileName, packageName, description) {
+    addExistingTransferDebFile(fileName, packageName, description, insert) {
         if(description === undefined) {
             description = "";
         }
@@ -384,7 +413,12 @@ class LinuxPackage extends Package {
         this._exosPkg.addService("Install",`dpkg -i ${fileName}`);
         this._exosPkg.addService("Remove",`dpkg --purge ${packageName}`);
         //add it as a "ExistingFile", that the super Package class doesnt consider to write the contents at _createPackage as it does with "Files"
-        this._objects.push({type:"ExistingFile", name:fileName, attributes:"", description:description, contents:""});
+        if(insert && insert == true) {
+            this._objects.unshift({type:"ExistingFile", name:fileName, attributes:"", description:description, contents:""});
+        }
+        else {
+            this._objects.push({type:"ExistingFile", name:fileName, attributes:"", description:description, contents:""});
+        }
     }
 
     /**
@@ -403,17 +437,18 @@ class LinuxPackage extends Package {
      * @param {object} buildCommand object returned from {@link ExosPkg.getNewBuildCommand} or {@link ExosPkg.getNewWSLBuildCommand}
      * @param {string} fileName name of the file within the Linux package
      * @param {string} contents contents of the file that is to be stored on disk
-     * @param {string} description (optional) description that will appear in AS
+     * @param {string} [description] description that will appear in AS
+     * @param {boolean} [insert] in case the file should be placed at the beginning of the package rather than at the end
      * @returns {FileObj} JSON object with a .content property that can be populated with the file contents
      */
-    addNewBuildFile(buildCommand, fileName, contents, description) {
+    addNewBuildFile(buildCommand, fileName, contents, description, insert) {
         if(description === undefined) {
             description = "";
         }
         //add a build dependency to this file
         this._exosPkg.addBuildDependency(buildCommand,path.join(this._folderName,fileName));
         //return a new standard file where the contents can be populated
-        super.addNewFile(fileName, contents, description);
+        super.addNewFile(fileName, contents, description, insert);
     }
 
     /**
@@ -423,9 +458,10 @@ class LinuxPackage extends Package {
      * 
      * @param {object} buildCommand 
      * @param {FileObj} fileObj 
+     * @param {boolean} [insert] in case the file should be placed at the beginning of the package rather than at the end
      */
-    addNewBuildFileObj(buildCommand, fileObj) {
-        this.addNewBuildFile(buildCommand, fileObj.name, fileObj.contents, fileObj.description);
+    addNewBuildFileObj(buildCommand, fileObj, insert) {
+        this.addNewBuildFile(buildCommand, fileObj.name, fileObj.contents, fileObj.description, insert);
     }
 
     /**
@@ -444,17 +480,18 @@ class LinuxPackage extends Package {
      * 
      * @param {object} buildCommand object returned from {@link ExosPkg.getNewBuildCommand} or {@link ExosPkg.getNewWSLBuildCommand()}
      * @param {string} fileName name of the file within the Linux package
-     * @param {string} description (optional) description that will appear in AS
+     * @param {string} [description] description that will appear in AS
+     * @param {boolean} [insert] in case the file should be placed at the beginning of the package rather than at the end
      * @returns {FileObj} JSON object with a .content property that can be populated with the file contents
      */
-    getNewBuildFile(buildCommand, fileName, description) {
+    getNewBuildFile(buildCommand, fileName, description, insert) {
         if(description === undefined) {
             description = "";
         }
         //add a build dependency to this file
         this._exosPkg.addBuildDependency(buildCommand,path.join(this._folderName,fileName));
         //return a new standard file where the contents can be populated
-        return super.getNewFile(fileName,description);
+        return super.getNewFile(fileName, description, insert);
     }
 }
 
@@ -715,7 +752,7 @@ class ExosPackage extends Package {
      * myPackage.makePackage();
      * 
      * @param {string} name Name of the Linux package (and the folder in the file system)
-     * @param {string} description (optional) description that will appear in AS
+     * @param {string} [description] description that will appear in AS
      * @returns {LinuxPackage} 
      */
     getNewLinuxPackage(name, description) {
@@ -724,7 +761,7 @@ class ExosPackage extends Package {
         }
 
         this._objects.push({type:"Package", name:name, attributes:"", description:description, _object:new LinuxPackage(this._exosPkg, name)});
-        return this._objects.last()._object;
+        return this._objects[this._objects.length-1]._object;
     }
 
     /**
@@ -740,7 +777,7 @@ class ExosPackage extends Package {
      * myPackage.makePackage();     
      *  
      * @param {string} name Name of the C/C++ Library (and the folder in the file system)
-     * @param {string} description (optional) description that will appear in AS
+     * @param {string} [description] description that will appear in AS
      * @returns {CLibrary}
      */
     getNewCLibrary(name, description) {
@@ -750,7 +787,7 @@ class ExosPackage extends Package {
 
         this._objects.push({type:"Library", name:name, attributes:"Language=\"ANSIC\"", description:description, _object:new CLibrary(name)});
 
-        return this._objects.last()._object;
+        return this._objects[this._objects.length-1]._object;
     }
 
     /**
@@ -768,7 +805,7 @@ class ExosPackage extends Package {
      * myPackage.makePackage();
      * 
      * @param {string} name Name of the IEC Program (and the folder in the file system) 
-     * @param {string} description (optional) description that will appear in AS
+     * @param {string} [description] description that will appear in AS
      * @returns {IECProgram}
      */
     getNewIECProgram(name, description) {
@@ -778,7 +815,7 @@ class ExosPackage extends Package {
 
         this._objects.push({type:"Program", name:name, attributes:"Language=\"IEC\"", description:description, _object:new IECProgram(name)});
 
-        return this._objects.last()._object;
+        return this._objects[this._objects.length-1]._object;
     }
 
 }
