@@ -19,6 +19,10 @@
 	"contributes": {
 		"commands": [
 			{
+				"command": "exos-component-extension.debugConsole",
+				"title": "Start exOS debug console"
+			},
+			{
 				"command": "exos-component-extension.updateExosPkg",
 				"title": "Update exOS package description file"
 			},

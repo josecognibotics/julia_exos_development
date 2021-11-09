@@ -9,6 +9,7 @@ const os = require('os');
 
 const isDebugMode = () => process.env.VSCODE_DEBUG_MODE === "true";
 
+const { ExosDebugConsole } = require('./src/exosconsole');
 const { ExosPkg } = require('./src/exospkg')
 const { Datamodel, DatatypeListItem } = require('./src/datamodel');
 const { UpdateComponentResults } = require('./src/components/exoscomponent');
@@ -17,10 +18,16 @@ const { ExosComponentNAPI, ExosComponentNAPIUpdate } = require('./src/components
 const { ExosComponentSWIG, ExosComponentSWIGUpdate } = require('./src/components/exoscomponent_swig');
 const { ExosExport, ASConfiguration } = require('./src/exosexport');
 
+
+const debugConsole = new ExosDebugConsole();
+
 /**
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
+
+	// let taskProvider = vscode.tasks.registerTaskProvider('exostest', new vscode.Task({type:"exostest"},vscode.TaskScope.Workspace,"buildme","exOS",new vscode.ShellExecution("echo hello")));
+	// context.subscriptions.push(taskProvider);
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
@@ -33,7 +40,28 @@ function activate(context) {
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
 
+
+	const writeEmitter = new vscode.EventEmitter();
+	debugConsole.setCallback(function(message) {writeEmitter.fire(message)})
+
+	let debugTerminal = vscode.commands.registerCommand('exos-component-extension.debugConsole', () => {
+		const pty = {
+			onDidWrite: writeEmitter.event,
+			open: () => {writeEmitter.fire('\x1b[31mHello world\x1b[0m')},
+			close: () => {},
+			handleInput: data => writeEmitter.fire(data === '\r' ? '\r\n' : `>${data}>`)
+		};		
+		let terminal = vscode.window.createTerminal({ name: 'exOS Debug Console', pty });
+		debugConsole.connect("192.168.1.175");	
+		terminal.show();
+	});
+
+	context.subscriptions.push(debugTerminal);
+
+
 	let createPackage = vscode.commands.registerCommand('exos-component-extension.createPackage', function (uri) {
+
+		writeEmitter.fire('\n\r\x1b[35mCreate Package!\x1b[0m\r\n')
 
 		function createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, destination) {
 			function convertLabel2Teplate(label) {
