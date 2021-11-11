@@ -6,6 +6,7 @@ const fs = require('fs');
 const fse = require('fs-extra');
 const { dir } = require('console');
 const os = require('os');
+const net = require('net');
 
 const isDebugMode = () => process.env.VSCODE_DEBUG_MODE === "true";
 
@@ -17,10 +18,15 @@ const { ExosComponentNAPI, ExosComponentNAPIUpdate } = require('./src/components
 const { ExosComponentSWIG, ExosComponentSWIGUpdate } = require('./src/components/exoscomponent_swig');
 const { ExosExport, ASConfiguration } = require('./src/exosexport');
 
+var lastIP = "127.0.0.1"
+
 /**
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
+
+	// let taskProvider = vscode.tasks.registerTaskProvider('exostest', new vscode.Task({type:"exostest"},vscode.TaskScope.Workspace,"buildme","exOS",new vscode.ShellExecution("echo hello")));
+	// context.subscriptions.push(taskProvider);
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
@@ -32,6 +38,73 @@ function activate(context) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
+
+	let debugTerminal = vscode.commands.registerCommand('exos-component-extension.debugConsole', function() {
+		
+		vscode.window.showInputBox({prompt:"IP address of the AR target:", value:lastIP}).then(selectedIP => {
+
+			lastIP = selectedIP;
+			const writeEmitter = new vscode.EventEmitter();
+
+			let client = new net.Socket();
+			let port = 30000;
+			let ip = selectedIP;
+
+			client.connect(port, ip)
+
+			client.on('timeout', () => {
+				writeEmitter.fire('Disconnected\r\n');
+				client.destroy();
+			});
+
+			client.on('connect', function () {
+				client.setTimeout(3000);
+				writeEmitter.fire('Connected\r\n');
+			});
+
+			client.on('data', function (data) {
+
+				let lines = data.toString().replace("\r","").split("\n")
+				for(line of lines) {
+					if(line.length > 0) {
+						writeEmitter.fire(`${line}\r\n`);
+					}
+				}
+			});
+
+			client.on('close', function () {
+				client.destroy();
+				writeEmitter.fire('Connection closed\r\n');
+			});
+
+			client.on('error', function (error) {
+				client.destroy();
+				writeEmitter.fire(`${prepend}Connection error (${error.code})\r\n`);
+			});
+
+
+			const pty = {
+				onDidWrite: writeEmitter.event,
+				open: () => {writeEmitter.fire(`Connecting to ${ip}:${port}\r\n`)},
+				close: () => {},
+				handleInput: data => {
+					if(!client.connecting) {
+						writeEmitter.fire(`Connecting to ${ip}:${port}\r\n`)
+						client.connect(port,ip);
+					}
+					else {
+						writeEmitter.fire(`hold on, already connecting..\r\n`)
+					}
+				}
+			};		
+			let terminal = vscode.window.createTerminal({ name: 'exOS Debug Console', pty });
+			terminal.show();
+		});
+
+	});
+
+	context.subscriptions.push(debugTerminal);
+
 
 	let createPackage = vscode.commands.registerCommand('exos-component-extension.createPackage', function (uri) {
 

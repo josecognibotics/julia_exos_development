@@ -222,6 +222,8 @@ class TemplateARCpp extends TemplateCppLib {
             out += `    ${template.datamodel.structName}Cyclic_0 : ${template.datamodel.structName}Cyclic;\n`;
             out += `    ${template.datamodel.structName}Exit_0 : ${template.datamodel.structName}Exit;\n`;
             out += `    ${template.datamodel.structName}_0 : ${template.datamodel.structName};\n`;
+            out += `    ExComponentInfo_0 : ExComponentInfo;\n`;
+            out += `    ExDatamodelInfo_0 : ExDatamodelInfo;\n`;
             out += `END_VAR\n`;
         
             return out;
@@ -241,9 +243,13 @@ class TemplateARCpp extends TemplateCppLib {
             out += `END_PROGRAM\n`;
             out += `\n`;
             out += `PROGRAM _CYCLIC\n`;
-            out += `\n`;
+            out += `    \n`;
             out += `    ${template.datamodel.structName}Cyclic_0(Handle := ${template.datamodel.structName}Init_0.Handle, p${template.datamodel.structName} := ADR(${template.datamodel.structName}_0));\n`;
-            out += `\n`;
+            out += `    \n`;
+            out += `    ExComponentInfo_0(ExTargetLink := ADR(${template.targetName}), ExComponentLink := ADR(${template.aliasName}), Enable := TRUE);\n`;
+            out += `    \n`;
+            out += `    ExDatamodelInfo_0(ExTargetLink := ADR(${template.targetName}), Enable := TRUE, InstanceName := '${template.datamodelInstanceName}');\n`;
+            out += `    \n`;
             out += `END_PROGRAM\n`;
             out += `\n`;
             out += `PROGRAM _EXIT\n`;

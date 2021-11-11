@@ -489,50 +489,59 @@ class TemplateARDynamic extends Template {
      * @returns {string} `{ProgramName}.var`: varaible declaration for the ST program
      */
     _generateIECProgramVar() {
-        function generateIECProgramVar(typName) {
+        function generateIECProgramVar(template) {
             let out = "";
         
             out += `VAR\n`;
-            out += `    ${typName}Init_0 : ${typName}Init;\n`;
-            out += `    ${typName}Cyclic_0 : ${typName}Cyclic;\n`;
-            out += `    ${typName}Exit_0 : ${typName}Exit;\n`;
-            out += `    ${typName}_0 : ${typName};\n`;
+            out += `    ${template.datamodel.structName}Init_0 : ${template.datamodel.structName}Init;\n`;
+            out += `    ${template.datamodel.structName}Cyclic_0 : ${template.datamodel.structName}Cyclic;\n`;
+            out += `    ${template.datamodel.structName}Exit_0 : ${template.datamodel.structName}Exit;\n`;
+            out += `    ${template.datamodel.structName}_0 : ${template.datamodel.structName};\n`;
+            out += `    ExComponentInfo_0 : ExComponentInfo;\n`;
+            out += `    ExDatamodelInfo_0 : ExDatamodelInfo;\n`;
             out += `END_VAR\n`;
         
             return out;
         }
-        return generateIECProgramVar(this.datamodel.typeName);
+        return generateIECProgramVar(this.template);
     }
 
     /**
      * @returns {string} `{ProgramName}.st`: application implementation code in ST
      */
     _generateIECProgramST() {
-        function generateIECProgramST(typName) {
+        /**
+         * @param {ApplicationTemplate} template 
+         */
+        function generateIECProgramST(template) {
             let out = "";
         
             out += `\n`;
             out += `PROGRAM _INIT\n`;
             out += `\n`;
-            out += `    ${typName}Init_0();\n`;
+            out += `    ${template.datamodel.structName}Init_0();\n`;
             out += `\n`;
             out += `END_PROGRAM\n`;
             out += `\n`;
             out += `PROGRAM _CYCLIC\n`;
-            out += `\n`;
-            out += `    ${typName}Cyclic_0(Handle := ${typName}Init_0.Handle, p${typName} := ADR(${typName}_0));\n`;
-            out += `\n`;
+            out += `    \n`;
+            out += `    ${template.datamodel.structName}Cyclic_0(Handle := ${template.datamodel.structName}Init_0.Handle, p${template.datamodel.structName} := ADR(${template.datamodel.structName}_0));\n`;
+            out += `    \n`;
+            out += `    ExComponentInfo_0(ExTargetLink := ADR(${template.targetName}), ExComponentLink := ADR(${template.aliasName}), Enable := TRUE);\n`;
+            out += `    \n`;
+            out += `    ExDatamodelInfo_0(ExTargetLink := ADR(${template.targetName}), Enable := TRUE, InstanceName := '${template.datamodelInstanceName}');\n`;
+            out += `    \n`;
             out += `END_PROGRAM\n`;
             out += `\n`;
             out += `PROGRAM _EXIT\n`;
             out += `\n`;
-            out += `    ${typName}Exit_0(Handle := ${typName}Init_0.Handle);\n`;
+            out += `    ${template.datamodel.structName}Exit_0(Handle := ${template.datamodel.structName}Init_0.Handle);\n`;
             out += `\n`;
             out += `END_PROGRAM\n`;
         
             return out;
         }
-        return generateIECProgramST(this.datamodel.typeName);
+        return generateIECProgramST(this.template);
     }
 
     /**
