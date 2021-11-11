@@ -1,5 +1,5 @@
 var net = require('net');
-const { stdout } = require("process");
+const vscode = require('vscode');
 
 class ExosDebugConsole {
 
@@ -16,20 +16,19 @@ class ExosDebugConsole {
      * @callback ExosDebugConsole.logCallback
      * @param {string} message
      * 
-     * @param {string} ip
-     * @param {ExosDebugConsole.logCallback} log
+     * @param {vscode.EventEmitter} eventEmitter
      * 
      */
-    constructor() {
+    constructor(eventEmitter) {
 
         this._client = new net.Socket();
         this._timeout = null;
         this._reconnectOnClose = false;
         this._reconnectCounter = 0;
-        this._log = log;
+        this._eventEmitter = eventEmitter;
 
         this._client.on('this._timeout', () => {
-            this._log('Disconnected');
+            this._eventEmitter.fire('Disconnected');
             this._client.end();
             this._client.connect(this._port, this._ip);
         });
@@ -39,7 +38,7 @@ class ExosDebugConsole {
                 stdout.write('\n');
             }
             this._client.setTimeout(3000);
-            this._log('Connected');
+            this._eventEmitter.fire('Connected');
             console.log('Connected');
             this._reconnectOnClose = false;
             this._reconnectCounter = 0;
@@ -47,7 +46,7 @@ class ExosDebugConsole {
 
         this._client.on('data', function (data) {
             process.stdout.write(data.toString());
-            this._log(data.toString());
+            this._eventEmitter.fire(data.toString());
             /* file output - remove color codes
             data.toString().replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
             */
@@ -61,7 +60,7 @@ class ExosDebugConsole {
                 }, 2000);
             }
             else {
-                this._log('Connection closed');
+                this._eventEmitter.fire('Connection closed');
             }
         });
 
@@ -79,14 +78,10 @@ class ExosDebugConsole {
         });
     }
 
-    setCallback(log) {
-        this._log = log;
-    }
-
     connect(ip) {
         this._ip = ip;
         this._port = 49000;
-        this._log(`Connecting to ${this._ip}:${this._port}`);
+        this._eventEmitter.fire(`Connecting to ${this._ip}:${this._port}`);
         console.log(`Connecting to ${this._ip}:${this._port}`);
         this._client.connect(this._port, this._ip);
     }

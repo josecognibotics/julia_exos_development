@@ -40,6 +40,11 @@
 			}
 		],
 		"menus": {
+			"editor/title": [
+				{
+					"command": "exos-component-extension.debugConsole"
+				}
+			],
 			"editor/title/context": [
 				{
 					"when": "resourceExtname == .exospkg",

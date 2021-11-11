@@ -1543,7 +1543,7 @@ class TemplateLinuxNAPI extends Template {
                 // exOS inits
                 out += `    // exOS\n`;
                 out += `    // exOS inits\n`;
-                out += `    if (EXOS_ERROR_OK != exos_datamodel_init(&${template.datamodel.varName}_datamodel, "${template.datamodel.structName}", "${template.datamodel.structName}_NodeJS")) \n`;
+                out += `    if (EXOS_ERROR_OK != exos_datamodel_init(&${template.datamodel.varName}_datamodel, "${template.datamodelInstanceName}", "${template.aliasName}")) \n`;
                 out += `    {\n`;
                 out += `        napi_throw_error(env, "EINVAL", "Can't initialize ${template.datamodel.structName}"); \n`;
                 out += `    } \n`;

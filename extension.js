@@ -6,10 +6,10 @@ const fs = require('fs');
 const fse = require('fs-extra');
 const { dir } = require('console');
 const os = require('os');
+const net = require('net');
 
 const isDebugMode = () => process.env.VSCODE_DEBUG_MODE === "true";
 
-const { ExosDebugConsole } = require('./src/exosconsole');
 const { ExosPkg } = require('./src/exospkg')
 const { Datamodel, DatatypeListItem } = require('./src/datamodel');
 const { UpdateComponentResults } = require('./src/components/exoscomponent');
@@ -18,8 +18,7 @@ const { ExosComponentNAPI, ExosComponentNAPIUpdate } = require('./src/components
 const { ExosComponentSWIG, ExosComponentSWIGUpdate } = require('./src/components/exoscomponent_swig');
 const { ExosExport, ASConfiguration } = require('./src/exosexport');
 
-
-const debugConsole = new ExosDebugConsole();
+var lastIP = "127.0.0.1"
 
 /**
  * @param {vscode.ExtensionContext} context
@@ -40,28 +39,74 @@ function activate(context) {
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
 
+	let debugTerminal = vscode.commands.registerCommand('exos-component-extension.debugConsole', function() {
+		
+		vscode.window.showInputBox({prompt:"IP address of the AR target:", value:lastIP}).then(selectedIP => {
 
-	const writeEmitter = new vscode.EventEmitter();
-	debugConsole.setCallback(function(message) {writeEmitter.fire(message)})
+			lastIP = selectedIP;
+			const writeEmitter = new vscode.EventEmitter();
 
-	let debugTerminal = vscode.commands.registerCommand('exos-component-extension.debugConsole', () => {
-		const pty = {
-			onDidWrite: writeEmitter.event,
-			open: () => {writeEmitter.fire('\x1b[31mHello world\x1b[0m')},
-			close: () => {},
-			handleInput: data => writeEmitter.fire(data === '\r' ? '\r\n' : `>${data}>`)
-		};		
-		let terminal = vscode.window.createTerminal({ name: 'exOS Debug Console', pty });
-		debugConsole.connect("192.168.1.175");	
-		terminal.show();
+			let client = new net.Socket();
+			let port = 30000;
+			let ip = selectedIP;
+
+			client.connect(port, ip)
+
+			client.on('timeout', () => {
+				writeEmitter.fire('Disconnected\r\n');
+				client.destroy();
+			});
+
+			client.on('connect', function () {
+				client.setTimeout(3000);
+				writeEmitter.fire('Connected\r\n');
+			});
+
+			client.on('data', function (data) {
+
+				let lines = data.toString().replace("\r","").split("\n")
+				for(line of lines) {
+					if(line.length > 0) {
+						writeEmitter.fire(`${line}\r\n`);
+					}
+				}
+			});
+
+			client.on('close', function () {
+				client.destroy();
+				writeEmitter.fire('Connection closed\r\n');
+			});
+
+			client.on('error', function (error) {
+				client.destroy();
+				writeEmitter.fire(`${prepend}Connection error (${error.code})\r\n`);
+			});
+
+
+			const pty = {
+				onDidWrite: writeEmitter.event,
+				open: () => {writeEmitter.fire(`Connecting to ${ip}:${port}\r\n`)},
+				close: () => {},
+				handleInput: data => {
+					if(!client.connecting) {
+						writeEmitter.fire(`Connecting to ${ip}:${port}\r\n`)
+						client.connect(port,ip);
+					}
+					else {
+						writeEmitter.fire(`hold on, already connecting..\r\n`)
+					}
+				}
+			};		
+			let terminal = vscode.window.createTerminal({ name: 'exOS Debug Console', pty });
+			terminal.show();
+		});
+
 	});
 
 	context.subscriptions.push(debugTerminal);
 
 
 	let createPackage = vscode.commands.registerCommand('exos-component-extension.createPackage', function (uri) {
-
-		writeEmitter.fire('\n\r\x1b[35mCreate Package!\x1b[0m\r\n')
 
 		function createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, destination) {
 			function convertLabel2Teplate(label) {

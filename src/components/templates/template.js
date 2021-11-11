@@ -35,6 +35,7 @@ const {Datamodel, Dataset} = require('../../datamodel');
  * @property {boolean} isPrivate set to true if the comment includes the word `private`
  * 
  * @typedef {Object} ApplicationTemplate
+ * @property {string} targetName default name of the target, set in the TP => `gTarget_0`
  * @property {string} headerName name of the generated headerfile to be included in applications => `Datamodel.headerFile.name`
  * @property {string} libHeaderName name of a library wrapper headerfile to be included `libmyapplication.h`
  * @property {string} logname name of a `exos_log_handle_t` instance in the application, hardcoded => `logger`
@@ -152,6 +153,7 @@ class Template
             }
 
             var template = {
+                targetName: "",
                 headerName: "",
                 datamodelInstanceName: "",
                 logname: "",
@@ -174,6 +176,7 @@ class Template
                 },
                 datasets: []
             }
+            template.targetName = "gTarget_0";
             template.logname = "logger";
             template.aliasName = `g${types.attributes.dataType}_0`;
             template.loggerClassName = `${types.attributes.dataType}Logger`;
