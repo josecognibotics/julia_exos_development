@@ -44,12 +44,34 @@ function activate(context) {
 		vscode.window.showInputBox({prompt:"IP address of the AR target:", value:lastIP}).then(selectedIP => {
 
 			lastIP = selectedIP;
-			const writeEmitter = new vscode.EventEmitter();
-
-			let client = new net.Socket();
 			let port = 30000;
 			let ip = selectedIP;
 
+			const writeEmitter = new vscode.EventEmitter();
+
+			const pty = {
+				onDidWrite: writeEmitter.event,
+				open: () => {writeEmitter.fire(`exOS Debug Console on ${ip}\r\nPress Enter to reconnect broken connections\r\n\r\n`)},
+				close: () => {},
+				handleInput: data => {
+					if(data === '\r')
+					{
+						if(!client.connecting) {
+							writeEmitter.fire(`Reconnecting to ${ip}:${port}\r\n`)
+							client.connect(port,ip);
+						}
+						else {
+							writeEmitter.fire(`hold on, already connecting..\r\n`)
+						}
+					}
+				}
+			};		
+			let terminal = vscode.window.createTerminal({ name: 'exOS Debug Console', pty });
+
+			let client = new net.Socket();
+			
+
+			writeEmitter.fire(`Connecting to ${ip}:${port}\r\n`)
 			client.connect(port, ip)
 
 			client.on('timeout', () => {
@@ -83,21 +105,6 @@ function activate(context) {
 			});
 
 
-			const pty = {
-				onDidWrite: writeEmitter.event,
-				open: () => {writeEmitter.fire(`Connecting to ${ip}:${port}\r\n`)},
-				close: () => {},
-				handleInput: data => {
-					if(!client.connecting) {
-						writeEmitter.fire(`Connecting to ${ip}:${port}\r\n`)
-						client.connect(port,ip);
-					}
-					else {
-						writeEmitter.fire(`hold on, already connecting..\r\n`)
-					}
-				}
-			};		
-			let terminal = vscode.window.createTerminal({ name: 'exOS Debug Console', pty });
 			terminal.show();
 		});
 
