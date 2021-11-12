@@ -143,8 +143,10 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
             out += `END_PROGRAM\n`;
             out += `\n`;
             out += `PROGRAM _CYCLIC\n`;
-            out += `\n`;
-            out += `    ${template.datamodel.structName}Cyclic_0(p${template.datamodel.structName} := ADR(${template.datamodel.structName}_0);\n`;
+            out += `    \n`;
+            out += `    //Auto connect:\n`;
+            out += `    //${template.datamodel.structName}Cyclic_0.Enable := ExComponentInfo_0.Operational;\n`;
+            out += `    ${template.datamodel.structName}Cyclic_0(p${template.datamodel.structName} := ADR(${template.datamodel.structName}_0));\n`;
             out += `    \n`;
             out += `    ExComponentInfo_0(ExTargetLink := ADR(${template.targetName}), ExComponentLink := ADR(${template.aliasName}), Enable := TRUE);\n`;
             out += `    \n`;
@@ -155,8 +157,7 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
             out += `\n`;
             out += `PROGRAM _EXIT\n`;
             out += `\n`;
-            out += `    ${template.datamodel.structName}Cyclic_0.Enable := FALSE;\n`;
-            out += `    ${template.datamodel.structName}Cyclic_0();\n`;
+            out += `    ${template.datamodel.structName}Cyclic_0(Enable := FALSE);\n`;
             out += `\n`;
             out += `END_PROGRAM\n`;
         

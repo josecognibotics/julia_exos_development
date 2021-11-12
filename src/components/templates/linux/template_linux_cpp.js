@@ -59,10 +59,10 @@ class TemplateLinuxCpp extends TemplateCppLib {
             out += `    ${template.datamodel.varName}.connect();\n`;
             out += `    \n`;
             out += `    ${template.datamodel.varName}.onConnectionChange([&] () {\n`;
-            out += `        if(${template.datamodel.varName}.connectionState == EXOS_STATE_CONNECTED) {\n`;
+            out += `        if (${template.datamodel.varName}.connectionState == EXOS_STATE_CONNECTED) {\n`;
             out += `            // Datamodel connected\n`;
             out += `        }\n`;
-            out += `        else if(${template.datamodel.varName}.connectionState == EXOS_STATE_DISCONNECTED) {    \n`;
+            out += `        else if (${template.datamodel.varName}.connectionState == EXOS_STATE_DISCONNECTED) {    \n`;
             out += `            // Datamodel disconnected\n`;
             out += `        }\n`;
             out += `    });\n`;
@@ -76,19 +76,21 @@ class TemplateLinuxCpp extends TemplateCppLib {
                 }
             }
             out += `\n`;
-            out += `    while(true) {\n`;
+            out += `    while(!is_terminated()) {\n`;
             out += `        // trigger callbacks\n`;
             out += `        ${template.datamodel.varName}.process();\n`;
             out += `        \n`;
             out += `        // publish datasets\n`;
             out += `        \n`;
+            out += `        if (${template.datamodel.varName}.isConnected) {\n`;
             for (let dataset of template.datasets) {
                 if (dataset.isPub) {
-                    out += `        // ${template.datamodel.varName}.${dataset.structName}.value = ...\n`;
-                    out += `        // ${template.datamodel.varName}.${dataset.structName}.publish();\n`;
-                    out += `        \n`;
+                    out += `            // ${template.datamodel.varName}.${dataset.structName}.value = ...\n`;
+                    out += `            // ${template.datamodel.varName}.${dataset.structName}.publish();\n`;
+                    out += `            \n`;
                 }
             }
+            out += `        }\n`;
             out += `    }\n`;
             out += `\n`;
             out += `    return 0;\n`;

@@ -206,7 +206,7 @@ function activate(context) {
 			
 				vscode.window.showInformationMessage(`Created component ${selectedStructure.label}`);
 				if(replaceTypWithPackage(uri.fsPath, selectedStructure.label)) {
-					vscode.window.showInformationMessage(`The file ${path.basename(uri.fsPath)} was replaced the ${selectedStructure.label} exOS package`);
+					vscode.window.showInformationMessage(`The file ${path.basename(uri.fsPath)} was replaced with the ${selectedStructure.label} exOS package`);
 				}
 			}
 			catch(error) {

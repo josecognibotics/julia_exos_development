@@ -525,6 +525,8 @@ class TemplateARDynamic extends Template {
             out += `\n`;
             out += `PROGRAM _CYCLIC\n`;
             out += `    \n`;
+            out += `    //Auto connect:\n`;
+            out += `    //${template.datamodel.structName}Cyclic_0.Enable := ExComponentInfo_0.Operational;\n`;
             out += `    ${template.datamodel.structName}Cyclic_0(Handle := ${template.datamodel.structName}Init_0.Handle, p${template.datamodel.structName} := ADR(${template.datamodel.structName}_0));\n`;
             out += `    \n`;
             out += `    ExComponentInfo_0(ExTargetLink := ADR(${template.targetName}), ExComponentLink := ADR(${template.aliasName}), Enable := TRUE);\n`;

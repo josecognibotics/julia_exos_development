@@ -212,7 +212,7 @@ class TemplateLinuxNAPI extends Template {
                     if (dataset.isPub || dataset.isSub) {
                         out += `\ndataset ${dataset.structName}:\n`;
             
-                        out += `    ${template.datamodel.varName}.dataModel.${dataset.structName}.value : (${Datamodel.convertPlcType(dataset.dataType)}`;
+                        out += `    ${template.datamodel.varName}.datamodel.${dataset.structName}.value : (${Datamodel.convertPlcType(dataset.dataType)}`;
                         if (dataset.arraySize > 0) { // array comes before string length in c (unlike AS typ editor where it would be: STRING[80][0..1])
                             out += `[${parseInt(dataset.arraySize)}]`;
                         }
@@ -230,17 +230,17 @@ class TemplateLinuxNAPI extends Template {
                         }
             
                         if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
-                            out += `    ${template.datamodel.varName}.dataModel.${dataset.structName}.publish()\n`;
+                            out += `    ${template.datamodel.varName}.datamodel.${dataset.structName}.publish()\n`;
                         }
                         if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
-                            out += `    ${template.datamodel.varName}.dataModel.${dataset.structName}.onChange(() => {\n`;
-                            out += `        ${template.datamodel.varName}.dataModel.${dataset.structName}.value ...\n`;
-                            out += `        ${template.datamodel.varName}.dataModel.${dataset.structName}.nettime : (int32_t) nettime @ time of publish\n`;
-                            out += `        ${template.datamodel.varName}.dataModel.${dataset.structName}.latency : (int32_t) time in us between publish and arrival\n`;
+                            out += `    ${template.datamodel.varName}.datamodel.${dataset.structName}.onChange(() => {\n`;
+                            out += `        ${template.datamodel.varName}.datamodel.${dataset.structName}.value ...\n`;
+                            out += `        ${template.datamodel.varName}.datamodel.${dataset.structName}.nettime : (int32_t) nettime @ time of publish\n`;
+                            out += `        ${template.datamodel.varName}.datamodel.${dataset.structName}.latency : (int32_t) time in us between publish and arrival\n`;
                             out += `    })\n`;
                         }
-                        out += `    ${template.datamodel.varName}.dataModel.${dataset.structName}.onConnectionChange(() => {\n`;
-                        out += `        ${template.datamodel.varName}.dataModel.${dataset.structName}.connectionState : (string) "Connected", "Operational", "Disconnected" or "Aborted"\n`;
+                        out += `    ${template.datamodel.varName}.datamodel.${dataset.structName}.onConnectionChange(() => {\n`;
+                        out += `        ${template.datamodel.varName}.datamodel.${dataset.structName}.connectionState : (string) "Connected", "Operational", "Disconnected" or "Aborted"\n`;
                         out += `    });\n`;
             
             
@@ -269,8 +269,8 @@ class TemplateLinuxNAPI extends Template {
             out += `});\n`;
             for (let i = 0; i < template.datasets.length; i++) {
                 if (template.datasets[i].isSub || template.datasets[i].isPub) {
-                    out += `${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.onConnectionChange(() => {\n`;
-                    out += `    // switch (${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.connectionState) ...\n`;
+                    out += `${template.datamodel.varName}.datamodel.${template.datasets[i].structName}.onConnectionChange(() => {\n`;
+                    out += `    // switch (${template.datamodel.varName}.datamodel.${template.datasets[i].structName}.connectionState) ...\n`;
                     out += `});\n`;
                 }
             }
@@ -280,8 +280,8 @@ class TemplateLinuxNAPI extends Template {
             out += `//value change events\n`;
             for (let i = 0; i < template.datasets.length; i++) {
                 if (template.datasets[i].isSub) {
-                    out += `${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.onChange(() => {\n`;
-                    out += `    //${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.value..\n`;
+                    out += `${template.datamodel.varName}.datamodel.${template.datasets[i].structName}.onChange(() => {\n`;
+                    out += `    //${template.datamodel.varName}.datamodel.${template.datasets[i].structName}.value..\n`;
                     out += `});\n`;
                 }
             }
@@ -294,8 +294,8 @@ class TemplateLinuxNAPI extends Template {
             out += `    //if (${template.datamodel.varName}.isConnected) {\n`;
             for (let i = 0; i < template.datasets.length; i++) {
                 if (template.datasets[i].isPub) {
-                    out += `        //${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.value = ..\n`;
-                    out += `        //${template.datamodel.varName}.dataModel.${template.datasets[i].structName}.publish();\n`;
+                    out += `        //${template.datamodel.varName}.datamodel.${template.datasets[i].structName}.value = ..\n`;
+                    out += `        //${template.datamodel.varName}.datamodel.${template.datasets[i].structName}.publish();\n`;
                 }
             }
             out += `    //}\n`;
@@ -1496,7 +1496,7 @@ class TemplateLinuxNAPI extends Template {
                 for (let i = 0; i < template.datasets.length; i++) {
                     if (template.datasets[i].isSub || template.datasets[i].isPub) { out += `    napi_set_named_property(env, dataModel, "${template.datasets[i].structName}", ${template.datasets[i].structName}.value); \n`; }
                 }
-                out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "dataModel", dataModel); \n`;
+                out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "datamodel", dataModel); \n`;
                 out += `    napi_create_function(env, NULL, 0, ${template.datamodel.varName}_connonchange_init, NULL, &${template.datamodel.varName}_conn_change); \n`;
                 out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "onConnectionChange", ${template.datamodel.varName}_conn_change); \n`;
                 out += `    napi_set_named_property(env, ${template.datamodel.varName}.value, "connectionState", def_string);\n`;

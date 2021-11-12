@@ -33,10 +33,18 @@ class TemplateLinuxTermination {
             out += `#ifndef _TERMINATION_H_\n`;
             out += `#define _TERMINATION_H_\n`;
             out += `\n`;
+            out += `#ifdef __cplusplus\n`;
+            out += `extern "C" {\n`;
+            out += `#endif\n`;
+            out += `\n`;
             out += `#include <stdbool.h>\n`;
             out += `\n`;
             out += `void catch_termination();\n`;
             out += `bool is_terminated();\n`;
+            out += `\n`;
+            out += `#ifdef __cplusplus\n`;
+            out += `}\n`;
+            out += `#endif\n`;
             out += `\n`;
             out += `#endif//_TERMINATION_H_\n`;
         

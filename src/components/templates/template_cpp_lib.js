@@ -576,7 +576,7 @@ class TemplateCppLib extends Template {
         
             return out;
         }
-        return genenerateLegend(this.template, this.datamodel.isLinux);
+        return genenerateLegend(this.template, this.isLinux);
     }
 }
 
