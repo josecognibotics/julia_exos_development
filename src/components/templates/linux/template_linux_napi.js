@@ -185,9 +185,138 @@ class TemplateLinuxNAPI extends Template {
 
             /**
              * @param {ApplicationTemplate} template 
-             * @param {boolean} PubSubSwap 
              */
-            function genenerateLegend(template, PubSubSwap) {
+            function generateJsDoc(template) {
+                function convertPlcType(type) {
+                    switch (type) {
+                        case "BOOL": return "boolean";
+                        case "USINT": return "number";
+                        case "SINT": return "number";
+                        case "UINT": return "number";
+                        case "INT": return "number";
+                        case "UDINT": return "number";
+                        case "DINT": return "number";
+                        case "REAL": return "number";
+                        case "LREAL": return "number";
+                        case "BYTE": return "number";
+                        case "STRING": return "string";
+                        default: //returning the type makes the function valid even if you insert a struct
+                    }
+                }
+
+                function makeValue(parent, dataset) {
+                    
+                    let out = "";
+                    
+                    for (let member of dataset.datasets) {
+                        if(member.datasets && member.datasets.length > 0) {
+                            out += makeValue(`${parent}${dataset.structName}`, member);
+                        }
+                    }
+
+                    out += ` * @typedef {Object} ${parent}${dataset.structName}DataSetValue\n`;
+                    
+                    for (let member of dataset.datasets) {
+                        let arrayOut = "";
+                        let arraySize = ""; 
+                        if (member.arraySize > 0) {
+                            arrayOut = "[]";
+                            arraySize = `\`[0..${member.arraySize-1}]\` `
+                        }
+                        if(member.datasets && member.datasets.length > 0) {
+                            out += ` * @property {${parent}${dataset.structName}${member.structName}DataSetValue${arrayOut}} ${member.structName} ${arraySize}${member.comment}\n`;
+                        }
+                        else {
+                            out += ` * @property {${convertPlcType(member.dataType)}${arrayOut}} ${member.structName} ${arraySize}${member.comment}\n`;
+                        }
+                    }
+                    out += ` * \n`;
+
+                    return out;
+                }
+
+                let out = "";
+    
+                out += `/**\n`;
+                out += ` * @callback ${template.datamodel.structName}DataModelCallback\n`;
+                out += ` * @returns {function()}\n`;
+                out += ` * \n`;
+                for (let dataset of template.datasets) {
+                    if (dataset.isPub || dataset.isSub) {
+                        if(dataset.datasets && dataset.datasets.length > 0) {
+                            out += makeValue(template.datamodel.structName, dataset);
+                        }
+                    }
+                }
+                
+                for (let dataset of template.datasets) {
+                    if (dataset.isPub || dataset.isSub) {
+                        out += ` * @typedef {Object} ${dataset.structName}DataSet\n`;
+                        let arrayOut = "";
+                        let arraySize = ""; 
+                        if (dataset.arraySize > 0) {
+                            arrayOut = "[]";
+                            arraySize = `\`[0..${dataset.arraySize-1}]\` `
+                        }
+                        if (dataset.datasets && dataset.datasets.length > 0) {
+                            out += ` * @property {${template.datamodel.structName}${dataset.structName}DataSetValue${arrayOut}} value ${arraySize}${dataset.comment}\n`;
+                        }
+                        else {
+                            out += ` * @property {${convertPlcType(dataset.dataType)}${arrayOut}} value ${arraySize}${dataset.comment}\n`;
+                        }
+                        
+                        if (dataset.isPub) {
+                            out += ` * @property {function()} publish publish the value\n`;
+                        }
+                        if (dataset.isSub) {
+                            out += ` * @property {${template.datamodel.structName}DataModelCallback} onChange event fired when \`value\` changes\n`;
+                            out += ` * @property {number} nettime used in the \`onChange\` event: nettime @ time of publish\n`;
+                            out += ` * @property {number} latency used in the \`onChange\` event: time in us between publish and arrival\n`;
+                        }
+                        out += ` * @property {${template.datamodel.structName}DataModelCallback} onConnectionChange event fired when \`connectionState\` changes \n`;
+                        out += ` * @property {string} connectionState \`Connected\`|\`Operational\`|\`Disconnected\`|\`Aborted\` - used in the \`onConnectionChange\` event\n`;
+                        out += ` * \n`;
+                    }
+                }
+                out += ` * @typedef {Object} ${template.datamodel.structName}Datamodel\n`;
+                for (let dataset of template.datasets) {
+                    if (dataset.isPub || dataset.isSub) {
+                        out += ` * @property {${dataset.structName}DataSet} ${dataset.structName}\n`;
+                    }
+                }
+                out += ` * \n`;
+                out += ` * @callback ${template.datamodel.structName}DatamodelLogMethod\n`;
+                out += ` * @param {string} message\n`;
+                out += ` * \n`;
+                out += ` * @typedef {Object} ${template.datamodel.structName}DatamodelLog\n`;
+                out += ` * @property {${template.datamodel.structName}DatamodelLogMethod} warning\n`;
+                out += ` * @property {${template.datamodel.structName}DatamodelLogMethod} success\n`;
+                out += ` * @property {${template.datamodel.structName}DatamodelLogMethod} info\n`;
+                out += ` * @property {${template.datamodel.structName}DatamodelLogMethod} debug\n`;
+                out += ` * @property {${template.datamodel.structName}DatamodelLogMethod} verbose\n`;
+                out += ` * \n`;
+                out += ` * @typedef {Object} ${template.datamodel.structName}\n`;
+                out += ` * @property {function():number} nettime get current nettime\n`;
+                out += ` * @property {${template.datamodel.structName}DataModelCallback} onConnectionChange event fired when \`connectionState\` changes \n`;
+                out += ` * @property {string} connectionState \`Connected\`|\`Operational\`|\`Disconnected\`|\`Aborted\` - used in the \`onConnectionChange\` event\n`;
+                out += ` * @property {boolean} isConnected\n`;
+                out += ` * @property {boolean} isOperational\n`;
+                out += ` * @property {${template.datamodel.structName}DatamodelLog} log\n`;
+                out += ` * @property {${template.datamodel.structName}Datamodel} datamodel\n`;
+                out += ` * \n`;
+                out += ` */\n\n`;
+
+                out += `/**\n`;
+                out += ` * @type {${template.datamodel.structName}}\n`;
+                out += ` */\n`;
+                return out;
+            }
+    
+
+            /**
+             * @param {ApplicationTemplate} template 
+             */
+            function genenerateLegend(template) {
                 let out = "";
             
                 out += `/* datamodel features:\n`;
@@ -229,10 +358,10 @@ class TemplateLinuxNAPI extends Template {
                             out += `s\n`;
                         }
             
-                        if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
+                        if (dataset.isPub) {
                             out += `    ${template.datamodel.varName}.datamodel.${dataset.structName}.publish()\n`;
                         }
-                        if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
+                        if (dataset.isSub) {
                             out += `    ${template.datamodel.varName}.datamodel.${dataset.structName}.onChange(() => {\n`;
                             out += `        ${template.datamodel.varName}.datamodel.${dataset.structName}.value ...\n`;
                             out += `        ${template.datamodel.varName}.datamodel.${dataset.structName}.nettime : (int32_t) nettime @ time of publish\n`;
@@ -254,9 +383,9 @@ class TemplateLinuxNAPI extends Template {
 
             let out = "";
         
-            out += `let ${template.datamodel.varName} = require("./l_${template.datamodel.structName}.node").${template.datamodel.structName};\n\n`;
-        
-            out += genenerateLegend(template, true);
+            out += generateJsDoc(template);
+            out += `let ${template.datamodel.varName} = require('./l_${template.datamodel.structName}.node').${template.datamodel.structName};\n\n`;
+            out += genenerateLegend(template);
         
             out += `//connection state changes\n`;
             out += `${template.datamodel.varName}.onConnectionChange(() => {\n`;

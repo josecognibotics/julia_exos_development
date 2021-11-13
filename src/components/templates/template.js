@@ -119,7 +119,7 @@ class Template
                     } else {
                         object["arraySize"] = 0;
                     }
-                    object["comment"] = child.attributes.comment;
+                    object["comment"] = child.attributes.comment.replace("PUB","").replace("SUB","");
                     if (typeof child.attributes.comment === "string") {
                         if(Linux)
                         {
