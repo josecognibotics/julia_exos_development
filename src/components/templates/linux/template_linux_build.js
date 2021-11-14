@@ -43,6 +43,7 @@ const {GeneratedFileObj} = require('../../../datamodel')
  * @property {string} nodeFileName (read only) name of the generated .node module. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the LinuxPackage
  * 
  * @typedef {Object} BuildOptions
+ * @property {boolean} checkVersion add additional code in the build.sh to check the version of exos-data-eth against the first parameter passed to the build script (only if a parameter is passed). default: `true`
  * @property {string} buildType  `Debug` | `Release` | `RelWithDebInfo` | `MinSizeRel`. default: `Debug`
  * @property {BuildOptionsExecutable} executable build options for creating an executable
  * @property {BuildOptionsSWIGPython} swigPython build options for creating a SWIG python module
@@ -91,6 +92,7 @@ class TemplateLinuxBuild {
     constructor(name) {
         this.name = name;
         this.options = {
+            checkVersion: true,
             buildType: "Debug",
             executable: {
                 enable: false,
@@ -283,6 +285,27 @@ class TemplateLinuxBuild {
         
         out += `#!/bin/sh\n\n`;
 
+        if(this.options.checkVersion == true) {
+            out += `dpkg -s exos-data-eth | grep Version\n`;
+            out += `if [ "$?" -ne 0 ] ; then\n`;
+            out += `    echo "Please install exos-data-eth in your build system:"\n`;
+            out += `    echo "sudo ./setup_build_environment.sh"\n`;
+            out += `    exit 1\n`;
+            out += `fi\n`;
+            out += `\n`;
+            out += `## check the version of exos-data-eth\n`;
+            out += `if [ -n "$1" ] ; then\n`;
+            out += `    EXOS_DATA_VER=$(dpkg -s exos-data-eth | grep Version | cut -d ':' -f2 | sed -e 's/^[[:space:]]*//')\n`;
+            out += `    if [ "$1" != $EXOS_DATA_VER ] ; then\n`;
+            out += `        echo "Error Version of exos-data-eth is $EXOS_DATA_VER instead of required $1"\n`;
+            out += `        echo "Please install the version $1 in your build system:"\n`;
+            out += `        echo "sudo ./setup_build_environment.sh"\n`;
+            out += `        exit 1\n`;
+            out += `    fi\n`;
+            out += `fi\n`;
+            out += `\n`;
+        }
+
         if(this.options.napi.enable) {
             
             out += `finalize() {\n`;
@@ -293,7 +316,7 @@ class TemplateLinuxBuild {
             out += `    sync\n`;
             out += `    exit $1\n`;
             out += `}\n\n`;
-        
+    
             out += `mkdir build > /dev/null 2>&1\n`;
         
             out += `rm -f l_*.node\n`;
