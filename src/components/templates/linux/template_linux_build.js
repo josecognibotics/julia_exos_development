@@ -249,7 +249,7 @@ class TemplateLinuxBuild {
         }
 
         if(this.options.debPackage.enable) {
-            this.options.debPackage.fileName = `${this.options.debPackage.packageName}_${this.options.debPackage.version.major}.${this.options.debPackage.version.minor}.${this.options.debPackage.version.patch}_amd64.deb`;
+            this.options.debPackage.fileName = `${this.options.debPackage.packageName}_${this.options.debPackage.version.major}.${this.options.debPackage.version.minor}.${this.options.debPackage.version.patch}_amd64`;
 
             out += `\n`;
             out += `set(CPACK_GENERATOR "DEB")\n`;
