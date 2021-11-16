@@ -11,7 +11,7 @@
         {
             "label": "Remove exOS exports",
             "type": "shell",
-            "command": "Remove-Item -Recurse -Force C:\\Temp\\exOS\\*",
+            "command": "if(Test-Path C:\\Temp\\exOS\\) { Remove-Item -Recurse -Force C:\\Temp\\exOS\\* } else { New-item -Path C:\\Temp\\exOS -ItemType Directory | Out-Null }",
         }
     ]
 }
