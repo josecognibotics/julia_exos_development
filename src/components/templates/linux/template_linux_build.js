@@ -286,23 +286,37 @@ class TemplateLinuxBuild {
         out += `#!/bin/sh\n\n`;
 
         if(this.options.checkVersion == true) {
-            out += `dpkg -s exos-data-eth | grep Version\n`;
-            out += `if [ "$?" -ne 0 ] ; then\n`;
-            out += `    echo "Please install exos-data-eth in your build system:"\n`;
+            out += `# Get the installed version of exos-data-eth\n`;
+            out += `EXOS_DATA_PKG_NAME="exos-data-eth"\n`;
+            out += `EXOS_DATA_VERSION_INSTALLED=$(dpkg -s $EXOS_DATA_PKG_NAME 2>/dev/null | grep -i version | cut -d" " -f2)\n`;
+            out += `if [ -z $EXOS_DATA_VERSION_INSTALLED ] ; then\n`;
+            out += `    # Fall-back to check the installed version of exos-data\n`;
+            out += `    EXOS_DATA_PKG_NAME="exos-data"\n`;
+            out += `    EXOS_DATA_VERSION_INSTALLED=$(dpkg -s $EXOS_DATA_PKG_NAME 2>/dev/null | grep -i version | cut -d" " -f2)\n`;
+            out += `fi\n`;
+            out += `\n`;
+            out += `# If there is nothing installed at all\n`;
+            out += `if [ -z $EXOS_DATA_VERSION_INSTALLED ] ; then\n`;
+            out += `    echo "ERROR: Did not find any version of $EXOS_DATA_PKG_NAME"\n`;
+            out += `    echo "Please install exos-data-eth or exos-data in your build system:"\n`;
             out += `    echo "sudo ./setup_build_environment.sh"\n`;
             out += `    exit 1\n`;
             out += `fi\n`;
             out += `\n`;
-            out += `## check the version of exos-data-eth\n`;
-            out += `if [ -n "$1" ] ; then\n`;
-            out += `    EXOS_DATA_VER=$(dpkg -s exos-data-eth | grep Version | cut -d ':' -f2 | sed -e 's/^[[:space:]]*//')\n`;
-            out += `    if [ "$1" != $EXOS_DATA_VER ] ; then\n`;
-            out += `        echo "Error Version of exos-data-eth is $EXOS_DATA_VER instead of required $1"\n`;
-            out += `        echo "Please install the version $1 in your build system:"\n`;
-            out += `        echo "sudo ./setup_build_environment.sh"\n`;
-            out += `        exit 1\n`;
-            out += `    fi\n`;
+            out += `## Check if no version is given as parameter to the script\n`;
+            out += `if [ -z $1 ] ; then\n`;
+            out += `    echo "WARNING: Version of $EXOS_DATA_PKG_NAME is $EXOS_DATA_VERSION_INSTALLED but required version is unknown"\n`;
+            out += `    echo "Please use \\$(EXOS_VERSION) in .exospkg BuildCommand Arguments when calling $0"\n`;
+            out += `\n`;
+            out += `# Check compatibility of exos-data/exos-data-eth and exos version from technology package\n`;
+            out += `elif [ "$1" != $EXOS_DATA_VERSION_INSTALLED ] ; then\n`;
+            out += `    echo "ERROR: Version of $EXOS_DATA_PKG_NAME is $EXOS_DATA_VERSION_INSTALLED instead of required $1"\n`;
+            out += `    echo "Please install the version $1 in your build system:"\n`;
+            out += `    echo "sudo ./setup_build_environment.sh"\n`;
+            out += `    exit 1\n`;
             out += `fi\n`;
+            out += `\n`;
+            out += `# Checks done, continue with the build\n`;
             out += `\n`;
         }
 
@@ -325,7 +339,7 @@ class TemplateLinuxBuild {
             out += `npm install\n`;
             out += `if [ "$?" -ne 0 ] ; then\n`;
             out += `    cd build\n\n`;
-            out += `    finalize 1\n`;
+            out += `    finalize 2\n`;
             out += `fi\n\n`;
         
             out += `cp -f build/Release/l_*.node .\n\n`;
@@ -341,7 +355,7 @@ class TemplateLinuxBuild {
             if(this.options.debPackage.enable) {
                 out += `cmake -Wno-dev ..\n`;
                 out += `if [ "$?" -ne 0 ] ; then\n`;
-                out += `    finalize 2\n`;
+                out += `    finalize 4\n`;
                 out += `fi\n\n`;
             }
         }
@@ -366,11 +380,11 @@ class TemplateLinuxBuild {
             }
             //make
             out += `if [ "$?" -ne 0 ] ; then\n`;
-            out += `    finalize 1\n`;
+            out += `    finalize 2\n`;
             out += `fi\n\n`;
             out += `make\n`;
             out += `if [ "$?" -ne 0 ] ; then\n`;
-            out += `    finalize 2\n`;
+            out += `    finalize 3\n`;
             out += `fi\n\n`;
         }    
         
@@ -378,7 +392,7 @@ class TemplateLinuxBuild {
         if(this.options.debPackage.enable) {
             out += `cpack\n`;
             out += `if [ "$?" -ne 0 ] ; then\n`;
-            out += `    finalize 3\n`;
+            out += `    finalize 4\n`;
             out += `fi\n\n`;
             out += `cp -f ${this.options.debPackage.fileName} ..\n\n`;
         }
