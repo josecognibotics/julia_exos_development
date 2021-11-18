@@ -543,7 +543,7 @@ const EXOSPKG_VERSION = "2.0.0";
      * @returns {object} object that can be further populated with file dependencies using `addBuildDependency()`
      */
     getNewWSLBuildCommand(linuxPackage, buildScript) {
-        return this.getNewBuildCommand("C:\\Windows\\Sysnative\\wsl.exe",linuxPackage,`-d Debian -e sh ${buildScript}`);
+        return this.getNewBuildCommand("C:\\Windows\\Sysnative\\wsl.exe",linuxPackage,`-d Debian -e sh ${buildScript} $(EXOS_VERSION)`);
     }
 
     /**
