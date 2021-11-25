@@ -1,16 +1,6 @@
 
 const version = "1.1.0";
 
-/**
- * Not yet implemented:
- * - multidimensional arrays
- * - value initialization of structures or structure members
- * 
- * Todos:
- * - create an error for multidimenstional arrays
- * - what happens if one of the types arent found??
- *  */
-
 const fs = require('fs');
 const path = require('path');
 
@@ -881,6 +871,24 @@ class Datamodel {
                     else return null;
                 }
                 
+                function plcTypeNotSupported(type)
+                {
+                    switch(type)
+                    {
+                        case "DATE":
+                        case "DATE_AND_TIME":
+                        case "DT":
+                        case "DWORD":
+                        case "TIME":
+                        case "TIME_OF_DAY":
+                        case "TOD":
+                        case "WORD":
+                        case "WSTRING":
+                            return true;
+                    }
+                    return false;
+                }
+
                 let arraySize = 0;
                 let dimensions = [0];
             
@@ -892,11 +900,23 @@ class Datamodel {
                         dimensions = ranges.split(",");
             
                         if (dimensions.length > 1) {
-                            throw (`multi dimensional arrays are not supported -> member "${name}"`);
+                            throw (`Multi dimensional arrays are not supported -> member "${name}"`);
                         }
                         if (ranges != null) {
-                            let from = parseInt(ranges.split("..")[0].trim());
-                            let to = parseInt(ranges.split("..")[1].trim());
+                            let fromStr = ranges.split("..")[0].trim()
+                            let toStr = ranges.split("..")[1].trim()
+
+                            if(isNaN(fromStr) || isNaN(toStr)) {
+                                throw (`Array with non-numeric bounds not supported -> member "${name}"`);
+                            }
+
+                            let from = parseInt(fromStr);
+                            let to = parseInt(toStr);
+
+                            if(from != 0) {
+                                throw (`Array bound not starting from 0 not supported -> member "${name}"`);
+                            } 
+
                             arraySize = to - from + 1;
                             nestingDepth += dimensions.length; //add a nesting depth for each dimention in multi-dim arrays
                             if (nestingDepth > Datamodel.MAX_ARRAY_NEST) throw (`Member "${name}" has array nesting depth of ${nestingDepth} deeper than ${Datamodel.MAX_ARRAY_NEST} nests`);
@@ -919,6 +939,14 @@ class Datamodel {
                         comment = _takeout(fileLines[index], "(*", "*)");
                     }
             
+                    if(type.includes("REFERENCE")) {
+                        throw (`Referenced members are not supported -> member "${name}"`);
+                    }
+                    
+                    if(plcTypeNotSupported(type)) {
+                        throw (`IEC Type ${type} is not supported -> member "${name}"`);
+                    }
+
                     if (type.includes("STRING")) {
                         if (arraySize > 0) nestingDepth -= dimensions.length;
                         let length = _takeout(type, "[", "]");
