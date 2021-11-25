@@ -249,7 +249,7 @@ class TemplateLinuxBuild {
         }
 
         if(this.options.debPackage.enable) {
-            this.options.debPackage.fileName = `${this.options.debPackage.packageName}_${this.options.debPackage.version.major}.${this.options.debPackage.version.minor}.${this.options.debPackage.version.patch}_amd64`;
+            this.options.debPackage.fileName = `${this.options.debPackage.packageName}_${this.options.debPackage.version.major}.${this.options.debPackage.version.minor}.${this.options.debPackage.version.patch}_amd64.deb`;
 
             out += `\n`;
             out += `set(CPACK_GENERATOR "DEB")\n`;
@@ -262,7 +262,7 @@ class TemplateLinuxBuild {
             out += `set(CPACK_PACKAGE_VERSION_MINOR ${this.options.debPackage.version.minor})\n`;
             out += `set(CPACK_PACKAGE_VERSION_PATCH ${this.options.debPackage.version.patch})\n`;
 
-            out += `set(CPACK_PACKAGE_FILE_NAME ${this.options.debPackage.fileName})\n`;
+            out += `set(CPACK_PACKAGE_FILE_NAME ${this.options.debPackage.packageName}_${this.options.debPackage.version.major}.${this.options.debPackage.version.minor}.${this.options.debPackage.version.patch}_amd64)\n`;
 
             out += `set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${this.options.debPackage.maintainer}")\n`;
             out += `\n`;
