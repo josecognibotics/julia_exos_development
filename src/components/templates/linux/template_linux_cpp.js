@@ -1,3 +1,9 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 const { Datamodel, GeneratedFileObj } = require('../../../datamodel');
 const { Template, ApplicationTemplate } = require('../template')
 const { TemplateLinuxTermination } = require('./template_linux_termination');

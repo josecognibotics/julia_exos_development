@@ -1,4 +1,6 @@
-# exOS-Components Generator
+# exOS Component Generator
+
+Extension to create exOS components for B&R Automation Studio.
 
 ## Usage
 
@@ -10,9 +12,15 @@ If the .typ file is located within an Automation Studio project (part of the Pac
 
 ## Update
 
-For all templates except the `Instantiatable C Template` theres a functionality to regenerate the "inner" parts of the template, which is defining the datamodel by using the exos-api functions.
+For all templates except the `C-API` theres a functionality to regenerate the "inner" parts of the template, which is defining the datamodel by using the exos-api functions.
 
-This is done via the context menu of / right clicking on the `.exospkg` which was initially generated. Note that is is only possible to **update same kind of Template that was initially created**, and there is little error handling to check the behaviour for improper usage.
+This is done via the context menu of / right clicking on the `.exospkg` which was initially generated. Note that is is only possible to **update same kind of Template that was initially created**.
+
+## Binary Export
+
+All exOS packages created with the `exOS Component Generator` can be exported as binary packages, so that the package can be used inside automation projects without recompiling any code. Normally the packages contain "user-code" which is editable, like a main program / script or Structured Text program using the exOS datamodel. The parts including exOS-API communication mechanisms will be binary and thus stay without modifications after binary distribution.
+
+A package can be exported to a binary format via the context menu of / right clicking on the Folder containing the `.exospkg` file. Note that this folder needs to be part of a compiled AS project, in order to obtain the binaries of the Libraries.
 
 ## Example
 
