@@ -1,6 +1,6 @@
 {
 	"name": "exos-component-extension",
-	"publisher": "B&R Automation",
+	"publisher": "exOS-ComponentExtension",
 	"repository": "https://github.com/br-automation-com/exOS-ComponentExtension",
 	"displayName": "exOS Component Generator",
 	"description": "Code Generator for exOS Hybrid Components",
