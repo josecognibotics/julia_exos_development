@@ -326,7 +326,7 @@ class TemplateARDynamic extends Template {
             out += `    {\n`;
             out += `        ${template.datamodel.varName}->datamodel_event_callback = datamodelEvent;\n`;
             out += `        exos_log_delete(&${template.handle.name}->${template.logname});\n`;
-            out += `        exos_log_init(&${template.handle.name}->${template.logname}, "${template.datamodel.structName}_0");\n`;
+            out += `        exos_log_init(&${template.handle.name}->${template.logname}, "${template.aliasName}");\n`;
             out += `    }\n\n`;
         
             for (let dataset of template.datasets) {
