@@ -71,10 +71,10 @@ class TemplateLinuxNAPI extends Template {
     librarySource;
 
     /**
-     * main javascript application (index.js)
+     * main javascript application
      * @type {GeneratedFileObj}
      */
-    indexJs;
+    JsMain;
 
     /**
      * nodejs package JSON file
@@ -94,7 +94,7 @@ class TemplateLinuxNAPI extends Template {
      * It generates the following {@link GeneratedFileObj} objects
      * - {@linkcode gypFile}
      * - {@linkcode librarySource}
-     * - {@linkcode indexJs}
+     * - {@linkcode JsMain}
      * - {@linkcode packageJson}
      * - {@linkcode packageLockJson}
      * 
@@ -104,7 +104,7 @@ class TemplateLinuxNAPI extends Template {
         super(datamodel, true, true); //create recursive template.dataset info
         this.gypFile = {name:"binding.gyp", contents:this._generateGyp(), description:`${this.datamodel.typeName} build file`};
         this.librarySource = {name:`lib${this.datamodel.typeName.toLowerCase()}.c`, contents:this._generateLibTemplate(), description:`${this.datamodel.typeName} N-API wrapper`};
-        this.indexJs = {name:"index.js", contents:this._generateIndexJS(), description:`${this.datamodel.typeName} main javascript application`};
+        this.JsMain = {name:`${this.datamodel.typeName.toLowerCase()}.js`, contents:this._generateJSMain(), description:`${this.datamodel.typeName} main javascript application`};
         this.packageJson = {name:"package.json", contents:this._generatePackageJSON(), description:`${this.datamodel.typeName} package information`};
         this.packageLockJson = {name:"package-lock.json", contents:this._generatePackageLockJSON(), description:`${this.datamodel.typeName} package dependency tree`};
     }
@@ -161,16 +161,16 @@ class TemplateLinuxNAPI extends Template {
         /**
          * @param {ApplicationTemplate} template 
          */
-        function generatePackageJSON(template) {
+        function generatePackageJSON(template, mainName) {
             let out = "";
         
             out += `{\n`;
             out += `  "name": "${template.datamodel.varName}",\n`;
             out += `  "version": "1.0.0",\n`;
             out += `  "description": "implementation of exOS data exchange defined by datatype ${template.datamodel.structName}",\n`;
-            out += `  "main": "index.js",\n`;
+            out += `  "main": "${mainName}",\n`;
             out += `  "scripts": {\n`;
-            out += `    "start": "node index.js"\n`;
+            out += `    "start": "node ${mainName}"\n`;
             out += `  },\n`;
             out += `  "author": "your name",\n`;
             out += `  "license": "MIT"\n`;
@@ -179,15 +179,15 @@ class TemplateLinuxNAPI extends Template {
             return out;
         }
 
-        return generatePackageJSON(this.template);
+        return generatePackageJSON(this.template, this.JsMain.name);
     }
 
-    _generateIndexJS() {
+    _generateJSMain() {
 
         /**
          * @param {ApplicationTemplate} template 
          */
-        function generateIndexJS(template) {
+        function generateJSMain(template) {
 
             /**
              * @param {ApplicationTemplate} template 
@@ -439,7 +439,7 @@ class TemplateLinuxNAPI extends Template {
             return out;
         }
 
-        return generateIndexJS(this.template);
+        return generateJSMain(this.template);
     }
 
     _generateLibTemplate() {

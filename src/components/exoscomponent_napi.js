@@ -69,7 +69,7 @@ class ExosComponentNAPI extends ExosComponentAR {
     makeComponent(location) {
         
         this._templateBuild.options.napi.enable = true;
-        this._templateBuild.options.napi.sourceFiles = [this._templateNAPI.indexJs.name, this._templateNAPI.packageJson.name, this._templateNAPI.packageLockJson.name];
+        this._templateBuild.options.napi.sourceFiles = [this._templateNAPI.JsMain.name, this._templateNAPI.packageJson.name, this._templateNAPI.packageLockJson.name];
     
         if(this._options.packaging == "deb") {
             this._templateBuild.options.debPackage.enable = true;
@@ -93,7 +93,7 @@ class ExosComponentNAPI extends ExosComponentAR {
         if(this._options.packaging == "deb") {
             this._linuxPackage.addExistingFile(this._templateBuild.options.napi.nodeFileName, `${this._typeName} node module`);
             this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName, this._templateBuild.options.debPackage.packageName, `${this._typeName} debian package`);
-            this._exospackage.exospkg.addService("Startup", `cp ${this._templateNAPI.indexJs.name} ${this._templateBuild.options.debPackage.destination}`);
+            this._exospackage.exospkg.addService("Startup", `cp ${this._templateNAPI.JsMain.name} ${this._templateBuild.options.debPackage.destination}`);
             this._exospackage.exospkg.addService("Runtime", `npm start`, this._templateBuild.options.debPackage.destination);
         }
         else {
@@ -103,17 +103,17 @@ class ExosComponentNAPI extends ExosComponentAR {
             this._exospackage.exospkg.addService("Runtime", `npm start`);
         }
 
-        this._linuxPackage.addNewTransferFileObj(this._templateNAPI.indexJs, "Restart");
+        this._linuxPackage.addNewTransferFileObj(this._templateNAPI.JsMain, "Restart");
         this._exospackage.exospkg.addDatamodelInstance(`${this._templateAR.template.datamodelInstanceName}`);
 
         this._exospackage.exospkg.setComponentGenerator("ExosComponentNAPI", EXOS_COMPONENT_VERSION, []);
 
         if(this._options.packaging == "deb") {
             this._exospackage.exospkg.addGeneratorOption("exportLinux",[this._templateBuild.options.debPackage.fileName,
-                                                                        this._templateNAPI.indexJs.name]);
+                                                                        this._templateNAPI.JsMain.name]);
         }
         else {
-            this._exospackage.exospkg.addGeneratorOption("exportLinux",[this._templateNAPI.indexJs.name,
+            this._exospackage.exospkg.addGeneratorOption("exportLinux",[this._templateNAPI.JsMain.name,
                                                                         this._templateNAPI.packageJson.name,
                                                                         this._templateNAPI.packageLockJson.name,
                                                                         this._templateBuild.options.napi.nodeFileName]);
@@ -138,7 +138,7 @@ class ExosComponentNAPIUpdate extends ExosComponentARUpdate {
             this._templateNAPI = new TemplateLinuxNAPI(this._datamodel);
             this._linuxPackage.addNewFileObj(this._templateNAPI.librarySource);
             if(reset) {
-                this._linuxPackage.addNewFileObj(this._templateNAPI.indexJs);
+                this._linuxPackage.addNewFileObj(this._templateNAPI.JsMain);
             }
         }
      }
