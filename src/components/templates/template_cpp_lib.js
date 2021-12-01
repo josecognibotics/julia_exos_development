@@ -79,6 +79,10 @@ class TemplateCppLib extends Template {
 
             let out = "";
         
+            out += `#if __GNUC__ == 4\n`;
+            out += `#error ########## GCC 4.1.2 used but C++ Template Requires GCC 6.3 - Change the complier in the build options ##########\n`;
+            out += `#endif\n`;
+            
             out += `#ifndef _${template.datamodel.structName.toUpperCase()}DATASET_H_\n`;
             out += `#define _${template.datamodel.structName.toUpperCase()}DATASET_H_\n`;
             out += `\n`;
