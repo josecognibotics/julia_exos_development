@@ -483,6 +483,89 @@ function activate(context) {
 		}
 	});
 	context.subscriptions.push(updateComponent);
+
+	if (isDebugMode()) 
+	{
+		/* 
+			The purpose of this generate-everything-function is to easier compare generated templates before and after changes to the generators.
+				1) Generate everything
+				2) Initialize a git repo (or just copy the generated folders somewhere else for later comparision)
+				3) Change generators
+				4) Generate everything
+				5) Compare the new and old
+		*/
+		let generateEverythingDebug = vscode.commands.registerCommand('exos-component-extension.generateEverythingDebug', function (uri) {
+			
+			// Expecting the structure name to be the same as the name of the .typ file (no ext)
+			// if something else is needed, use Datamodel.getDatatypeList(uri.fsPath);
+			selectedStructure = {label: path.parse(uri.fsPath).name, detail: `some debug detail`};
+			infoMessage = `Generated Template for ${selectedStructure.label}: `;
+			vscode.debug.activeDebugConsole.appendLine(infoMessage);
+
+			try {
+				finalName = `${path.dirname(uri.fsPath)}/${selectedStructure.label}_c-api`;
+				fse.removeSync(finalName);
+				let templateC = new ExosComponentC(uri.fsPath, selectedStructure.label, {
+					packaging: "deb", templateLinux: "c-api", templateAR: "c-api", destinationDirectory: ""
+				});
+				templateC.makeComponent(path.dirname(uri.fsPath));
+				fse.moveSync(`${path.dirname(uri.fsPath)}/${selectedStructure.label}`, finalName);
+				infoMessage += `'c-api'`;
+				vscode.debug.activeDebugConsole.appendLine('c-api');
+				
+
+				finalName = `${path.dirname(uri.fsPath)}/${selectedStructure.label}_c-static`;
+				fse.removeSync(finalName);
+				templateC = new ExosComponentC(uri.fsPath, selectedStructure.label, {
+					packaging: "deb", templateLinux: "c-static", templateAR: "c-static", destinationDirectory: ""
+				});
+				templateC.makeComponent(path.dirname(uri.fsPath));
+				fse.moveSync(`${path.dirname(uri.fsPath)}/${selectedStructure.label}`, finalName);
+				infoMessage += `, 'c-static'`;
+				vscode.debug.activeDebugConsole.appendLine('c-static');
+				
+
+				finalName = `${path.dirname(uri.fsPath)}/${selectedStructure.label}_cpp`;
+				fse.removeSync(finalName);
+				templateC = new ExosComponentC(uri.fsPath, selectedStructure.label, {
+					packaging: "deb", templateLinux: "cpp", templateAR: "cpp", destinationDirectory: ""
+				});
+				templateC.makeComponent(path.dirname(uri.fsPath));
+				fse.moveSync(`${path.dirname(uri.fsPath)}/${selectedStructure.label}`, finalName);
+				infoMessage += `, 'cpp'`;
+				vscode.debug.activeDebugConsole.appendLine('cpp');
+				
+
+				finalName = `${path.dirname(uri.fsPath)}/${selectedStructure.label}_py`;
+				fse.removeSync(finalName);
+				templateSWIG = new ExosComponentSWIG(uri.fsPath, selectedStructure.label, {
+					packaging:"deb", templateAR:"c-api", destinationDirectory: ""
+				});
+				templateSWIG.makeComponent(path.dirname(uri.fsPath));
+				fse.moveSync(`${path.dirname(uri.fsPath)}/${selectedStructure.label}`, finalName);
+				infoMessage += `, 'py'`;
+				vscode.debug.activeDebugConsole.appendLine('py');
+
+
+				finalName = `${path.dirname(uri.fsPath)}/${selectedStructure.label}_napi`;
+				fse.removeSync(finalName);
+				let templateNAPI = new ExosComponentNAPI(uri.fsPath, selectedStructure.label,{
+					packaging: "deb", templateAR: "c-api", destinationDirectory: ""
+				});
+				templateNAPI.makeComponent(path.dirname(uri.fsPath));
+				fse.moveSync(`${path.dirname(uri.fsPath)}/${selectedStructure.label}`, finalName);
+				infoMessage += ` and 'napi'`;
+				vscode.debug.activeDebugConsole.appendLine('napi');
+
+				vscode.window.showInformationMessage(`${infoMessage}`);
+
+			} catch (error) {
+				vscode.debug.activeDebugConsole.appendLine(error);
+				vscode.window.showErrorMessage(error);
+			}
+		});
+		context.subscriptions.push(generateEverythingDebug);
+	}
 }
 exports.activate = activate;
 

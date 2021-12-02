@@ -9,7 +9,7 @@
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}"
 			],
-			"name": "Launch Extension",
+			"name": "Debug Extension",
 			"preLaunchTask": "Remove exOS exports",
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"
