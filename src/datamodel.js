@@ -206,7 +206,7 @@ class Datamodel {
     }
 
     /**
-     * @returns {string} datatype (BOOL, UDINT) as stdint.h/stdbool.h datatype (bool, uint32_t) or struct (unchanged)
+     * @returns {string} datatype (BOOL, UDINT) as stdint.h/stdbool.h datatype (bool, uint32_t) or struct/enum (unchanged)
      * @param {string} type IEC type, like BOOL or UDINT 
      */
      static convertPlcType(type) {
@@ -222,18 +222,20 @@ class Datamodel {
             case "LREAL": return "double";
             case "BYTE": return "int8_t";
             case "STRING": return "char";
-            default: //returning the type makes the function valid even if you insert a struct
+            default: //returning the type makes the function valid even if you insert a struct or enum
                 return type;
         }
     }
 
     /**
-     * @returns {boolean} true if the type is scalar (BOOL, UDINT..) or false if it is a structure
-     * @param {string} type IEC type, like BOOL or UDINT 
-     * @param {boolean} includeString 
+     * @returns {boolean} true if the type is scalar (BOOL, UDINT..) or enum. False if it is a structure
+     * @param {ApplicationTemplateDataset} dataset where .dataType is IEC type, like BOOL or UDINT 
+     * @param {boolean} includeString set whether string should be considered a scalar. Optional and false if not provided
      */
-    static isScalarType(type, includeString) {
-        switch (type) {
+    static isScalarType(dataset, includeString) {
+        if(dataset.type == "enum")
+            return true;
+        switch (dataset.dataType) {
             case "BOOL":
             case "USINT":
             case "SINT":
@@ -245,7 +247,7 @@ class Datamodel {
             case "LREAL":
             case "BYTE":
             case "STRING":
-                if (type === "STRING") {
+                if (dataset.dataType === "STRING") {
                     if ((includeString === undefined) || (includeString === false)) { return false; }
                     if ((includeString === true)) { return true; }
                     return false;
@@ -259,10 +261,12 @@ class Datamodel {
     /**
      * @returns {string} the printf format string for the given IEC type, like %u for UDINT or %s for STRING
      * 
-     * @param {string} type IEC type, like BOOL or UDINT  
+     * @param {ApplicationTemplateDataset} dataset where .dataType is IEC type, like BOOL or UDINT  
      */
-    static convertPlcTypePrintf(type) {
-        switch (type) {
+    static convertPlcTypePrintf(dataset) {
+        if(dataset.type == "enum")
+            return "%i";
+        switch (dataset.dataType) {
             case "BOOL": return "%i";
             case "USINT": return "%u";
             case "SINT": return "%i";
@@ -713,6 +717,7 @@ class Datamodel {
                             }
     
                             let typeForSwig = "";
+                            let dataset = {dataType: type, type: "notenum"};
                             if (type.includes("STRING")) {
                                 let length = _takeout(type, "[", "]");
                                 if (length != null) {
@@ -721,7 +726,7 @@ class Datamodel {
                                     out += _outputMember("char", name, [arraySize, stringSize], comment);
                                 }
                             }
-                            else if (Datamodel.isScalarType(type)) {
+                            else if (Datamodel.isScalarType(dataset)) {
                                 let stdtype = Datamodel.convertPlcType(type);
                                 typeForSwig = stdtype;
                                 out += _outputMember(stdtype, name, [arraySize], comment);
@@ -952,6 +957,7 @@ class Datamodel {
                         throw (`IEC Type ${type} is not supported -> member "${name}"`);
                     }
 
+                    let dataset = {dataType: type, type: "notenum"};
                     if (type.includes("STRING")) {
                         if (arraySize > 0) nestingDepth -= dimensions.length;
                         let length = _takeout(type, "[", "]");
@@ -969,7 +975,7 @@ class Datamodel {
                             }
                         }
                     }
-                    else if (Datamodel.isScalarType(type)) {
+                    else if (Datamodel.isScalarType(dataset)) {
                         if (arraySize > 0) nestingDepth -= dimensions.length;
                         return {
                             name: "variable",

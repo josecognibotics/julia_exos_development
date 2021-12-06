@@ -84,13 +84,13 @@ class TemplateLinuxStaticCLib extends TemplateStaticCLib {
                     out += `{\n`;
                     out += `   ${template.datamodel.varName}->log.verbose("${template.datamodel.varName}->${dataset.structName} changed!");\n`;
                     if (dataset.arraySize == 0) {
-                        out += `   ${prepend}printf("on_change: ${template.datamodel.varName}->${dataset.structName}: ${Datamodel.convertPlcTypePrintf(dataset.dataType)}\\n", ${template.datamodel.varName}->${dataset.structName}.value);\n\n`;
+                        out += `   ${prepend}printf("on_change: ${template.datamodel.varName}->${dataset.structName}: ${Datamodel.convertPlcTypePrintf(dataset)}\\n", ${template.datamodel.varName}->${dataset.structName}.value);\n\n`;
                     } else {
                         out += `   ${prepend}uint32_t i;\n`;
                         out += `   ${prepend}printf("on_change: ${template.datamodel.varName}->${dataset.structName}: Array of ${Datamodel.convertPlcType(dataset.dataType)}${dataset.dataType.includes("STRING") ? "[]" : ""}:\\n");\n`;
                         out += `   ${prepend}for(i = 0; i < sizeof(${template.datamodel.varName}->${dataset.structName}.value) / sizeof(${template.datamodel.varName}->${dataset.structName}.value[0]); i++ )\n`;
                         out += `   ${prepend}{\n`;
-                        out += `   ${prepend}    printf("  Index %i: ${Datamodel.convertPlcTypePrintf(dataset.dataType)}\\n", i, ${Datamodel.isScalarType(dataset.dataType,true)?"":"&"}${template.datamodel.varName}->${dataset.structName}.value[i]);\n`; 
+                        out += `   ${prepend}    printf("  Index %i: ${Datamodel.convertPlcTypePrintf(dataset)}\\n", i, ${Datamodel.isScalarType(dataset,true)?"":"&"}${template.datamodel.varName}->${dataset.structName}.value[i]);\n`; 
                         out += `   ${prepend}}\n\n`;
                     }
                     out += `   // Your code here...\n`;
@@ -122,7 +122,7 @@ class TemplateLinuxStaticCLib extends TemplateStaticCLib {
             out += `        // {\n`;
             for (let dataset of template.datasets) {
                 if (dataset.isPub) {
-                    out += `        //     ${template.datamodel.varName}->${dataset.structName}.value${dataset.arraySize > 0 ? "[..]" : ""}${Datamodel.isScalarType(dataset.dataType) ? "" : ". .."} = .. ;\n`;
+                    out += `        //     ${template.datamodel.varName}->${dataset.structName}.value${dataset.arraySize > 0 ? "[..]" : ""}${(Datamodel.isScalarType(dataset) || dataset.type == "enum") ? "" : ". .."} = .. ;\n`;
                     out += `        //     ${template.datamodel.varName}->${dataset.structName}.publish();\n`;
                     out += "        \n";
                 }

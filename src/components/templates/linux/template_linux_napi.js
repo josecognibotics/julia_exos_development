@@ -357,7 +357,7 @@ class TemplateLinuxNAPI extends Template {
                             out += `) `;
                         }
                         out += ` actual dataset value`;
-                        if (Datamodel.isScalarType(dataset.dataType, true)) {
+                        if (Datamodel.isScalarType(dataset, true)) {
                             out += `\n`;
                         }
                         else {
@@ -805,11 +805,9 @@ class TemplateLinuxNAPI extends Template {
                     let out = "";
                 
                     //check if the type is an enum and change enums to DINT
-                    if (!Datamodel.isScalarType(dataset.dataType, true)) {
-                        if (dataset.type === "enum") dataset.dataType = "DINT";
-                    }
+                    if (dataset.type === "enum") dataset.dataType = "DINT";
                 
-                    if (Datamodel.isScalarType(dataset.dataType, true)) {
+                    if (Datamodel.isScalarType(dataset, true)) {
                         if (dataset.arraySize > 0) {
                             iterator.next();
                             out += `napi_create_array(env, &${destNapiVar});`
@@ -832,7 +830,7 @@ class TemplateLinuxNAPI extends Template {
                             out += `{\n`;
                             out += `    napi_create_object(env, &${objectIdx.toString()});\n`;
                             for (let type of dataset.datasets) {
-                                if (Datamodel.isScalarType(type.dataType, true)) {
+                                if (Datamodel.isScalarType(type, true)) {
                                     if (type.arraySize > 0) {
                                         objectIdx.next(); //force "max" property to ++1 in order to get declarations rigt.
                                         objectIdx.prev();
@@ -855,7 +853,7 @@ class TemplateLinuxNAPI extends Template {
                         } else {
                             out += `    napi_create_object(env, &${objectIdx.toString()});\n`;
                             for (let type of dataset.datasets) {
-                                if (Datamodel.isScalarType(type.dataType, true)) {
+                                if (Datamodel.isScalarType(type, true)) {
                                     if (type.arraySize > 0) {
                                         objectIdx.next(); //force "max" property to ++1 in order to get declarations rigt.
                                         objectIdx.prev();
@@ -1057,11 +1055,9 @@ class TemplateLinuxNAPI extends Template {
                     let out = "";
                 
                     //check if the type is an enum and change enums to DINT
-                    if (!Datamodel.isScalarType(dataset.dataType, true)) {
-                        if (dataset.type === "enum") dataset.dataType = "DINT";
-                    }
-                
-                    if (Datamodel.isScalarType(dataset.dataType, true)) {
+                    if (dataset.type === "enum") dataset.dataType = "DINT";
+
+                    if (Datamodel.isScalarType(dataset, true)) {
                         if (dataset.arraySize > 0) {
                             iterator.next();
                             out += `for (uint32_t ${iterator.i} = 0; ${iterator.i} < (sizeof(${destvar})/sizeof(${destvar}[0])); ${iterator.i}++)\n`;
@@ -1085,7 +1081,7 @@ class TemplateLinuxNAPI extends Template {
                             for (let type of dataset.datasets) {
                                 objectIdx.next();
                                 out += `    napi_get_named_property(env, ${objectIdx.toString(-1)}, "${type.structName}", &${objectIdx.toString()});\n`;
-                                if (Datamodel.isScalarType(type.dataType, true)) {
+                                if (Datamodel.isScalarType(type, true)) {
                                     if (type.arraySize > 0) {
                                         let olditerator = iterator.i;
                                         out += generateValuesPublishItem(false, `${objectIdx.toString()}`, `${destvar}[${iterator.i}].${type.structName}`, type);
@@ -1109,7 +1105,7 @@ class TemplateLinuxNAPI extends Template {
                             for (let type of dataset.datasets) {
                                 objectIdx.next();
                                 out += `    napi_get_named_property(env, ${objectIdx.toString(-1)}, "${type.structName}", &${objectIdx.toString()});\n`;
-                                if (Datamodel.isScalarType(type.dataType, true)) {
+                                if (Datamodel.isScalarType(type, true)) {
                                     if (type.arraySize > 0) {
                                         out += generateValuesPublishItem(false, `${objectIdx.toString()}`, `${destvar}.${type.structName}`, type);
                                     } else {
@@ -1390,11 +1386,9 @@ class TemplateLinuxNAPI extends Template {
                     let out = "";
                 
                     //check if the type is an enum and change enums to DINT
-                    if (!Datamodel.isScalarType(dataset.dataType, true)) {
-                        if (dataset.type === "enum") dataset.dataType = "DINT";
-                    }
+                    if (dataset.type === "enum") dataset.dataType = "DINT";
                 
-                    if (Datamodel.isScalarType(dataset.dataType, true)) {
+                    if (Datamodel.isScalarType(dataset, true)) {
                         if (dataset.arraySize > 0) {
                             iterator.next();
                             out += `napi_create_array(env, &${destNapiVar});\n`;
@@ -1415,7 +1409,7 @@ class TemplateLinuxNAPI extends Template {
                             out += `{\n`;
                             out += `    napi_create_object(env, &${objectIdx.toString()});\n`;
                             for (let type of dataset.datasets) {
-                                if (Datamodel.isScalarType(type.dataType, true)) {
+                                if (Datamodel.isScalarType(type, true)) {
                                     if (type.arraySize > 0) {
                                         let olditerator = iterator.i;
                                         objectIdx.next();
@@ -1439,7 +1433,7 @@ class TemplateLinuxNAPI extends Template {
                         } else {
                             out += `    napi_create_object(env, &${objectIdx.toString()});\n`;
                             for (let type of dataset.datasets) {
-                                if (Datamodel.isScalarType(type.dataType, true)) {
+                                if (Datamodel.isScalarType(type, true)) {
                                     if (type.arraySize > 0) {
                                         objectIdx.next();
                                         out += `    ` + generateDataSetStructures(false, `${srcVariable}.${type.structName}`, `${objectIdx.toString()}`, type);

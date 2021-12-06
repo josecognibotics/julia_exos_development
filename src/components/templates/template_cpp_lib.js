@@ -386,7 +386,7 @@ class TemplateCppLib extends Template {
                     if(dataType.includes("STRING")) {
                         dataType = "char";
                     }
-                    if(Datamodel.isScalarType(dataType)){
+                    if(Datamodel.isScalarType(dataset)){
                         dataType = Datamodel.convertPlcType(dataType);
                     }
                     out += `    ${template.datamodel.datasetClassName}<${dataType}${dataset.arraySize > 0 ? '['+dataset.arraySize+']' : ''}${dataset.stringLength && dataset.stringLength > 0 ? '['+dataset.stringLength+']' : ''}> ${dataset.structName};\n`;
@@ -574,7 +574,7 @@ class TemplateCppLib extends Template {
                         out += `) `;
                     }
                     out += ` actual dataset value`;
-                    if(Datamodel.isScalarType(dataset.dataType, true)) {
+                    if(Datamodel.isScalarType(dataset, true)) {
                         out += `\n`;
                     }
                     else {

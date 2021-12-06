@@ -385,7 +385,7 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
                             out += `) `;
                         }
                         out += ` actual dataset value`;
-                        if(Datamodel.isScalarType(dataset.dataType, true)) {
+                        if(Datamodel.isScalarType(dataset, true)) {
                             out += `\n`;
                         }
                         else {
@@ -429,7 +429,7 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
                     out += `        self.${template.datamodel.varName}.log.verbose("python dataset ${dataset.structName} changed!")\n`;
         
                     if(dataset.arraySize == 0) {
-                        if(Datamodel.isScalarType(dataset.dataType, false)) {
+                        if(Datamodel.isScalarType(dataset, false)) {
                             out += `        ${prepend}self.${template.datamodel.varName}.log.debug("on_change: ${template.datamodel.varName}.${dataset.structName}: " + str(self.${template.datamodel.varName}.${dataset.structName}.value))\n`;
                         } else {
                             out += `        ${prepend}self.${template.datamodel.varName}.log.debug("on_change: ${template.datamodel.varName}.${dataset.structName}: " + str(self.${template.datamodel.varName}.${dataset.structName}.value))\n`;
@@ -461,7 +461,7 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
         
             for (let dataset of template.datasets) {
                 if (dataset.isPub) {
-                    out += `            # ${template.datamodel.varName}.${dataset.structName}.value${dataset.arraySize > 0 ? "[..]" : ""}${Datamodel.isScalarType(dataset.dataType) ? "" : ". .."} = .. \n`;
+                    out += `            # ${template.datamodel.varName}.${dataset.structName}.value${dataset.arraySize > 0 ? "[..]" : ""}${Datamodel.isScalarType(dataset) ? "" : ". .."} = .. \n`;
                     out += `            # ${template.datamodel.varName}.${dataset.structName}.publish()\n`;
                     out += "            \n";
                 }

@@ -459,7 +459,7 @@ class TemplateStaticCLib extends Template {
                         out += `) `;
                     }
                     out += ` actual dataset value`;
-                    if(Datamodel.isScalarType(dataset.dataType, true)) {
+                    if(Datamodel.isScalarType(dataset, true)) {
                         out += `\n`;
                     }
                     else {

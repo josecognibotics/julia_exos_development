@@ -204,7 +204,7 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
                 if ((!PubSubSwap && dataset.isSub) || (PubSubSwap && dataset.isPub)) {
                     out += `static void on_change_${dataset.varName}(void)\n`;
                     out += `{\n`;
-                    if (Datamodel.isScalarType(dataset.dataType) && dataset.arraySize == 0) {
+                    if(Datamodel.isScalarType(dataset) && (dataset.arraySize == 0)) {
                         out += `    cyclic_inst->p${template.datamodel.structName}->${dataset.structName} = ${template.datamodel.varName}->${dataset.structName}.value;\n`;
                     }
                     else {
@@ -288,7 +288,7 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
             out += `    {\n`;
             for (let dataset of template.datasets) {
                 if ((!PubSubSwap && dataset.isPub) || (PubSubSwap && dataset.isSub)) {
-                    if (Datamodel.isScalarType(dataset.dataType) && dataset.arraySize == 0) {
+                    if(Datamodel.isScalarType(dataset) && (dataset.arraySize == 0)) {
                         out += `        if (${template.datamodel.varName}->${dataset.structName}.value != inst->p${template.datamodel.structName}->${dataset.structName})\n`;
                         out += `        {\n`;
                         out += `            ${template.datamodel.varName}->${dataset.structName}.value = inst->p${template.datamodel.structName}->${dataset.structName};\n`;

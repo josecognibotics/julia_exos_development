@@ -104,7 +104,7 @@ class TemplateARCpp extends TemplateCppLib {
                 if (dataset.isSub) {
                     out += `        ${template.datamodel.varName}->${dataset.structName}.onChange([&] () {\n`;
                     
-                    if(Datamodel.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
+                    if(Datamodel.isScalarType(dataset) && (dataset.arraySize == 0)) {
                         out += `            inst->p${template.datamodel.structName}->${dataset.structName} = ${template.datamodel.varName}->${dataset.structName}.value;\n`;
                     }
                     else {
@@ -140,7 +140,7 @@ class TemplateARCpp extends TemplateCppLib {
             for (let dataset of template.datasets) {
                 if (!dataset.isPrivate) {
                     if (dataset.isPub) {
-                        if(Datamodel.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
+                        if(Datamodel.isScalarType(dataset) && (dataset.arraySize == 0)) {
                             out += `        //publish the ${dataset.structName} dataset as soon as there are changes\n`;
                             out += `        if (inst->p${template.datamodel.structName}->${dataset.structName} != ${template.datamodel.varName}->${dataset.structName}.value)\n`;
                             out += `        {\n`;

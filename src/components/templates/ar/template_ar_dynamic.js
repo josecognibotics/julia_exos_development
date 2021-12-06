@@ -143,7 +143,7 @@ class TemplateARDynamic extends Template {
                     }
                     out += `if(0 == strcmp(dataset->name, "${dataset.structName}"))\n`;
                     out += `        {\n`;
-                    if(Datamodel.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
+                    if(Datamodel.isScalarType(dataset) && (dataset.arraySize == 0)) {
                         out += `            inst->p${template.datamodel.structName}->${dataset.structName} = *(${dataset.dataType} *)dataset->data;\n`;
                     }
                     else {
@@ -404,7 +404,7 @@ class TemplateARDynamic extends Template {
             out += `        //put your cyclic code here!\n\n`;
             for (let dataset of template.datasets) {
                 if (dataset.isPub) {        
-                    if(Datamodel.isScalarType(dataset.dataType) && (dataset.arraySize == 0)) {
+                    if(Datamodel.isScalarType(dataset) && (dataset.arraySize == 0)) {
                         out += `        //publish the ${dataset.varName} dataset as soon as there are changes\n`;
                         out += `        if (inst->p${template.datamodel.structName}->${dataset.structName} != data->${dataset.structName})\n`;
                         out += `        {\n`;
