@@ -227,7 +227,7 @@ class ExosComponent extends Component {
         this._typeFileName = `${typeName}.typ`;
 
         this._typFile = {name:this._typeFileName, contents:fs.readFileSync(fileName).toString(), description:`${typeName} datamodel declaration`}
-        this._SG4Includes = [`${typeName}.h`];
+        this._SG4Includes = [`${typeName.substr(0,10)}.h`];
 
         this._datamodel = new Datamodel(fileName, typeName, this._SG4Includes);
        

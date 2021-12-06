@@ -63,7 +63,7 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
         super(datamodel,false);
 
         this.librarySource = {name:`${this.datamodel.typeName.toLowerCase()}.c`, contents:this._generateSource(), description:`${this.datamodel.typeName} library source`};
-        this.libraryFun = {name:`${this.datamodel.typeName}.fun`, contents:this._generateFun(), description:`${this.datamodel.typeName} function blocks`};
+        this.libraryFun = {name:`${this.datamodel.typeName.substr(0,10)}.fun`, contents:this._generateFun(), description:`${this.datamodel.typeName} function blocks`}; // Avoid Error in AS: The name of the .fun file is not equal to the name of the library.	(9348)
         this.iecProgramVar = {name:`${this.datamodel.typeName}.var`, contents:this._generateIECProgramVar(), description:`${this.datamodel.typeName} variable declaration`};
         this.iecProgramST = {name:`${this.datamodel.typeName}.st`, contents:this._generateIECProgramST(), description:`${this.datamodel.typeName} application`};
         this.heap = new TemplateARHeap(100000);
