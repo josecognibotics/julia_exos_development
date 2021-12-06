@@ -94,13 +94,13 @@ class ExosComponentNAPI extends ExosComponentAR {
             this._linuxPackage.addExistingFile(this._templateBuild.options.napi.nodeFileName, `${this._typeName} node module`);
             this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName, this._templateBuild.options.debPackage.packageName, `${this._typeName} debian package`);
             this._exospackage.exospkg.addService("Startup", `cp ${this._templateNAPI.JsMain.name} ${this._templateBuild.options.debPackage.destination}`);
-            this._exospackage.exospkg.addService("Runtime", `npm start`, this._templateBuild.options.debPackage.destination);
+            this._exospackage.exospkg.addService("Runtime", `node ${this._templateNAPI.JsMain.name}`, this._templateBuild.options.debPackage.destination);
         }
         else {
             this._linuxPackage.addExistingTransferFile(this._templateBuild.options.napi.nodeFileName, "Restart", `${this._typeName} node module`);
             this._exospackage.exospkg.addFile(path.join("Linux",this._templateNAPI.packageJson.name), "Restart");
             this._exospackage.exospkg.addFile(path.join("Linux",this._templateNAPI.packageLockJson.name), "Restart");
-            this._exospackage.exospkg.addService("Runtime", `npm start`);
+            this._exospackage.exospkg.addService("Runtime", `node ${this._templateNAPI.JsMain.name}`);
         }
 
         this._linuxPackage.addNewTransferFileObj(this._templateNAPI.JsMain, "Restart");
