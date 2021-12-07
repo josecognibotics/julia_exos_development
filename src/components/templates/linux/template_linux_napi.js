@@ -473,8 +473,10 @@ class TemplateLinuxNAPI extends Template {
                         out += `        {\n`;
                         out += `            if (${dataset.structName}.onchange_cb != NULL)\n`;
                         out += `            {\n`;
+                        out += `                callback_context_t *ctx = create_callback_context(dataset);\n`;
+                        out += `                \n`;
                         out += `                napi_acquire_threadsafe_function(${dataset.structName}.onchange_cb);\n`;
-                        out += `                napi_call_threadsafe_function(${dataset.structName}.onchange_cb, &dataset->nettime, napi_tsfn_blocking);\n`;
+                        out += `                napi_call_threadsafe_function(${dataset.structName}.onchange_cb, ctx, napi_tsfn_blocking);\n`;
                         out += `                napi_release_threadsafe_function(${dataset.structName}.onchange_cb, napi_tsfn_release);\n`;
                         out += `            }\n`;
                         out += `        }\n`;
@@ -810,8 +812,8 @@ class TemplateLinuxNAPI extends Template {
                     if (Datamodel.isScalarType(dataset, true)) {
                         if (dataset.arraySize > 0) {
                             iterator.next();
-                            out += `napi_create_array(env, &${destNapiVar});`
-                            out += `for (uint32_t ${iterator.i} = 0; ${iterator.i} < (sizeof(${srcVariable})/sizeof(${srcVariable}[0])); ${iterator.i}++)\n`;
+                            out += `napi_create_array(env, &${destNapiVar});\n`
+                            out += `for (uint32_t ${iterator.i} = 0; ${iterator.i} < ${dataset.arraySize}; ${iterator.i}++)\n`;
                             out += `{\n`;
                             out += `    ` + subSetLeafValue(dataset.dataType, `${srcVariable}[${iterator.i}]`, `arrayItem`);
                             out += `    napi_set_element(env, ${destNapiVar}, ${iterator.i}, arrayItem);\n`;
@@ -826,7 +828,7 @@ class TemplateLinuxNAPI extends Template {
                         if (dataset.arraySize > 0) {
                             iterator.next();
                             out += `napi_create_array(env, &${destNapiVar});\n`
-                            out += `for (uint32_t ${iterator.i} = 0; ${iterator.i} < (sizeof(${srcVariable})/sizeof(${srcVariable}[0])); ${iterator.i}++)\n`;
+                            out += `for (uint32_t ${iterator.i} = 0; ${iterator.i} < ${dataset.arraySize}; ${iterator.i}++)\n`;
                             out += `{\n`;
                             out += `    napi_create_object(env, &${objectIdx.toString()});\n`;
                             for (let type of dataset.datasets) {
@@ -894,10 +896,24 @@ class TemplateLinuxNAPI extends Template {
                         iterator.reset();
                         objectIdx.reset();
                         objectIdx.prev();//initialize to -1
-                        out2 = generateValuesSubscribeItem(`exos_data.${dataset.structName}`, `${dataset.structName}.value`, dataset);
+                        
+                        //introducing allocated ctx pointer, as the callback is not called synchronously to the datasetEvent(UPDATED)
+                        //this only had a void *pData value, instead of the previous statically allocated "real" variables
+                        //the ctx_value is where the generateValuesSubscribeItem should start, and as we dont actually have a datatype
+                        //we need to cast the ctx->pData according to its type (eg. arrays should be kept as pointers, scalars dereferenced..)
+                        let ctx_value = "";
+                        if (dataset.arraySize > 0 || dataset.dataType == "STRING") {
+                            ctx_value = `((${Datamodel.convertPlcType(dataset.dataType)} *)ctx->pData)`;
+                        }
+                        else {
+                            ctx_value = `(*((${Datamodel.convertPlcType(dataset.dataType)} *)ctx->pData))`;
+                        }
 
-                        out += `static void ${dataset.structName}_onchange_js_cb(napi_env env, napi_value js_cb, void *context, void *netTime_exos)\n`;
+                        out2 = generateValuesSubscribeItem(ctx_value, `${dataset.structName}.value`, dataset);
+
+                        out += `static void ${dataset.structName}_onchange_js_cb(napi_env env, napi_value js_cb, void *context, void *cb_context)\n`;
                         out += `{\n`;
+                        out += `    callback_context_t *ctx = (callback_context_t *)cb_context;\n`;
                         // check what variables to declare for the publish process in "out2" variable.
                         if (out2.includes("&object")) {
                             out += `    napi_value `;
@@ -926,8 +942,8 @@ class TemplateLinuxNAPI extends Template {
 
                         out += out2;
 
-                        out += `        int32_t _latency = exos_datamodel_get_nettime(&${template.datamodel.varName}_datamodel) - *(int32_t *)netTime_exos;\n`;
-                        out += `        napi_create_int32(env, *(int32_t *)netTime_exos, &netTime);\n`;
+                        out += `        int32_t _latency = exos_datamodel_get_nettime(&${template.datamodel.varName}_datamodel) - ctx->nettime;\n`;
+                        out += `        napi_create_int32(env, ctx->nettime, &netTime);\n`;
                         out += `        napi_create_int32(env, _latency, &latency);\n`;
                         out += `        napi_set_named_property(env, ${dataset.structName}.object_value, "nettime", netTime);\n`;
                         out += `        napi_set_named_property(env, ${dataset.structName}.object_value, "latency", latency);\n`;
@@ -937,7 +953,8 @@ class TemplateLinuxNAPI extends Template {
                         out += `    }\n\n`;
                         out += `    if (napi_ok != napi_call_function(env, undefined, js_cb, 0, NULL, NULL))\n`;
                         out += `        throw_fatal_exception_callbacks(env, "EINVAL", "Can't call onChange callback");\n\n`;
-                        out += `    exos_dataset_publish(&${dataset.structName}_dataset);\n`;
+                        out += `    \n`;
+                        out += `    free(ctx);\n`;
                         out += `}\n\n`;
                     }
                 }
@@ -1788,6 +1805,23 @@ class TemplateLinuxNAPI extends Template {
             out += `    napi_value object_value; //volatile placeholder.\n`;
             out += `    napi_value value;        //volatile placeholder.\n`;
             out += `} obj_handles;\n`;
+            out += `\n`;
+            out += `typedef struct\n`;
+            out += `{\n`;
+            out += `    size_t size;\n`;
+            out += `    int32_t nettime;\n`;
+            out += `    void *pData;\n`;
+            out += `} callback_context_t;\n`;
+            out += `\n`;
+            out += `callback_context_t *create_callback_context(exos_dataset_handle_t *dataset)\n`;
+            out += `{\n`;
+            out += `    callback_context_t *context = malloc(sizeof(callback_context_t) + dataset->size);\n`;
+            out += `    context->nettime = dataset->nettime;\n`;
+            out += `    context->size = dataset->size;\n`;
+            out += `    context->pData = (void *)((unsigned long)context + (unsigned long)sizeof(callback_context_t));\n`;
+            out += `    memcpy(context->pData, dataset->data, dataset->size);\n`;
+            out += `    return context;\n`;
+            out += `}\n`;
             out += `\n`;
             out += `obj_handles ${template.datamodel.varName} = {};\n`;
             for (let dataset of template.datasets) {
