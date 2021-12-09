@@ -227,7 +227,6 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
                     let endIdx = headerStructs.indexOf("</sai>");
                     let arrayInfoStr = headerStructs.substring(0, endIdx);
                     let arrayInfo = JSON.parse(arrayInfoStr)
-                    console.log(arrayInfo)
                     out += generateSwigArrayinfoPre(arrayInfo)
                     out += tmpOut;
                     out += generateSwigArrayinfo(arrayInfo);

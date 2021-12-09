@@ -500,7 +500,6 @@ function activate(context) {
 			// if something else is needed, use Datamodel.getDatatypeList(uri.fsPath);
 			selectedStructure = {label: path.parse(uri.fsPath).name, detail: `some debug detail`};
 			infoMessage = `Generated Template for ${selectedStructure.label}: `;
-			vscode.debug.activeDebugConsole.appendLine(infoMessage);
 
 			try {
 				finalName = `${path.dirname(uri.fsPath)}/${selectedStructure.label}_c-api`;
@@ -511,7 +510,6 @@ function activate(context) {
 				templateC.makeComponent(path.dirname(uri.fsPath));
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selectedStructure.label}`, finalName);
 				infoMessage += `'c-api'`;
-				vscode.debug.activeDebugConsole.appendLine('c-api');
 				
 
 				finalName = `${path.dirname(uri.fsPath)}/${selectedStructure.label}_c-static`;
@@ -522,7 +520,6 @@ function activate(context) {
 				templateC.makeComponent(path.dirname(uri.fsPath));
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selectedStructure.label}`, finalName);
 				infoMessage += `, 'c-static'`;
-				vscode.debug.activeDebugConsole.appendLine('c-static');
 				
 
 				finalName = `${path.dirname(uri.fsPath)}/${selectedStructure.label}_cpp`;
@@ -533,7 +530,6 @@ function activate(context) {
 				templateC.makeComponent(path.dirname(uri.fsPath));
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selectedStructure.label}`, finalName);
 				infoMessage += `, 'cpp'`;
-				vscode.debug.activeDebugConsole.appendLine('cpp');
 				
 
 				finalName = `${path.dirname(uri.fsPath)}/${selectedStructure.label}_py`;
@@ -544,7 +540,6 @@ function activate(context) {
 				templateSWIG.makeComponent(path.dirname(uri.fsPath));
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selectedStructure.label}`, finalName);
 				infoMessage += `, 'py'`;
-				vscode.debug.activeDebugConsole.appendLine('py');
 
 
 				finalName = `${path.dirname(uri.fsPath)}/${selectedStructure.label}_napi`;
@@ -555,12 +550,11 @@ function activate(context) {
 				templateNAPI.makeComponent(path.dirname(uri.fsPath));
 				fse.moveSync(`${path.dirname(uri.fsPath)}/${selectedStructure.label}`, finalName);
 				infoMessage += ` and 'napi'`;
-				vscode.debug.activeDebugConsole.appendLine('napi');
 
 				vscode.window.showInformationMessage(`${infoMessage}`);
 
 			} catch (error) {
-				vscode.debug.activeDebugConsole.appendLine(error);
+				console.error(`Exception during generate all (infoMessage: ${infoMessage}): ${error}`);
 				vscode.window.showErrorMessage(error);
 			}
 		});
