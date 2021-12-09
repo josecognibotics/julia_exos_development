@@ -151,7 +151,12 @@ class TemplateARStaticCLib extends TemplateStaticCLib {
             out += `PROGRAM _CYCLIC\n`;
             out += `    \n`;
             out += `    //Auto connect:\n`;
-            out += `    //${template.datamodel.structName}Cyclic_0.Enable := ExComponentInfo_0.Operational;\n`;
+            out += `    //${template.datamodel.structName}Cyclic_0.Enable := ExComponentInfo_0.Operational; // Component has been deployed and started up successfully\n`;
+            out += `    \n`;
+            out += `    //Auto connect when deployment is off and manually started in GPOS:\n`;
+            out += `    //${template.datamodel.structName}Cyclic_0.Enable := TRUE;\n`;
+            out += `    //${template.datamodel.structName}Cyclic_0.Start := ${template.datamodel.structName}Cyclic_0.Connected;\n`;
+            out += `    \n`;
             out += `    ${template.datamodel.structName}Cyclic_0(p${template.datamodel.structName} := ADR(${template.datamodel.structName}_0));\n`;
             out += `    \n`;
             out += `    ExComponentInfo_0(ExTargetLink := ADR(${template.targetName}), ExComponentLink := ADR(${template.aliasName}), Enable := TRUE);\n`;
