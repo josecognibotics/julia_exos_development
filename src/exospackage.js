@@ -18,7 +18,7 @@ const path = require('path');
  * @property {number} foldersNotFound number of folders that could not be found
  * 
  * @typedef {Object} PackageObject
- * @property {string} type `File` | `Library` | `Program` | `Package` | `ExistingFile`
+ * @property {string} type `File` | `Library` | `Program` | `Package` | `ExistingFile` | `HiddenFile`
  * @property {string} name fileName of the package/file
  * @property {string} description description in AS
  * @property {string} contents contents of the file, only used for `type=File`, written to disk with {@link Package._createPackage},  {@link Package._updatePackage} or {@link Package._exportPackage} 
@@ -187,6 +187,25 @@ class Package {
         }
     }
 
+    /**
+     * Create a new file in this package without adding it to the package file
+     * which will make it hidden in Logical view of AS
+     * Return a object for populating the file contents.
+     * 
+     * @example
+     * let myPackage = new ExosPackage("MyPackage");
+     * let packageFile = myPackage.getNewHiddenFile("myfile.txt");
+     * packageFile.contents = "hello world!\n";
+     * myPackage.makePackage("C:\\Temp");
+     * 
+     * @param {string} fileName filename within this package
+     * @returns {FileObj} JSON object with a .content property that can be populated with the file contents
+     */
+     getNewHiddenFile(fileName) {
+        this._objects.push({type:"HiddenFile", name:fileName, attributes:"", description:"", contents:""});
+        return this._objects[this._objects.length-1];
+    }
+
     /** 
      * internal function to create the package (folder) and write all the file contents
      * including the package file (Package.pkg or ANSIC.lby etc.) to a specific location
@@ -208,7 +227,7 @@ class Package {
         fs.writeFileSync(path.join(location,this._folderName,this._pkgFile.name),this._pkgFile.contents);
 
         for (const obj of this._objects) {
-            if(obj.type == "File") {
+            if(obj.type == "File" || obj.type == "HiddenFile") {
                 //console.log(`Creating file: ${path.join(location,obj.name)}`);
                 fs.writeFileSync(path.join(location,this._folderName,obj.name), obj.contents);
             }
@@ -234,7 +253,7 @@ class Package {
         let result = {filesUpdated:0, filesNotFound:0, foldersNotFound:0};
         if(fs.existsSync(path.join(location,this._folderName))) {
             for (const obj of this._objects) {
-                if(obj.type == "File") {
+                if(obj.type == "File" || obj.type == "HiddenFile") {
                     
                     //update the file if it exists
                     if(createFiles || fs.existsSync(path.join(location,this._folderName,obj.name))) {
@@ -317,8 +336,10 @@ class LinuxPackage extends Package {
             if(obj.description === undefined) {
                 obj.description = "";
             }
-            //we only write "File" for the objects, because some _objects have special type properties (like "ExistingFile")
-            this._pkgFile.contents += `    <Object Type="File" Description="${obj.description}">${obj.name}</Object>\n`;
+            if(obj.type != "HiddenFile") {
+                //we only write "File" for the objects, because some _objects have special type properties (like "ExistingFile")
+                this._pkgFile.contents += `    <Object Type="File" Description="${obj.description}">${obj.name}</Object>\n`;
+            }
         }
         this._pkgFile.contents += this._footer;
 
@@ -679,7 +700,9 @@ class ExosPackage extends Package {
         
         this._pkgFile.contents = this._header;
         for (const obj of this._objects) {
-            this._pkgFile.contents += `    <Object Type="${obj.type}" ${obj.attributes} Description="${obj.description}">${obj.name}</Object>\n`;
+            if(obj.type != "HiddenFile") {
+                this._pkgFile.contents += `    <Object Type="${obj.type}" ${obj.attributes} Description="${obj.description}">${obj.name}</Object>\n`;
+            }
         }
         this._pkgFile.contents += this._footer;
 

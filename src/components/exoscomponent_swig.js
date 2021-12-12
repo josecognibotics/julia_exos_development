@@ -59,6 +59,11 @@ class ExosComponentSWIG extends ExosComponentAR {
 
         this._templateBuild = new TemplateLinuxBuild(typeName);
         this._templateSWIG = new TemplateLinuxSWIG(this._datamodel);
+
+        this._gitIgnore.contents += "__pycache__/\n";
+        this._gitIgnore.contents += "*.pyc\n";
+        this._gitIgnore.contents += `_lib${typeName}.so\n`;
+        this._gitIgnore.contents += `lib${typeName}.py\n`;
     }
 
     makeComponent(location) {

@@ -400,10 +400,10 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
             let out = "";
             let prepend = "# ";
         
-            out += `# Use import and sys.path.insert if this py file is moved.\n`;
+            out += `# Use import and sys.path.insert if this .py file is moved.\n`;
             out += `# The path should point to the directory containing _${template.datamodel.libStructName}.so\n`;
             out += `${prepend}import sys\n`;
-            out += `${prepend}sys.path.insert(1, '${template.datamodel.dataType}_py/Linux')\n`;
+            out += `${prepend}sys.path.insert(1, '${template.datamodel.dataType}/Linux/build')\n`;
             out += `import ${template.datamodel.libStructName}\n\n`;
         
             out += genenerateLegend(template);

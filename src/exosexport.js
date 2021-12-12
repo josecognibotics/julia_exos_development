@@ -194,8 +194,10 @@ class LinuxExport extends ExportPackage {
             if(obj.description === undefined) {
                 obj.description = "";
             }
-            //we only write "File" for the objects, because some _objects have special type properties (like "ExistingFile")
-            this._pkgFile.contents += `    <Object Type="File" Description="${obj.description}">${obj.name}</Object>\n`;
+			if(obj.type != "HiddenFile") {
+            	//we only write "File" for the objects, because some _objects have special type properties (like "ExistingFile")
+            	this._pkgFile.contents += `    <Object Type="File" Description="${obj.description}">${obj.name}</Object>\n`;
+			}
         }
 
         this._pkgFile.contents += `  </Objects>\n`;
@@ -594,7 +596,9 @@ class ExosExport extends ExportPackage {
         this._pkgFile.contents += `  <Objects>\n`;
 
         for (const obj of this._objects) {
-            this._pkgFile.contents += `    <Object Type="${obj.type}" ${obj.attributes} Description="${obj.description}">${obj.name}</Object>\n`;
+			if(obj.type != "HiddenFile") {
+            	this._pkgFile.contents += `    <Object Type="${obj.type}" ${obj.attributes} Description="${obj.description}">${obj.name}</Object>\n`;
+			}
         }
         this._pkgFile.contents += `  </Objects>\n`;
         this._pkgFile.contents += `</Package>\n`;

@@ -5,7 +5,7 @@
  */
 
 const { ExosPkg, ExosPkgParseFileResults } = require('../exospkg');
-const { ExosPackage, IECProgram, LinuxPackage, CLibrary, UpdatePackageResults} = require('../exospackage');
+const { ExosPackage, IECProgram, LinuxPackage, CLibrary, UpdatePackageResults, FileObj} = require('../exospackage');
 const { TemplateLinuxBuild } = require('./templates/linux/template_linux_build');
 const { Datamodel } = require('../datamodel');
 
@@ -206,6 +206,18 @@ class ExosComponent extends Component {
     _linuxBuild;
 
     /**
+     * git ignore the component
+     * @type {FileObj}
+     */
+     _gitIgnore;
+
+    /**
+     * git attributes the component
+     * @type {FileObj}
+     */
+    _gitAttributes;
+
+    /**
      * Creates an exOS package from the given `fileName/typeName` and generates headerfiles in the AR Library and the Linux Pacakge
      * It also generates a Linux WSL build command, with headerfiles added as build dependecies
      * 
@@ -248,6 +260,21 @@ class ExosComponent extends Component {
         this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._datamodel.headerFile);
         this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._datamodel.sourceFile);
 
+        this._gitIgnore = this._exospackage.getNewHiddenFile(".gitignore");
+        this._gitIgnore.contents = `build/\n`;
+        this._gitIgnore.contents += `*.bak\n`;
+        this._gitIgnore.contents += `*.ori\n`;
+
+        this._gitAttributes = this._exospackage.getNewHiddenFile(".gitattributes");
+        this._gitAttributes.contents = `# Autodetect text files and set to crlf\n`;
+        this._gitAttributes.contents += `* text=auto eol=crlf\n`;
+        this._gitAttributes.contents += `\n`;
+        this._gitAttributes.contents += `# ...Unless the name matches the following overriding patterns\n`;
+        this._gitAttributes.contents += `*.sh text eol=lf\n`;
+        this._gitAttributes.contents += `Linux/* text eol=lf\n`;
+        if(this._templateBuild.options.debPackage.enable == true) {
+            this._gitIgnore.contents += "exos-comp-*.deb\n";
+        }
     }
 
     makeComponent(location)
