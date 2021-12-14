@@ -12,7 +12,7 @@ const { Datamodel } = require('../datamodel');
 const path = require('path')
 const fs = require('fs')
 
-const EXOS_COMPONENT_VERSION = "2.0.0"
+const EXOS_COMPONENT_VERSION = "2.0.1"
 
 class Component {
 

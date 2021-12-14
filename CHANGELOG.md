@@ -1,5 +1,36 @@
 # Changelog
 
+## [2.0.1] - 2021-12-14
+
+### Added
+
+- Added gitignore files in the generated packages, especially when handling sources being source controlled in AS and Linux. AS4.11 will have a feature to ignore these files at build (currently it shows a warning)
+- Added GCC6.3 check for AS C++ template. This template does not build with GCC4.1.2 because of the newer language features used.
+
+### Changed
+
+- ENUMs are now treated as values in the AS code parts, before they were trated as structures (and compared via memcmp). This has no effect on the runtime functionality.
+- NAPI applications are now started using node instead of npm. With this, the target system only needs to install nodejs, and not npm - which should not be needed there.
+- NAPI main application is now called e.g. watertank.js instead of index.js, in order to streamline the look-and-feel with other templates (e.g. watertank.py)
+- Update is now called "Update All" rather than "Reset" and "Recreate" rather than "Force" because the previous names were misleading
+
+### Fixed
+
+- NAPI template had a timing issue with non-synchronous JS callbacks, that a burst of value changes from AR could result in calling the onChange several times with the same (last) value. Values are now stored internally so that each onChange gets the corresponding (correct) value
+- Max 10 character limitation was added to certain library / type / fun files which did not have this limitation before.
+- exos_log_init had the wrong "alias-name" when reinitializing AS templates after a download (i.e it was using "WaterTank_0" rather than "gWaterTank_0"). Only has an effect on the filter in the AS Logger.
+
+## [2.0.0] - 2021-12-01
+
+### Changed
+
+- Major rework of all template generators, collecting all specific functionalities into different classes that are used across the various templates
+- Templates are now only returning generated source code, and do not create CMakeLists, Packagefiles etc. which is handled in the other classes
+
+### Added
+
+- Added exOS Debug Console as an easier way to access the AS Logger (with additional information) from the VsCode terminal window
+
 ## [1.2.0] - 2021-05-31
 
 ### Added

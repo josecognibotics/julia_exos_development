@@ -396,9 +396,9 @@ function activate(context) {
 				
 				let pickForceOption = []
 				pickForceOption.push({label: "Update", detail: "Update datamodel based files"});
-				pickForceOption.push({label: "Force Update", detail: "Update datamodel based files, create the files if needed"});
-				pickForceOption.push({label: "Reset", detail: "Update all source files including main library/application sources"});
-				pickForceOption.push({label: "Force Reset", detail: "Update all source files including main library/application sources, create the files if needed"});
+				pickForceOption.push({label: "Update & Recreate", detail: "Update datamodel based files, create the files if needed"});
+				pickForceOption.push({label: "Update All", detail: "Update all source files including main library/application sources"});
+				pickForceOption.push({label: "Update All & Recreate", detail: "Update all source files including main library/application sources, create the files if needed"});
 
 				vscode.window.showQuickPick(pickForceOption,{title:"Select datatype which becomes the new component datamodel"}).then(selectedForceOption => {
 
