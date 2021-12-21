@@ -106,6 +106,7 @@
 	},
 	"dependencies": {
 		"child_process": "^1.0.2",
+		"dir-compare": "^3.3.0",
 		"fs-extra": "^9.1.0",
 		"xml-parser": "^1.2.1"
 	}
