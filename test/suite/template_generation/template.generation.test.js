@@ -15,7 +15,7 @@ const { parseConfigFileTextToJson } = require('typescript');
 const { stringify } = require('querystring');
 // const myExtension = require('../extension');
 
-suite('Datamodel generation tests (<name> <AR side> <Linux side>)', () => {
+suite('Template generation tests (<name> <AR side> <Linux side>)', () => {
     
     // Call the generator and compare it to expected output
     
@@ -64,7 +64,7 @@ suite('Datamodel generation tests (<name> <AR side> <Linux side>)', () => {
 
         splitTitle = title.split(" ");
 
-        genPath = path.resolve(__dirname, '../datamodel_generation/generated/');
+        genPath = path.resolve(__dirname, '../template_generation/generated/');
 
         // start with deleting everything previously generated
         fse.emptyDirSync(genPath);
@@ -86,10 +86,10 @@ suite('Datamodel generation tests (<name> <AR side> <Linux side>)', () => {
         // now compare the newly generated output with the expected output
         dirOptions = { compareSize: true };
         
-        genPath = path.resolve(__dirname, '../datamodel_generation/generated/', typName)
+        genPath = path.resolve(__dirname, '../template_generation/generated/', typName)
         assert.equal(fse.existsSync(genPath), true, `${genPath} doesnt exist`);
 
-        expectedPath = path.resolve(__dirname, '../datamodel_generation/expected/', `${typName}_${selectedOptions.templateAR}_${selectedOptions.templateLinux}`)
+        expectedPath = path.resolve(__dirname, '../template_generation/expected/', `${typName}_${selectedOptions.templateAR}_${selectedOptions.templateLinux}`)
 
         if (!fse.existsSync(expectedPath)) {
             // copy the newly generated as the new expected and report an error to inform the user
@@ -100,7 +100,7 @@ suite('Datamodel generation tests (<name> <AR side> <Linux side>)', () => {
 
         compRes = dircompare.compareSync(genPath, expectedPath, dirOptions);
         if (compRes.differences > 0) {
-            unexpectedPath = path.resolve(__dirname, '../datamodel_generation/unexpected/', `${typName}_${selectedOptions.templateAR}_${selectedOptions.templateLinux}`)
+            unexpectedPath = path.resolve(__dirname, '../template_generation/unexpected/', `${typName}_${selectedOptions.templateAR}_${selectedOptions.templateLinux}`)
             fse.copySync(genPath, unexpectedPath);
             assert.equal(compRes.differences, 0, `Generated output for ${typName} differs from expected (if the output is the new expected, manually copy it from the unexpected folder)`);
         }
