@@ -75,7 +75,7 @@ suite('Template generation tests (<name> <AR side> <Linux side>)', () => {
         typName = path.parse(typFile).name;
 
         // setup variables used by generator
-        selectedStructure = {label: typName, detail: "datamodel.generation.test.js"};
+        selectedStructure = {label: typName, detail: "template.generation.test.js"};
         selectedOptions = {
             packaging: "deb", templateLinux: splitTitle[2], templateAR: splitTitle[1], destinationDirectory: ""
         }

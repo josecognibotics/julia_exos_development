@@ -1,0 +1,5 @@
+Temp/
+Binaries/
+Diagnosis/
+*.set
+*.isopen
