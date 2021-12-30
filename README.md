@@ -26,6 +26,8 @@ A package can be exported to a binary format via the context menu of / right cli
 
 In the editor title menu, under "More Actions...", the exOS Debug Console terminal can be started. This console connects to the IP address of the PLC, and captures all internal logging available to the system. This is mainly useful for debugging purposes, where all other exOS diagnostic functionalities fall short.
 
+![](blob/master/images/DebugConsole.gif)
+
 ## Example
 
 The Code generator uses a top-level structure of a given `IEC TYPE` definition file to generate `PUB/SUB` datasets.
