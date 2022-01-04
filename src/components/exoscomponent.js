@@ -253,7 +253,7 @@ class ExosComponent extends Component {
         this._cLibrary.addNewFileObj(this._datamodel.headerFile);
         this._cLibrary.addNewFileObj(this._datamodel.sourceFile);
 
-        this._exospackage.exospkg.addGenerateDatamodel(path.join(this._cLibrary._folderName,this._typeFileName), typeName, this._SG4Includes, [typeName, "Linux"]);
+        this._exospackage.exospkg.addGenerateDatamodel(path.join(this._cLibrary._folderName,this._typeFileName), typeName, this._SG4Includes, [typeName.substr(0,10), "Linux"]);
 
 
         this._templateBuild = new TemplateLinuxBuild(typeName);  
