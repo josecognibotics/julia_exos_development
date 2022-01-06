@@ -10,7 +10,7 @@
     <Build>
         <GenerateDatamodel FileName="StringAndA\StringAndArray.typ" TypeName="StringAndArray">
             <SG4 Include="StringAndA.h"/>
-            <Output Path="StringAndArray"/>
+            <Output Path="StringAndA"/>
             <Output Path="Linux"/>
         </GenerateDatamodel>
         <BuildCommand Command="C:\Windows\Sysnative\wsl.exe" WorkingDirectory="Linux" Arguments="-d Debian -e sh build.sh $(EXOS_VERSION)">
