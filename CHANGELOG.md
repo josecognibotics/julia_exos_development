@@ -1,4 +1,6 @@
 # Changelog
+### Added - hofix
+- Added needed include of stdlib in the libxxxxxx.c file created by the N-Api generator.
 
 ## [2.0.1] - 2021-12-14
 
