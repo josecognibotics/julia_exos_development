@@ -1786,7 +1786,8 @@ class TemplateLinuxNAPI extends Template {
             out += `#include "exos_${template.datamodel.varName}.h"\n`;
             out += `#include <uv.h>\n`;
             out += `#include <unistd.h>\n`;
-            out += `#include <string.h>\n\n`;
+            out += `#include <string.h>\n`;
+            out += `#include <stdlib.h>\n\n`;
             out += `#define SUCCESS(_format_, ...) exos_log_success(&logger, EXOS_LOG_TYPE_USER, _format_, ##__VA_ARGS__);\n`;
             out += `#define INFO(_format_, ...) exos_log_info(&logger, EXOS_LOG_TYPE_USER, _format_, ##__VA_ARGS__);\n`;
             out += `#define VERBOSE(_format_, ...) exos_log_debug(&logger, EXOS_LOG_TYPE_USER + EXOS_LOG_TYPE_VERBOSE, _format_, ##__VA_ARGS__);\n`;
