@@ -1,9 +1,9 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <ComponentPackage Version="2.0.0" ErrorHandling="Component" StartupTimeout="0">
     <Build>
-		<GenerateDatamodel FileName="..\..\..\..\typfiles\StringAndArray.typ" TypeName="StringAndArray">
-			<SG4 Include="StringAndA.h"/>
-            <Output Path="..\..\..\..\datamodel_generation\generated\AS\StringAndArray"/>
+        <GenerateDatamodel FileName="../../../../typfiles/StringAndArray.typ" TypeName="StringAndArray">
+            <SG4 Include="StringAndA.h"/>
+            <Output Path="../../../../datamodel_generation/generated/AS/StringAndArray/"/>
         </GenerateDatamodel>
     </Build>
     <!-- ComponentGenerator info - do not change! -->
