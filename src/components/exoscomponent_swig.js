@@ -128,10 +128,10 @@ class ExosComponentSWIGUpdate extends ExosComponentARUpdate {
     /**
      * Update class for SWIG applications, only updates the sourcefile of the datamodel-wrapper
      * @param {string} exospkgFileName absolute path to the .exospkg file stored on disk
-     * @param {boolean} reset update main application sources as well
+     * @param {boolean} updateAll update main application sources as well
      */
-     constructor(exospkgFileName, reset) {
-        super(exospkgFileName, reset);
+     constructor(exospkgFileName, updateAll) {
+        super(exospkgFileName, updateAll);
      
         if(this._exosPkgParseResults.componentFound == true && this._exosPkgParseResults.componentErrors.length == 0) {
             this._templateSWIG = new TemplateLinuxSWIG(this._datamodel);
@@ -140,7 +140,7 @@ class ExosComponentSWIGUpdate extends ExosComponentARUpdate {
             this._linuxPackage.addNewFileObj(this._templateSWIG.staticLibrarySource);
             this._linuxPackage.addNewFileObj(this._templateSWIG.swigInclude);
 
-            if(reset) {
+            if(updateAll) {
                 this._linuxPackage.addNewFileObj(this._templateSWIG.pythonMain);
             }
         }

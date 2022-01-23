@@ -405,14 +405,14 @@ function activate(context) {
 					if(!selectedForceOption)
 						return;
 
-					let reset = false;
-					if(selectedForceOption.label.includes("Reset")) {
-						reset = true;
+					let updateAll = false;
+					if(selectedForceOption.label.includes("Update All")) {
+						updateAll = true;
 					}
 
-					let force = false;
-					if(selectedForceOption.label.includes("Force")) {
-						force = true;
+					let recreate = false;
+					if(selectedForceOption.label.includes("Recreate")) {
+						recreate = true;
 					}
 
 					try {
@@ -425,23 +425,23 @@ function activate(context) {
 						switch(exospkg.componentClass) {
 							case "ExosComponentC":
 								{
-									let component = new ExosComponentCUpdate(uri.fsPath,reset);
+									let component = new ExosComponentCUpdate(uri.fsPath, updateAll);
 									componentName = component._name;
-									results = component.updateComponent(force);
+									results = component.updateComponent(recreate);
 								}
 								break;
 							case "ExosComponentNAPI":
 								{
-									let component = new ExosComponentNAPIUpdate(uri.fsPath,reset);
+									let component = new ExosComponentNAPIUpdate(uri.fsPath, updateAll);
 									componentName = component._name;
-									results = component.updateComponent(force);
+									results = component.updateComponent(recreate);
 								}
 								break;
 							case "ExosComponentSWIG":
 								{
-									let component = new ExosComponentSWIGUpdate(uri.fsPath,reset);
+									let component = new ExosComponentSWIGUpdate(uri.fsPath, updateAll);
 									componentName = component._name;
-									results = component.updateComponent(force);
+									results = component.updateComponent(recreate);
 								}
 								break;
 							default:

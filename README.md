@@ -70,7 +70,7 @@ The Datatype which is used to generate the template (and represents the exOS dat
 
 ## C API
 
-The dynamic library (which has the name of the Datatype) has the possiblity to instantiate its function blocks, that local copies of the datatype can be used throughout the application. The exos-api functions are implemented directly in the Library, meaning it is rather simple for the user to add special features of the application using the C-API. *Updating the package* using the "Reset" option might add additional dataset declarations, but remove user-specific features.
+The dynamic library (which has the name of the Datatype) has the possiblity to instantiate its function blocks, that local copies of the datatype can be used throughout the application. The exos-api functions are implemented directly in the Library, meaning it is rather simple for the user to add special features of the application using the C-API. *Updating the package* using the "Update All" option might add additional dataset declarations, but remove user-specific features.
 
 ## C Interface
 
@@ -90,7 +90,7 @@ This template variant creates a dynamic library with an internal C++ Class as th
 
 ## C API
 
-Here a C-executable is created together with a cmake instruction. Like the Automation Runtime library, the exos-api functions are used directly in the code, making it simple for the user to add special communication features. *Updating the package* using the "Reset" option might add additional dataset declarations, but remove user-specific features.
+Here a C-executable is created together with a cmake instruction. Like the Automation Runtime library, the exos-api functions are used directly in the code, making it simple for the user to add special communication features. *Updating the package* using the "Update All" option might add additional dataset declarations, but remove user-specific features.
 
 ## C Interface
 
