@@ -38,10 +38,6 @@
 			{
 				"command": "exos-component-extension.createPackage",
 				"title": "Create exOS package..."
-			},
-			{
-				"command": "exos-component-extension.generateEverythingDebug",
-				"title": "exOS: >DEBUG> Generate everything <DEBUG<"
 			}
 		],
 		"menus": {
@@ -74,12 +70,7 @@
 					"when": "filesExplorerFocus && resourceExtname == .typ",
 					"command": "exos-component-extension.createPackage",
 					"group": "2_workspace"
-				},
-				{
-					"when": "filesExplorerFocus && resourceExtname == .typ && exos-component-extension.isDebugMode",
-					"command": "exos-component-extension.generateEverythingDebug",
-					"group": "2_workspace"
-				},
+				},	
 				{
 					"when": "filesExplorerFocus && resourceExtname == .exospkg",
 					"command": "exos-component-extension.updateComponent",
