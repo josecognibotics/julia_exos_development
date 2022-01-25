@@ -6,7 +6,7 @@ Extension to create exOS components for B&R Automation Studio.
 
 This VsCode plugin creates exOS components (code templates) via the context menu of / right clicking on a `.typ` datamodel (datatype) file. Datasets (structure members) are automatically added to the code template as publish or subscribe datasets by adding the comment `PUB` or `SUB`. Publish and Subscribe is seen from the perspective of Automation Runtime, menaing a `PUB` variable is published by AR and subscribed to from Linux. For bidirectional datasets, you can add both types to the comment, like `PUB SUB`. 
 
-![](https://github.com/br-automation-com/exOS-ComponentExtension/blob/master/images/CreateTemplate.gif)
+![Create template](https://github.com/br-automation-com/exOS-ComponentExtension/raw/master/images/CreateTemplate.gif)
 
 The purpose of the templates is to give an easy start for application development. Here, a base frame of Automation Runtime and Linux code is created for the application, and the build instructions for the component are configured to create Debian packages with the exOS build-chain in Automation Studio.
 
@@ -28,7 +28,7 @@ A package can be exported to a binary format via the context menu of / right cli
 
 In the editor title menu, under "More Actions...", the exOS Debug Console terminal can be started. This console connects to the IP address of the PLC, and captures all internal logging available to the system. This is mainly useful for debugging purposes, where all other exOS diagnostic functionalities fall short.
 
-![](https://github.com/br-automation-com/exOS-ComponentExtension/blob/master/images/DebugConsole.gif)
+![Debug console](https://github.com/br-automation-com/exOS-ComponentExtension/raw/master/images/DebugConsole.gif)
 
 ## Example
 
