@@ -1,6 +1,20 @@
 # Changelog
-### Added - hofix
-- Added needed include of stdlib in the libxxxxxx.c file created by the N-Api generator.
+
+## [2.0.2] - 2022-01-25
+
+### Added
+
+- Additional images in the README, and updated chapter regarding python and nodejs installation.
+
+### Changed
+
+- Changed default python version to 3 instead of previous version 2 for newly generated python templates.
+
+### Fixed
+
+- Update mechanism did not work correctly in V2.0.1 because of the name changes.
+- Added needed include of stdlib.h in the libxx.c file created by the N-Api generator.
+- Max 10 character limitation was added to the GenerateDatamodel command which did not have this limitation before.
 
 ## [2.0.1] - 2021-12-14
 
