@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ComponentPackage Version="2.0.0" ErrorHandling="Component" StartupTimeout="0">
+    <Build>
+        <GenerateDatamodel FileName="../../../../typfiles/StringAndArray.typ" TypeName="StringAndArray">
+            <SG4 Include="StringAndA.h"/>
+            <Output Path="../../../../datamodel_generation/generated/AS/StringAndArray/"/>
+        </GenerateDatamodel>
+    </Build>
+    <!-- ComponentGenerator info - do not change! -->
+    <ComponentGenerator Class="ExosComponentC" Version="2.0.1">
+        <Option Name="templateLinux" Value="c-api"/>
+        <Option Name="exportLinux" Value="exos-comp-stringandarray_1.0.0_amd64.deb"/>
+        <Option Name="templateAR" Value="c-api"/>
+        <Option Name="typeName" Value="StringAndArray"/>
+        <Option Name="typeFile" Value="StringAndA\StringAndArray.typ"/>
+        <Option Name="SG4Includes" Value="StringAndA.h"/>
+    </ComponentGenerator>
+</ComponentPackage>

@@ -1,0 +1,11 @@
+{
+  "name": "stringandarray",
+  "version": "1.0.0",
+  "description": "implementation of exOS data exchange defined by datatype StringAndArray",
+  "main": "stringandarray.js",
+  "scripts": {
+    "start": "node stringandarray.js"
+  },
+  "author": "your name",
+  "license": "MIT"
+}

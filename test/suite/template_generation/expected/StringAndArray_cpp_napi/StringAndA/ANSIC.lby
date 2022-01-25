@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?AutomationStudio FileVersion="4.10"?>
+<Library SubType="ANSIC" xmlns="http://br-automation.co.at/AS/Library">
+  <Files>
+    <File Description="StringAndArray datamodel declaration">StringAndArray.typ</File>
+    <File Description="Generated datamodel header for StringAndArray">exos_stringandarray.h</File>
+    <File Description="Generated datamodel source for StringAndArray">exos_stringandarray.c</File>
+    <File Description="StringAndArray function blocks">StringAndA.fun</File>
+    <File Description="StringAndArray library source">stringandarray.cpp</File>
+    <File Description="Dynamic heap configuration">heapsize.cpp</File>
+    <File Description="StringAndArray dataset class">StringAndArrayDataset.hpp</File>
+    <File Description="StringAndArray datamodel class">StringAndArrayDatamodel.hpp</File>
+    <File Description="StringAndArray datamodel class implementation">StringAndArrayDatamodel.cpp</File>
+    <File Description="StringAndArray logger class">StringAndArrayLogger.hpp</File>
+    <File Description="StringAndArray logger class implementation">StringAndArrayLogger.cpp</File>
+  </Files>
+  <Dependencies>
+    <Dependency ObjectName="ExData" />
+  </Dependencies>
+</Library>
