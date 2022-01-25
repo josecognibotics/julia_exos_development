@@ -13,14 +13,29 @@ If the .typ file is located within an Automation Studio project (part of the Pac
 ## Update packages
 
 For all templates except the `C-API` theres a functionality to regenerate the "inner" parts of the template, which is providing a datamodel interface by using the exos-api functions.
+This is needed when the source `.typ` file has changed, i.e. additional members have been added to the structure as `PUB` or `SUB` datasets.
 
-This is done via the context menu of / right clicking on the `.exospkg` which was initially generated. Note that is is only possible to **update same kind of Template that was initially created**.
+The update of a package is performed via the context menu of / right clicking on the `.exospkg` which was initially generated.
+
+![Update Component](https://github.com/br-automation-com/exOS-ComponentExtension/raw/master/images/UpdateComponent.gif)
+
+There are four options to update a template package
+
+- `Update`: This updates all datamodel based files, i.e. wrappers for the typ file. It will return an error for every file that has been renamed or is missing.
+
+- `Update & Recreate`: This works in the same way as the `Update`, whereas datamodel based files are regenerated if they are missing or have changed name.
+
+- `Update All`: This updates all files related to the datamodel including the main application, i.e. `CMakeLists.txt`, `.exospkg` and so forth are not updated. It will return an error for every file that has been renamed or is missing.
+
+- `Update All & Recreate`: Similar to `Update All`, this option updates all files including the main application, but recreates all files in case they are missing. As it might be beneficial to have the main application template updated, even though local changes have already been made, this option can be used by first *renaming* the main application, and then copy the local changes to the newly generated main application (alternatively, use version control).
 
 ## Export binary packages
 
 All exOS packages created with the `exOS Component Generator` can be exported as binary packages, so that the package can be used inside automation projects without recompiling any code. Normally the packages contain "user-code" which is editable, like a main program / script or Structured Text program using the exOS datamodel. The parts including exOS-API communication mechanisms will be binary and thus stay without modifications after binary distribution.
 
 A package can be exported to a binary format via the context menu of / right clicking on the Folder containing the `.exospkg` file. Note that this folder needs to be part of a compiled AS project, in order to obtain the binaries of the Libraries.
+
+![Export Component](https://github.com/br-automation-com/exOS-ComponentExtension/raw/master/images/ExportComponent.gif)
 
 ## Use exOS Debug Console
 
@@ -125,7 +140,7 @@ The SWIG library takes the **C Interface** as a template for a library that crea
 
 exOS works best with WSL as a build environment for the components that are to be deployed on a Linux target system, as WSL executes a full-fledged Debian Linux in the background containing all needed packages for the exOS components to be compiled. The `exOS Component Generator` therefore uses the background WSL compile step as the default mechanism in the generated templates, so that the Linux sources are integrated into the Automation Studio project build. This ensures that components are compiled and deployed to AR and Linux in a consistent manner.
 
-For installing a WSL build system as well as a simulated WSL target environment, please see [exOS-WSL on github](https://github.com/br-automation-com/exOS-WSL).
+For installing a WSL build system as well as a simulated WSL target environment, please see [exOS-WSL on github](https://github.com/br-automation-com/exOS-WSL). The provided images come with python, nodejs and SWIG preinstalled.
 
 ## Python
 
@@ -186,10 +201,14 @@ When `pyenv` and all required packages have been installed, the `3.9` developer 
 - In the CMakeLists.txt
 
     Using pyenv, the python librares are not located in /usr/include or /usr/lib, but need to be defined
-    manually in the CMakeLists.txt
+    manually in the CMakeLists.txt. As the file locations and directory names may vary, it is recommended 
+    to search for `libpython*.so` and make sure that the locations are the same on the target system, or 
+    that the linker on the target system can find the necessary dynamic library via environment variables.
 
-        set(PYTHON_INCLUDE_PATH ~/.pyenv/versions/3.9-dev/include/python3.9m)
-        set(PYTHON_LIBRARIES ~/.pyenv/versions/3.9-dev/lib/libpython3.9m.so)
+    Example:
+
+        set(PYTHON_INCLUDE_PATH ~/.pyenv/versions/3.9-dev/include/python3.9)
+        set(PYTHON_LIBRARIES ~/.pyenv/versions/3.9-dev/lib/libpython3.9.so)
 
 ## NodeJS
 
@@ -209,6 +228,10 @@ version that is installed on the target.
 As long as the same distribution is used for the build environment as the target, apt can be used to easily install nodejs.
 
     sudo apt install nodejs
+
+For the build environment, npm (the node package manager) should be installed to obtain additional node modules during build and include these in the generated package.
+
+    sudo apt install npm
 
 Whereas, if the target and build environment should use different distros, the best option is to use nodesource for both platforms. If theres a previous version of nodejs already installed, this should be removed, as it might result in conflicting dependencies or linkable .so files, even if the same version is in use (the apt setup uses a sligthly different setup of packages and linkable files the nodesource setup).
 
