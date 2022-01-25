@@ -121,6 +121,12 @@ The SWIG library takes the **C Interface** as a template for a library that crea
 
 # Installation
 
+## WSL
+
+exOS works best with WSL as a build environment for the components that are to be deployed on a Linux target system, as WSL executes a full-fledged Debian Linux in the background containing all needed packages for the exOS components to be compiled. The `exOS Component Generator` therefore uses the background WSL compile step as the default mechanism in the generated templates, so that the Linux sources are integrated into the Automation Studio project build. This ensures that components are compiled and deployed to AR and Linux in a consistent manner.
+
+For installing a WSL build system as well as a simulated WSL target environment, please see [exOS-WSL on github](https://github.com/br-automation-com/exOS-WSL).
+
 ## Python
 
 One important topic when creating Python-based exOS packages is to compile the package with the same Python
@@ -130,17 +136,11 @@ version that is installed on the target.
 
 One easy solution for this is to use Python2.7. Old as it is, it is still same-for-all
 
-- On the target system:
+    sudo apt install python-dev
 
-        sudo apt install python
+In the CMakeLists.txt:
 
-- In the build-enviroment
-
-        sudo apt install python-dev
-
-- In the CMakeLists.txt
-
-        find_package(PythonLibs)
+    find_package(PythonLibs 2)
 
 ### Python 3
 
@@ -149,7 +149,7 @@ distributions will install different Python versions when installing Python via 
 
 Here is a list of distributions together with supported Python versions https://wiki.debian.org/Python
 
-- Debian Bullseye contains 2.7, 3.9 (This information may not be final)
+- Debian Bullseye contains 3.9
 - Debian Buster contains Python 2.7, 3.7
 - Debian Stretch contains Python 2.7, 3.5
 - Debian Jessie contains Python 2.7, 3.4
@@ -158,63 +158,38 @@ Here is a list of distributions together with supported Python versions https://
 As long as the same distribution is used for target and build-environment, the installation
 of Python3 is as simple as Python2.7
 
-- On the target system:
+    sudo apt install python3-dev
 
-        sudo apt install python3
+In the CMakeLists.txt:
 
-- In the build-enviroment
-
-        sudo apt install python3-dev
-
-- In the CMakeLists.txt
-
-        find_package(PythonLibs 3)
+    find_package(PythonLibs 3)
 
 
-If the build environment uses a different distribution as the target, the distro-specific python
-version will most likely become a problem.
+If the application requires a different python version than is offered by the default apt mechanism in the distribution, python needs to be intalled by other means than `sudo apt install python3-dev`.
+There are a few different solutions to this, one of the solutions is to use `pyenv`.
 
-Here it is advised to strive towards letting the target system define the Python3 version
-to be used, as it is always easier to make local patches on the build system, than to change
-the target system setup, which might influence other running applications.
+`pyenv` can be installed with the following link: https://github.com/pyenv/pyenv-installer
 
-- On the target system:
+The following article gives a good intro to pyenv: https://realpython.com/intro-to-pyenv/
 
-        sudo apt install python3
-        python3 --version
+In short, a few packages need to be installed in the build-environment before using `pyenv`
+to install new versions
 
-    This will show the version currently installed on the target system, for example
+    sudo apt-get install -y make build-essential libssl-dev zlib1g-dev \
+    libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev \
+    libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl
 
-        Python 3.5.3
+When `pyenv` and all required packages have been installed, the `3.9` developer version can be installed.
 
-- In the build-enviroment
-
-    Here the `3.5.3` development version needs to be intalled by other means than `sudo apt install python3-dev`.
-    There are a few different solutions to this, one of the solutions is to use `pyenv`.
-
-    `pyenv` can be installed with the following link: https://github.com/pyenv/pyenv-installer
-
-
-    The following article gives a good intro to pyenv: https://realpython.com/intro-to-pyenv/
-
-    In short, a few packages need to be installed in the build-environment before using `pyenv`
-    to install new versions
-
-        sudo apt-get install -y make build-essential libssl-dev zlib1g-dev \
-        libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev \
-        libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl
-
-    When `pyenv` and all required packages have been installed, the `3.5.3` developer version can be installed.
-
-        env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.5-dev
+    env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.9-dev
         
 - In the CMakeLists.txt
 
     Using pyenv, the python librares are not located in /usr/include or /usr/lib, but need to be defined
     manually in the CMakeLists.txt
 
-        set(PYTHON_INCLUDE_PATH ~/.pyenv/versions/3.5-dev/include/python3.5m)
-        set(PYTHON_LIBRARIES ~/.pyenv/versions/3.5-dev/lib/libpython3.5m.so)
+        set(PYTHON_INCLUDE_PATH ~/.pyenv/versions/3.9-dev/include/python3.9m)
+        set(PYTHON_LIBRARIES ~/.pyenv/versions/3.9-dev/lib/libpython3.9m.so)
 
 ## NodeJS
 
@@ -222,19 +197,11 @@ Similar to using Python3, nodejs comes in different versions in different distri
 
 https://packages.debian.org/nodejs
 
-- jessie (oldoldstable): 0.10.29~dfsg-2
-
-- stretch (oldstable): 4.8.2~dfsg-1
-
-- stretch-backports: 8.11.1~dfsg-2~bpo9+1
-
-- buster (stable): 10.24.0~dfsg-1~deb10u1
-
-- bullseye (testing): 12.21.0~dfsg-3
-
-- sid (unstable): 12.21.0~dfsg-3
-
-- experimental: 14.16.0~dfsg-1
+- stretch (oldoldstable): 4.8.2~dfsg-1
+- buster (oldstable) 10.24.0~dfsg-1~deb10u1
+- bullseye (stable) 12.22.5~dfsg-2~11u1
+- bookworm (testing) 12.22.7~dfsg-2
+- sid (unstable) 12.22.7~dfsg-2
 
 One important topic when creating NodeJS-based exOS packages is to compile the package with the same NodeJS
 version that is installed on the target.
@@ -275,14 +242,10 @@ Unlike Python and NodeJS, SWIG is a mere code generator and only needs to be ins
 
 There is still a difference of SWIG versions dependent on the used distribution, see https://packages.debian.org/swig
 
-- jessie (oldoldstable): 2.0.12-1
-
-- stretch (oldstable): 3.0.10-1.1
-
-- buster (stable): 3.0.12-2
-
-- bullseye (testing): 4.0.2-1
-
+- stretch (oldoldstable): 3.0.10-1.1
+- buster (oldstable): 3.0.12-2
+- bullseye (stable): 4.0.2-1
+- bookworm (testing): 4.0.2-1
 - sid (unstable): 4.0.2-1
 
 
