@@ -177,10 +177,10 @@ class ExosComponentCUpdate extends ExosComponentARUpdate {
     /**
      * Update class for Linux C/C++ applications, only updates the sourcefiles of the datamodel-wrappers
      * @param {string} exospkgFileName absolute path to the .exospkg file stored on disk
-     * @param {boolean} reset update main application sources as well
+     * @param {boolean} updateAll update main application sources as well
      */
-    constructor(exospkgFileName, reset) {
-        super(exospkgFileName, reset);
+    constructor(exospkgFileName, updateAll) {
+        super(exospkgFileName, updateAll);
      
         if(this._exosPkgParseResults.componentFound == true && this._exosPkgParseResults.componentErrors.length == 0) {
             if(this._exospackage.exospkg.componentOptions.templateLinux) {
@@ -192,7 +192,7 @@ class ExosComponentCUpdate extends ExosComponentARUpdate {
                         this._templateLinux = new TemplateLinuxStaticCLib(this._datamodel);
                         this._linuxPackage.addNewFileObj(this._templateLinux.staticLibraryHeader);
                         this._linuxPackage.addNewFileObj(this._templateLinux.staticLibrarySource);
-                        if(reset) {
+                        if(updateAll) {
                             this._linuxPackage.addNewFileObj(this._templateLinux.mainSource);
                         }
                         break;
@@ -203,12 +203,12 @@ class ExosComponentCUpdate extends ExosComponentARUpdate {
                         this._linuxPackage.addNewFileObj(this._templateLinux.datamodelSource);
                         this._linuxPackage.addNewFileObj(this._templateLinux.loggerHeader);
                         this._linuxPackage.addNewFileObj(this._templateLinux.loggerSource);
-                        if(reset) {
+                        if(updateAll) {
                             this._linuxPackage.addNewFileObj(this._templateLinux.mainSource);
                         }
                         break;
                     case "c-api":
-                        if(reset) {
+                        if(updateAll) {
                             this._templateLinux = new TemplateLinuxC(this._datamodel);
                             this._linuxPackage.addNewFileObj(this._templateLinux.mainSource);
                         }
