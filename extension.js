@@ -215,6 +215,12 @@ function activate(context) {
 
 		}
 
+		let stats = fs.statSync(uri.fsPath);
+		if (stats.isDirectory()) {
+			vscode.window.showInformationMessage(`Create package in directory will in the future create a Linux only package`);
+			return;
+		}
+
 		let availableStructures = Datamodel.getDatatypeList(uri.fsPath);
 		if(!Array.isArray(availableStructures) || availableStructures.length == 0)
 		{
