@@ -185,12 +185,7 @@ class Datamodel {
 
         //read the file
         this.fileLines = fs.readFileSync(this.fileName).toString();
-        //remove stuff we dont want to look at
-        this.fileLines = this.fileLines.split("\r").join("");
-        this.fileLines = this.fileLines.split(";").join("");
-        this.fileLines = this.fileLines.split("{REDUND_UNREPLICABLE}").join("");
-        //now split with line endings
-        this.fileLines = this.fileLines.split("\n");
+        this.fileLines = Datamodel._splitLines(this.fileLines);
 
         this.headerFile = {name:"", contents:"", description:""};
         this.sourceFile = {name:"", contents:"", description:""};
@@ -338,6 +333,13 @@ class Datamodel {
         fileLines = fileLines.split("\r").join("");
         fileLines = fileLines.split(";").join("");
         fileLines = fileLines.split("{REDUND_UNREPLICABLE}").join("");
+        //Change multi-line comments to a single line with \n replaced with |
+        const to1line = str => str.replace(
+            /\(\*(.*?(?=\*\)))/gs,
+            (_, comment) => '(*' + comment.replace(/(?:\r?\n)/gs, ' | ')
+        );
+        fileLines= to1line( fileLines );
+
         //now split with line endings
         fileLines = fileLines.split("\n");
         return fileLines;
