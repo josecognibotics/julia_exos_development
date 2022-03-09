@@ -463,7 +463,8 @@ const EXOSPKG_VERSION = "2.0.0";
      * @param {string} name The `datamodel_instance_name` provided in the `exos_datamodel_connect_{type}()` function of the application
      */
     addDatamodelInstance(name) {
-        this._datamodels.push({name:name});
+        if (name != undefined)
+            this._datamodels.push({name:name});
     }
 
     /**

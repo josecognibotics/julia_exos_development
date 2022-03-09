@@ -28,35 +28,45 @@ const {GeneratedFileObj} = require('../../../datamodel')
  * @property {string} maintainer default: `Your Name`
  * 
  * @typedef {Object} BuildOptionsStaticLibrary
- * @property {boolean} enable whether or not a static library should be built. mutually exclusive with `napi` and `swigPython`. default: `false`
+ * @property {boolean} enable whether or not a static library should be built. mutually exclusive with `napi`, `js`, `python` and `swigPython`. default: `false`
  * @property {string} libraryName name of the library. default: `lib` + `name`. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the LinuxPackage
  * @property {string[]} sourceFiles list of source files used to build the library. default: [] 
  *
  * @typedef {Object} BuildOptionsExecutable
- * @property {boolean} enable whether or not an executable should be created. mutually exclusive with `napi` and `swigPython`. default: `false`
+ * @property {boolean} enable whether or not an executable should be created. mutually exclusive with `napi`, `js`, `python` and `swigPython`. default: `false`
  * @property {BuildOptionsStaticLibrary} staticLibrary build options for creating a static library, if enabled, the `executable` will be linked to this library
  * @property {string} executableName name of the executable. default: `name`. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the LinuxPackage
  * @property {string[]} sourceFiles list of source files used to build the executable. default: [] 
  * 
  * @typedef {Object} BuildOptionsSWIGPython
- * @property {boolean} enable whether or not a SWIG python module should be created. mutually exclusive with `executable`, and `napi`. default: `false`
+ * @property {boolean} enable whether or not a SWIG python module should be created. mutually exclusive with `executable`, `js`, `python` and `napi`. default: `false`
  * @property {string[]} sourceFiles list of source files used to build the module. default: [] 
  * @property {string} moduleName name of the module that the sources are built into. default: `lib` + `Name`
  * @property {string} soFileName (read only) name of the generated .so file. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the {@link LinuxPackage}
  * @property {string} pyFileName (read only) name of the generated .py file. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the {@link LinuxPackage}
  * 
  * @typedef {Object} BuildOptionsNAPI
- * @property {boolean} enable whether or not a N-API nodejs module should be created. mutually exclusive with `executable`, and `swigPython`. default: `false`
+ * @property {boolean} enable whether or not a N-API nodejs module should be created. mutually exclusive with `executable`, `js`, `python`, and `swigPython`. default: `false`
  * @property {boolean} includeNodeModules `true` if the `node_modules` folder should be added to the package. default: `true`
  * @property {string[]} sourceFiles list of source files used to build the module. default: [] 
  * @property {string} nodeFileName (read only) name of the generated .node module. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the LinuxPackage
  * 
+ * @typedef {Object} BuildOptionsPython
+ * @property {boolean} enable whether or not a python module should be created. mutually exclusive with `executable`, `swigPython`, `js` , and `napi`. default: `false`
+ * 
+ * @typedef {Object} BuildOptionsJS
+ * @property {boolean} enable whether or not a nodejs module should be created. mutually exclusive with `executable`, `napi`, `python` , and `swigPython`. default: `false`
+ * @property {boolean} includeNodeModules `true` if the `node_modules` folder should be added to the package. default: `true`
+ * 
  * @typedef {Object} BuildOptions
  * @property {boolean} checkVersion add additional code in the build.sh to check the version of exos-data-eth against the first parameter passed to the build script (only if a parameter is passed). default: `true`
  * @property {string} buildType  `Debug` | `Release` | `RelWithDebInfo` | `MinSizeRel`. default: `Debug`
+ * @property {string} linkLibraries set which libraries to link .default `zmq exos-api`
  * @property {BuildOptionsExecutable} executable build options for creating an executable
  * @property {BuildOptionsSWIGPython} swigPython build options for creating a SWIG python module
- * @property {BuildOptionsNAPI} napi build options for creating a N-API nodejs module.
+ * @property {BuildOptionsNAPI} napi build options for creating a nodejs module.
+ * @property {BuildOptionsPython} python build options for creating a python module
+ * @property {BuildOptionsJS} js build options for creating a nodejs module.
  * @property {BuildOptionsDebPackage} debPackage build options for creating a deb package, if enabled, all needed files will be added to the package
  * 
  */
@@ -103,6 +113,7 @@ class TemplateLinuxBuild {
         this.options = {
             checkVersion: true,
             buildType: "Debug",
+            linkLibraries: "zmq exos-api",
             executable: {
                 enable: false,
                 executableName: name.toLowerCase(),
@@ -125,6 +136,13 @@ class TemplateLinuxBuild {
                 includeNodeModules: true,
                 sourceFiles: [],
                 nodeFileName: `l_${this.name}.node`
+            },
+            python: {
+                enable: false
+            },
+            js: {
+                enable: false,
+                includeNodeModules: true
             },
             debPackage: {
                 enable: true,
@@ -176,6 +194,22 @@ class TemplateLinuxBuild {
                 out += `set(${this.name.toUpperCase()}_MODULE_FILES\n`;
                 out += `    ${this.options.napi.nodeFileName}\n`;
                 for (const source of this.options.napi.sourceFiles) {
+                    out += `    ${source}\n`;
+                }
+                out += `    )\n`;
+                out += `\n`;
+                out += `install(FILES \${${this.name.toUpperCase()}_MODULE_FILES} DESTINATION ${this.options.debPackage.destination})\n`;
+                if(this.options.napi.includeNodeModules) {
+                    out += `install(DIRECTORY node_modules DESTINATION ${this.options.debPackage.destination})\n`;
+                }
+            }
+        }
+        else if(this.options.js.enable) {
+            
+            if(this.options.debPackage.enable) {
+                out += `\n`;
+                out += `set(${this.name.toUpperCase()}_MODULE_FILES\n`;
+                for (const source of this.options.js.sourceFiles) {
                     out += `    ${source}\n`;
                 }
                 out += `    )\n`;
@@ -246,12 +280,11 @@ class TemplateLinuxBuild {
             }
             out += `)\n`;
             out += `target_include_directories(${this.options.executable.executableName} PUBLIC ..)\n`;
-            if(this.options.executable.staticLibrary.enable) {
-                out += `target_link_libraries(${this.options.executable.executableName} ${this.options.executable.staticLibrary.libraryName} zmq exos-api)\n`;
-            }
-            else {
-                out += `target_link_libraries(${this.options.executable.executableName} zmq exos-api)\n`;
-            }
+
+            let linklibs = [this.options.executable.staticLibrary.enable ? this.options.executable.staticLibrary.libraryName : "", this.options.linkLibraries].join(" ").trim();
+            if(linklibs != "")
+                out += `target_link_libraries(${this.options.executable.executableName} ${linklibs})\n`;
+
             if(this.options.debPackage.enable) {
                 out += `\n`;
                 out += `install(TARGETS ${this.options.executable.executableName} RUNTIME DESTINATION ${this.options.debPackage.destination})\n`;
@@ -330,7 +363,7 @@ class TemplateLinuxBuild {
             out += `\n`;
         }
 
-        if(this.options.napi.enable) {
+        if(this.options.napi.enable || this.options.js.enable) {
             
             out += `finalize() {\n`;
             out += `    cd ..\n`;
@@ -343,7 +376,8 @@ class TemplateLinuxBuild {
     
             out += `mkdir build > /dev/null 2>&1\n`;
         
-            out += `rm -f l_*.node\n`;
+            if (this.options.napi.enable)
+                out += `rm -f l_*.node\n`;
             out += `rm -f *.deb\n\n`;
         
             out += `npm install\n`;
@@ -352,9 +386,10 @@ class TemplateLinuxBuild {
             out += `    finalize 2\n`;
             out += `fi\n\n`;
         
-            out += `cp -f build/Release/l_*.node .\n\n`;
+            if (this.options.napi.enable)
+                out += `cp -f build/Release/l_*.node .\n\n`;
             
-            if(this.options.napi.includeNodeModules) {
+            if(this.options.napi.includeNodeModules || this.options.js.includeNodeModules) {
                 out += `mkdir -p node_modules #make sure the folder exists even if no submodules are needed\n\n`;
             }
             

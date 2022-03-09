@@ -21,7 +21,7 @@ const path = require('path');
  * @typedef {Object} ExosComponentCOptions
  * @property {string} packaging  package format: `deb` | `none` - default: `none`
  * @property {string} destinationDirectory destination for the packaging. default: `/home/user/{typeName.toLowerCase()}`
- * @property {string} templateAR template used for AR: `c-static` | `cpp` | `c-api` - default: `c-api`
+ * @property {string} templateAR template used for AR: `c-static` | `cpp` | `c-api` | `deploy-only` - default: `c-api`
  * @property {string} templateLinux template used for Linux: `c-static` | `cpp` | `c-api` - default: `c-api`
  */
 class ExosComponentC extends ExosComponentAR {
@@ -105,12 +105,14 @@ class ExosComponentC extends ExosComponentAR {
                 this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateLinux.loggerHeader);
                 this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateLinux.loggerSource);
 
-                this._templateBuild.options.executable.staticLibrary.enable = true;
-                this._templateBuild.options.executable.staticLibrary.sourceFiles = [this._templateLinux.datasetHeader.name,
-                                                                                    this._templateLinux.datamodelHeader.name,
-                                                                                    this._templateLinux.datamodelSource.name,
-                                                                                    this._templateLinux.loggerHeader.name,
-                                                                                    this._templateLinux.loggerSource.name];
+                if (this.datamodel != undefined) {
+                    this._templateBuild.options.executable.staticLibrary.enable = true;
+                    this._templateBuild.options.executable.staticLibrary.sourceFiles = [this._templateLinux.datasetHeader.name,
+                                                                                        this._templateLinux.datamodelHeader.name,
+                                                                                        this._templateLinux.datamodelSource.name,
+                                                                                        this._templateLinux.loggerHeader.name,
+                                                                                        this._templateLinux.loggerSource.name];
+                }
                 break;
             case "c-api":
             default:
@@ -122,7 +124,10 @@ class ExosComponentC extends ExosComponentAR {
         this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateLinux.termination.terminationSource);
 
         
-        this._templateBuild.options.executable.sourceFiles = [this._templateLinux.termination.terminationSource.name, this._templateLinux.mainSource.name, this._datamodel.sourceFile.name]
+        this._templateBuild.options.executable.sourceFiles = [this._templateLinux.termination.terminationSource.name, this._templateLinux.mainSource.name]
+        if (this._datamodel != undefined) {
+            this._templateBuild.options.executable.sourceFiles.push(this._datamodel.sourceFile.name)
+        }
         if(this._options.packaging == "deb") {
             this._templateBuild.options.debPackage.enable = true;
             this._templateBuild.options.debPackage.destination = this._options.destinationDirectory;
@@ -147,7 +152,8 @@ class ExosComponentC extends ExosComponentAR {
             this._linuxPackage.addExistingTransferFile(this._templateBuild.options.executable.executableName, "Restart", `${this._typeName} application`);
         }
 
-        this._exospackage.exospkg.addDatamodelInstance(`${this._templateAR.template.datamodelInstanceName}`);
+        if (this._templateAR != undefined)
+            this._exospackage.exospkg.addDatamodelInstance(`${this._templateAR.template.datamodelInstanceName}`);
 
         this._exospackage.exospkg.setComponentGenerator("ExosComponentC", EXOS_COMPONENT_VERSION, []);
         this._exospackage.exospkg.addGeneratorOption("templateLinux",this._options.templateLinux);
@@ -158,7 +164,11 @@ class ExosComponentC extends ExosComponentAR {
         else {
             this._exospackage.exospkg.addGeneratorOption("exportLinux",[this._templateBuild.options.executable.executableName]);
         }
-        super.makeComponent(location);
+
+        if (this._templateAR == undefined)
+            this._exospackage.makePackage(location);
+        else
+            super.makeComponent(location);
     }
 }
 

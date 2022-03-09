@@ -559,7 +559,8 @@ class LinuxPackage extends Package {
      * @param {boolean} [insert] in case the file should be placed at the beginning of the package rather than at the end
      */
     addNewBuildFileObj(buildCommand, fileObj, insert) {
-        this.addNewBuildFile(buildCommand, fileObj.name, fileObj.contents, fileObj.description, insert);
+        if (fileObj)
+            this.addNewBuildFile(buildCommand, fileObj.name, fileObj.contents, fileObj.description, insert);
     }
 
     /**

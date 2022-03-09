@@ -217,7 +217,8 @@ class Template
 
         this.isLinux = Linux;
         this.datamodel = datamodel;
-        this.template = configTemplate(this.datamodel.dataset, this.datamodel.headerFile.name, Linux, recurse);
+        if (datamodel != undefined)
+            this.template = configTemplate(this.datamodel.dataset, this.datamodel.headerFile.name, Linux, recurse);
     }
 
 }
