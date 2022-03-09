@@ -66,10 +66,8 @@ class ExosComponentJS extends ExosComponentAR {
         }
 
         this._templateBuild = new TemplateLinuxBuild(typeName);
-        //this._templateBuild.options.linkLibraries = "";
-        this._templateBuild.options.checkVersion = false;
-
         this._templateJS = new TemplateLinuxJS(this._datamodel);
+        this._exospackage._exosPkg._buildCommands = [];
     }
 
     makeComponent(location) {
@@ -80,17 +78,15 @@ class ExosComponentJS extends ExosComponentAR {
         
         if(this._options.packaging == "deb") {
             this._templateBuild.options.debPackage.enable = true;
-            this._templateBuild.options.js.includeNodeModules = this._options.includeNodeModules;
+            this._templateBuild.options.js.includeNodeModules = false
             this._templateBuild.options.debPackage.destination = this._options.destinationDirectory;
 
             this._templateBuild.makeBuildFiles();
             this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateBuild.CMakeLists);
-            this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateBuild.buildScript);
         }
         else {
             this._templateBuild.options.debPackage.enable = false;
             this._templateBuild.options.js.includeNodeModules = false;
-            this._exospackage._exosPkg._buildCommands = [];
         }
 
 
