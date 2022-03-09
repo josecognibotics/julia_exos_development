@@ -238,10 +238,7 @@ class TemplateLinuxSWIG extends TemplateLinuxStaticCLib {
         
                 } while ((idx=headerStructs.indexOf("<sai>")) > 0)
             }
-            else {
-                out += headerStructs;
-            }
-            
+            out += headerStructs; // Output the rest of the structs after handling sai
         
             for (let dataset of template.datasets) {
                 if (dataset.isSub || dataset.isPub ) {
