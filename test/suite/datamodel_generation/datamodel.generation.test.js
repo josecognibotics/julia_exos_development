@@ -38,10 +38,11 @@ suite('Datamodel generation tests (includes AS build, so might be lengthy)', () 
         // but lets keep it as an active choice to get them tested
         // (add to typNames array)
         
-        // TODO: Add more typ files here
+        // The names must match both the filename and the STRUCT name
         // Remember to also add them as reference files in ../AS/Project/Logical/typfiles/Package.pkg
         typNames = [
-            "StringAndArray"
+            "StringAndArray",
+            "ros_topics_typ"
         ];
  
         /*

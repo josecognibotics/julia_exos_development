@@ -1,0 +1,11 @@
+{
+  "name": "ros_topics_typ_datamodel",
+  "version": "1.0.0",
+  "description": "implementation of exOS data exchange defined by datatype ros_topics_typ",
+  "main": "ros_topics_typ.js",
+  "scripts": {
+    "start": "node ros_topics_typ.js"
+  },
+  "author": "your name",
+  "license": "MIT"
+}

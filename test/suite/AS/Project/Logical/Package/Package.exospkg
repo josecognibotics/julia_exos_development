@@ -5,6 +5,10 @@
             <SG4 Include="StringAndA.h"/>
             <Output Path="../../../../datamodel_generation/generated/AS/StringAndArray/"/>
         </GenerateDatamodel>
+        <GenerateDatamodel FileName="../../../../typfiles/ros_topics_typ.typ" TypeName="ros_topics_typ">
+            <SG4 Include="ros_topics.h"/>
+            <Output Path="../../../../datamodel_generation/generated/AS/ros_topics_typ/"/>
+        </GenerateDatamodel>
     </Build>
     <!-- ComponentGenerator info - do not change! -->
     <ComponentGenerator Class="ExosComponentC" Version="2.0.1">

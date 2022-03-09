@@ -35,9 +35,10 @@ suite('Template generation tests (<name> <AR side> <Linux side>)', () => {
     
     // we could loop and find all .typ if we wanted
     // but lets keep it as an active choice to get them tested
-    // TODO: Add more typ files here
+    // The names must match both the filename and the STRUCT name
     typNames = [
-        "StringAndArray"
+        "StringAndArray",
+        "ros_topics_typ"
     ];
 
     typNames.forEach(typName => {

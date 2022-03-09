@@ -3,5 +3,6 @@
 <Package xmlns="http://br-automation.co.at/AS/Package">
   <Objects>
     <Object Type="File" Private="true" Reference="true">\..\..\typfiles\StringAndArray.typ</Object>
+    <Object Type="File" Private="true" Reference="true">\..\..\typfiles\ros_topics_typ.typ</Object>
   </Objects>
 </Package>
