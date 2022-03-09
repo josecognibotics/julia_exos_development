@@ -115,7 +115,8 @@ suite('Datamodel generation tests (includes AS build, so might be lengthy)', () 
 
         let ret = child_process.spawnSync(`${ASBuilder}`, [`-c Config1`, `${apjFile}`]);
         assert.notEqual(ret.pid, 0, `command not started: ${ASBuilder} -c Config1 ${apjFile}`);
-        assert.equal(ret.status, 0, `build not succesful: ${ASBuilder} -c Config1 ${apjFile}: \nOutput from command:\n ${ret.stdout.toString()}`);
+        // Return values from BR.AS.Build.exe: 0 = No errors or warnings, 1 = Warnings only, 3 = Build error 
+        assert.notEqual(ret.status, 3, `build not successful: ${ASBuilder} -c Config1 ${apjFile}: \nOutput from command:\n ${ret.stdout.toString()}`);
 
         /*
             Compare AS version and VS Code extension version of the datamodel
@@ -128,7 +129,11 @@ suite('Datamodel generation tests (includes AS build, so might be lengthy)', () 
 
         /*
         // TODO: do the actual compare. Now it will fail due to TP and VSe not doing the same for uninitialized enums (TP is )
-        dirOptions = { compareSize: true };
+        dirOptions = {
+            compareContent: true,
+            compareFileSync: dircompare.fileCompareHandlers.lineBasedFileCompare.compareSync,
+            ignoreLineEnding: true
+        };
         compRes = dircompare.compareSync(genPathAS, genPathVSCE, dirOptions);
         if (compRes.differences > 0) {
             assert.equal(compRes.differences, 0, `One or more generated datamodel(s) from AS differs from VS code extension (${genPathAS} vs. ${genPathVSCE})`);

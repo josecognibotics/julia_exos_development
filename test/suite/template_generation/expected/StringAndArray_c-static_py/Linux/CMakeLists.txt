@@ -8,13 +8,14 @@ include(${SWIG_USE_FILE})
 
 # Load Python Libraries
 # ---------------------
-# a.) use Python 2.7 to avoid version conflicts
-find_package(PythonLibs)
-# b.) use Python 3 from the distro (same distro used on the target)
-# find_package(PythonLibs 3)
+# a.) use Python 3 
+find_package(PythonLibs 3)
+# b.) use Python 2.7 (  change the Runtime service command to 'python2' in the .exospkg file)
+# - update the DEPENDS to python-dev
+# find_package(PythonLibs 2)
 # c.) use pyenv to manually install a version matching the Python version on the target distro https://realpython.com/intro-to-pyenv/
-# set(PYTHON_INCLUDE_PATH ~/.pyenv/versions/3.5-dev/include/python3.5m)
-# set(PYTHON_LIBRARIES ~/.pyenv/versions/3.5-dev/lib/libpython3.5m.so)
+# set(PYTHON_INCLUDE_PATH ~/.pyenv/versions/3.9-dev/include/python3.9)
+# set(PYTHON_LIBRARIES ~/.pyenv/versions/3.9-dev/lib/libpython3.9.so)
 
 include_directories(${PYTHON_INCLUDE_PATH})
 

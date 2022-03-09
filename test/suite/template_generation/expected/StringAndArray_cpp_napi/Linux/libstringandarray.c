@@ -27,6 +27,7 @@ The code generated is NOT yet fully formatted to ones normal liking. There are m
 #include <uv.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define SUCCESS(_format_, ...) exos_log_success(&logger, EXOS_LOG_TYPE_USER, _format_, ##__VA_ARGS__);
 #define INFO(_format_, ...) exos_log_info(&logger, EXOS_LOG_TYPE_USER, _format_, ##__VA_ARGS__);
