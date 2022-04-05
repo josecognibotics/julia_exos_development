@@ -78,7 +78,7 @@ function activate(context) {
 			client.connect(port, ip)
 
 			client.on('timeout', () => {
-				writeEmitter.fire('Disconnected\r\n');
+				writeEmitter.fire('Disconnected\r\nPress Enter to reconnect\r\n');
 				client.destroy();
 			});
 
@@ -99,12 +99,12 @@ function activate(context) {
 
 			client.on('close', function () {
 				client.destroy();
-				writeEmitter.fire('Connection closed\r\n');
+				writeEmitter.fire('Connection closed\r\nPress Enter to reconnect\r\n');
 			});
 
 			client.on('error', function (error) {
 				client.destroy();
-				writeEmitter.fire(`${prepend}Connection error (${error.code})\r\n`);
+				writeEmitter.fire(`Connection error (${error.code})\r\n`);
 			});
 
 
