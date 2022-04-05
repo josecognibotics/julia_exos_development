@@ -39,7 +39,7 @@ class ExportPackage extends Package {
 	 * @param {string} type type of package: `Package` | `Library` | `Program`. throws an exeption if package type doesnt match
 	 * @param {string} subType expected package SubType: `ANSIC` | `IEC` | `exosPackage` | `exosLinuxPackage` . throws an exeption is the subtype found doesnt match
 	 * @param {string} packageFileName name of the xml packagefile used within this package, like `Package.pkg` or `ANSIC.lby`
-	 * @param {string[]} [extensions] list of file extensions that we ant to include, like `.var` `.typ` - can be used inversed, like `!.deb`, `!.bin` and so on. if left out, all files will be included
+	 * @param {string[]} [extensions] list of file extensions that we want to include, like `.var` `.typ` - can be used inversed, like `!.deb`, `!.bin` and so on. if left out, all files will be included. if just "!" is used, no files will be added
 	 * @param {ExosPkgExport} [exosPkg] exos package that is provided to the `LinuxExport` package 
 	 * 
 	 * @returns {string} version of the package (if provided) - if no version is provided, an empty string is returned
@@ -163,23 +163,24 @@ class LinuxExport extends ExportPackage {
 
 	constructor(packagePath, exosPkg) {
 
-		//dont add any files, these are provided later, by the _exosPkg.componentOptions
+		//dont add any files via the ExportPackage class ("!")
 		super(packagePath, "Package", "exosLinuxPackage", "Package.pkg", ["!"]);
 		this._exosPkg = exosPkg;
 
-	}
-
-	exportPackage(destination) {
-		if(!this._exosPkg) {
-			throw(`${this._folderName}: missing exosPkg!`);
-		}
-
+		//the files are provided by the _exosPkg.componentOptions
 		if(this._exosPkg.componentOptions && this._exosPkg.componentOptions.exportLinux) {
 		
 			for(let exportFile of this._exosPkg.componentOptions.exportLinux.split(","))
 			{
 				this.addExportFile(exportFile);
 			}
+		}
+
+	}
+
+	exportPackage(destination) {
+		if(!this._exosPkg) {
+			throw(`${this._folderName}: missing exosPkg!`);
 		}
 
         //fill the package specific contents
@@ -395,7 +396,7 @@ class ExosExport extends ExportPackage {
      * 
      * @param packagePath path of the exOS package to be exported
      */
-	 constructor(packagePath) {
+	constructor(packagePath) {
 		
 		let exosPkgFileName = undefined;
 		let files = fs.readdirSync(packagePath);
@@ -427,7 +428,18 @@ class ExosExport extends ExportPackage {
 		//..we therefore add the .exospkgfile as a new file instead and populate it in the exportPackage()
 		this._exosPkgFile = this.getNewFile(path.basename(exosPkgFileName),"exOS package description",true);
 
-		this._findASExports();
+		let ASExportsNeeded = false;
+		for (const obj of this._objects) {
+			if (obj.type == "Library") {
+				ASExportsNeeded = true;
+			}
+		}
+		if (ASExportsNeeded) {
+			this._findASExports();			
+		}
+		else {
+			this._configurations.push({name:"Default", cpu:"Package has no AS dependecies", description:""});
+		}
 	}
 
 	_findASExports() {

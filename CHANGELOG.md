@@ -1,5 +1,16 @@
 # Changelog
 
+## []
+
+### Added
+
+- Added possibillity to add deploy-only Linux component by right-clicking on a folder. Usecase is for creating node/python/C/C++ applications that are only running in Linux.
+
+### Fixed
+
+- Support for multiline comments in .typ files
+- Fix missing structs in swig i-file - a combination of array and nested structs could result in missing structs
+
 ## [2.0.2] - 2022-01-25
 
 ### Added
