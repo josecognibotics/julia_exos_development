@@ -557,6 +557,29 @@ const EXOSPKG_VERSION = "2.0.0";
     }
 
     /**
+     * Get a list of wsl distributions used in the build commands
+     * 
+     * @returns {string[]} empty list [] if no wsl.exe is found as build command, empty string list [""] if wsl.exe is found, but -d {Distro} isnt used, otherwise eg. ["Debian","DebianTest"]
+     */ 
+    getWSLBuildDistros() {
+        let distros = [];
+        for (const buildCommand of this._buildCommands) {
+            if (buildCommand.command.includes("wsl.exe")) {
+                let distro = "";
+                //pull out the distro name if provided
+                if (buildCommand.args.includes("-d")) {
+                    distro = buildCommand.args.replace(/-d\s(\S+)\s.*/, '$1');
+                }
+                //add the distro name if not already in the list
+                if (distros.indexOf(distro) == -1) {
+                    distros.push(distro);
+                }
+            }
+        }
+        return distros;
+    }
+     
+    /**
      * Add a dependency for the exOS TP build process, that a file can be monitored for changes that will trigger the build command to run.
      * The LinuxPackage has a shortcut to add files including adding them as build dependencies with {@link getNewBuildFile()}
      * 

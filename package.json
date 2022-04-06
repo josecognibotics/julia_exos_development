@@ -32,6 +32,10 @@
 				"title": "Update exOS component..."
 			},
 			{
+				"command": "exos-component-extension.updateBuildEnvironment",
+				"title": "Update exOS build environment..."
+			},
+			{
 				"command": "exos-component-extension.exportPackage",
 				"title": "Export binary exOS package..."
 			},
@@ -79,6 +83,11 @@
 				{
 					"when": "filesExplorerFocus && resourceExtname == .exospkg",
 					"command": "exos-component-extension.updateComponent",
+					"group": "2_workspace"
+				},
+				{
+					"when": "filesExplorerFocus && resourceExtname == .exospkg",
+					"command": "exos-component-extension.updateBuildEnvironment",
 					"group": "2_workspace"
 				}
 			]

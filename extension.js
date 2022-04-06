@@ -7,6 +7,7 @@ const fse = require('fs-extra');
 const { dir } = require('console');
 const os = require('os');
 const net = require('net');
+const {spawn} = require('child_process');
 
 const isDebugMode = () => process.env.VSCODE_DEBUG_MODE === "true";
 
@@ -20,6 +21,7 @@ const { ExosComponentPython, ExosComponentPythonUpdate } = require('./src/compon
 const { ExosComponentJS, ExosComponentJSUpdate } = require('./src/components/exoscomponent_js');
 const { ExosExport, ASConfiguration } = require('./src/exosexport');
 const { Package } = require('./src/exospackage');
+const { ASProject, ASProjectConfiguration } = require('./src/asproject')
 
 var lastIP = "127.0.0.1"
 
@@ -41,6 +43,181 @@ function activate(context) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
+
+	let updateBuildEnvironment = vscode.commands.registerCommand('exos-component-extension.updateBuildEnvironment', function(uri) {
+		
+		function performUpdate(cwd, args) {
+			const writeEmitter = new vscode.EventEmitter();
+
+			let finished = false;
+			const pty = {
+				onDidWrite: writeEmitter.event,
+				open: () => {writeEmitter.fire(`updating exOS build environment..\r\n\r\n`)},
+				close: () => {},
+				handleInput: data => {
+					if(data === '\r')
+					{
+						if(finished) {
+							terminal.dispose();
+						}
+					}
+				}
+			};		
+			let terminal = vscode.window.createTerminal({ name: 'updating exOS build environment', pty });
+
+			terminal.show();
+			let lineBuffer = [];
+
+			let outputTimer = setInterval(() => {
+				while (line = lineBuffer.shift()) {
+					writeEmitter.fire(`${line}\r\n`);					
+				}
+			}, 100);
+
+			let builder = spawn('wsl', args, { cwd: cwd, shell: true });
+
+            builder.stdout.setEncoding('utf8');
+			builder.stdout.on('data', (chunk) => {
+				let lines = chunk.toString().replace("\r","").split("\n")
+				for(line of lines) {
+					if(line.length > 0) {
+						lineBuffer.push(line);
+					}
+				}
+            });
+            builder.stderr.setEncoding('utf8');
+			builder.stderr.on('data', (chunk) => {
+				let lines = chunk.toString().replace("\r","").split("\n")
+				for(line of lines) {
+					if(line.length > 0) {
+						lineBuffer.push(line);
+					}
+				}
+            });
+			builder.on('error', function (err) {
+				writeEmitter.fire(`error from wsl:\r\n${err}\r\nPress Enter to close\r\n`);				
+				finished = true;
+            });
+            builder.on('exit', (code) => {
+				if (0 == code) {
+					clearInterval(outputTimer);
+					
+					while (line = lineBuffer.shift()) {
+						writeEmitter.fire(`${line}\r\n`);					
+					}
+					writeEmitter.fire(`wsl finished successfully\r\nPress Enter to close\r\n`);
+					finished = true;
+                }
+                else {
+					writeEmitter.fire(`wsl exited with code ${code}\r\nPress Enter to close\r\n`);
+					finished = true;
+                }
+			});
+		}
+
+		try {
+
+			let exospkg = new ExosPkg();
+			let result = exospkg.parseFile(uri.fsPath);
+			
+			if (!result.fileParsed) {
+				throw (`${path.basename(uri.fsPath)} could not be parsed!`);
+			}
+
+			let asProject = new ASProject(uri.fsPath, true);
+
+			/** 
+			* @type {ASProjectConfiguration[]}
+			*/
+			let configurations = asProject.getConfigurations();
+
+			let pickConfiguration = [];
+
+			for(let configuration of configurations) {
+				pickConfiguration.push({label: configuration.name, detail: configuration.cpu, description: configuration.description});
+			}
+
+			vscode.window.showQuickPick(pickConfiguration, { title: `Select configuration` }).then(selectedConfiguration => {
+				
+				let exosDataDir = path.join(asProject.getApjPath(), "Temp", "Transfer", selectedConfiguration.label, selectedConfiguration.detail, "FilesToTransfer", "AddonsData", "exos", "exos-data");
+				
+				try {
+					let stats = fs.statSync(exosDataDir);
+					if (!stats.isDirectory()) {
+						vscode.window.showErrorMessage("exos-data cannot be found in this configuration. Project needs to be built.");
+					}
+				}
+				catch (e) {
+					vscode.window.showErrorMessage(`exos-data cannot be found in this configuration. Project needs to be built. ${e}`);
+					return;
+				}
+
+				let distros = exospkg.getWSLBuildDistros();
+				if (distros.length == 0) {
+					vscode.window.showErrorMessage(`The file ${path.basename(uri.fsPath)} has no WSL build command. Update environment manually`);
+					return;
+				}
+
+				let distroType = [];
+				for (const distro of distros) {
+					if (distro.length > 0) {
+						distroType.push({ label: distro, detail: `WSL distribution "${distro}"` })
+					}
+					else {
+						distroType.push({ label: "(default)", detail: `WSL default distribution` })
+					}
+				}
+				vscode.window.showQuickPick(distroType, { title: "Select WSL distribution to update" }).then(selectedDistro => { 
+			
+					let userType = [];
+					userType.push({label: "sudo user", detail:"The default user is a sudo user"});
+					userType.push({label: "root", detail:"The default user is root"})
+					
+					vscode.window.showQuickPick(userType,{title:"Select default user"}).then(selectedUserType => {
+			
+						let args = [];
+						if (selectedDistro.label != "(default)") {
+							args.push('-d');
+							args.push(selectedDistro.label);
+						}
+
+						if (selectedUserType.label == "root")
+						{
+							args.push('-e');
+							args.push('sh setup_build_environment.sh');
+							performUpdate(exosDataDir, args);				
+						}
+						else
+						{
+							vscode.window.showInputBox({ prompt: "Enter password for default sudo user", password: true }).then(password => { 
+								
+								//create a file passing in the password to the sudo command, this cannot be donw via the wsl cmdline
+								fs.writeFileSync(path.join(exosDataDir,"update.sh"),`echo "${password}" | sudo -S sh setup_build_environment.sh`)
+								//remove the file with the password asap
+								setTimeout(() => {
+									fs.unlinkSync(path.join(exosDataDir, "update.sh"));
+								}, 1000);
+
+								args.push('-e');
+								args.push('sh update.sh')
+								performUpdate(exosDataDir, args);
+							
+							});
+							
+						}
+					});
+
+				});
+			});
+			
+		}
+		catch(error) {
+			vscode.window.showErrorMessage(error);
+		}
+	});
+
+	context.subscriptions.push(updateBuildEnvironment);
+
 
 	let debugTerminal = vscode.commands.registerCommand('exos-component-extension.debugConsole', function() {
 		
@@ -288,7 +465,7 @@ function activate(context) {
 		if (stats.isDirectory()) {
 			//vscode.window.showInformationMessage(`Create package in directory will in the future create a Linux only package`);
 
-			vscode.window.showInputBox({prompt:"Name of the deployable component with no datamodel", value:`MyDeployComp`}).then(name => {
+			vscode.window.showInputBox({prompt:"Name of the deployable component with no datamodel", value:`LinuxComponent`}).then(name => {
 
 				if(!name)
 					return;
