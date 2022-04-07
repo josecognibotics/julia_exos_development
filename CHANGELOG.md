@@ -1,15 +1,18 @@
 # Changelog
 
-## []
+## [2.0.3] - 2022-04-07
 
 ### Added
 
 - Added possibillity to add deploy-only Linux component by right-clicking on a folder. Usecase is for creating node/python/C/C++ applications that are only running in Linux.
 
+- Added "update WSL build environment" to simplify the update towards a new technology package. The update is done via the exospkg file, as this has the reference to the used WSL distro.
+
 ### Fixed
 
 - Support for multiline comments in .typ files
 - Fix missing structs in swig i-file - a combination of array and nested structs could result in missing structs
+- Fixed missing EXOS_ASSERT and ERROR messages on dataset/publish errors in the c-static template, that errors become visible in the logger.
 
 ## [2.0.2] - 2022-01-25
 
