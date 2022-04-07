@@ -42,7 +42,25 @@ static void libros_topics_typ_datasetEvent(exos_dataset_handle_t *dataset, EXOS_
         }
         break;
 
-    default:
+    case EXOS_DATASET_EVENT_PUBLISHED:
+        break;
+    case EXOS_DATASET_EVENT_DELIVERED:
+        break;
+    case EXOS_DATASET_EVENT_CONNECTION_CHANGED:
+        INFO("dataset %s changed state to %s", dataset->name, exos_get_state_string(dataset->connection_state));
+
+        switch (dataset->connection_state)
+        {
+        case EXOS_STATE_DISCONNECTED:
+            break;
+        case EXOS_STATE_CONNECTED:
+            break;
+        case EXOS_STATE_OPERATIONAL:
+            break;
+        case EXOS_STATE_ABORTED:
+            ERROR("dataset %s error %d (%s) occured", dataset->name, dataset->error, exos_get_error_string(dataset->error));
+            break;
+        }
         break;
     }
 }
@@ -100,11 +118,11 @@ static void libros_topics_typ_datamodelEvent(exos_datamodel_handle_t *datamodel,
 
 static void libros_topics_typ_publish_twist_dataset(void)
 {
-    exos_dataset_publish(&h_ros_topics_typ.twist_dataset);
+    EXOS_ASSERT_OK(exos_dataset_publish(&h_ros_topics_typ.twist_dataset));
 }
 static void libros_topics_typ_publish_config_dataset(void)
 {
-    exos_dataset_publish(&h_ros_topics_typ.config_dataset);
+    EXOS_ASSERT_OK(exos_dataset_publish(&h_ros_topics_typ.config_dataset));
 }
 
 static void libros_topics_typ_connect(void)

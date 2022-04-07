@@ -90,7 +90,25 @@ static void libStringAndArray_datasetEvent(exos_dataset_handle_t *dataset, EXOS_
         }
         break;
 
-    default:
+    case EXOS_DATASET_EVENT_PUBLISHED:
+        break;
+    case EXOS_DATASET_EVENT_DELIVERED:
+        break;
+    case EXOS_DATASET_EVENT_CONNECTION_CHANGED:
+        INFO("dataset %s changed state to %s", dataset->name, exos_get_state_string(dataset->connection_state));
+
+        switch (dataset->connection_state)
+        {
+        case EXOS_STATE_DISCONNECTED:
+            break;
+        case EXOS_STATE_CONNECTED:
+            break;
+        case EXOS_STATE_OPERATIONAL:
+            break;
+        case EXOS_STATE_ABORTED:
+            ERROR("dataset %s error %d (%s) occured", dataset->name, dataset->error, exos_get_error_string(dataset->error));
+            break;
+        }
         break;
     }
 }
@@ -148,31 +166,31 @@ static void libStringAndArray_datamodelEvent(exos_datamodel_handle_t *datamodel,
 
 static void libStringAndArray_publish_myint1(void)
 {
-    exos_dataset_publish(&h_StringAndArray.myint1);
+    EXOS_ASSERT_OK(exos_dataset_publish(&h_StringAndArray.myint1));
 }
 static void libStringAndArray_publish_mystring(void)
 {
-    exos_dataset_publish(&h_StringAndArray.mystring);
+    EXOS_ASSERT_OK(exos_dataset_publish(&h_StringAndArray.mystring));
 }
 static void libStringAndArray_publish_myint2(void)
 {
-    exos_dataset_publish(&h_StringAndArray.myint2);
+    EXOS_ASSERT_OK(exos_dataset_publish(&h_StringAndArray.myint2));
 }
 static void libStringAndArray_publish_myintstruct(void)
 {
-    exos_dataset_publish(&h_StringAndArray.myintstruct);
+    EXOS_ASSERT_OK(exos_dataset_publish(&h_StringAndArray.myintstruct));
 }
 static void libStringAndArray_publish_myintstruct1(void)
 {
-    exos_dataset_publish(&h_StringAndArray.myintstruct1);
+    EXOS_ASSERT_OK(exos_dataset_publish(&h_StringAndArray.myintstruct1));
 }
 static void libStringAndArray_publish_myintstruct2(void)
 {
-    exos_dataset_publish(&h_StringAndArray.myintstruct2);
+    EXOS_ASSERT_OK(exos_dataset_publish(&h_StringAndArray.myintstruct2));
 }
 static void libStringAndArray_publish_myenum1(void)
 {
-    exos_dataset_publish(&h_StringAndArray.myenum1);
+    EXOS_ASSERT_OK(exos_dataset_publish(&h_StringAndArray.myenum1));
 }
 
 static void libStringAndArray_connect(void)

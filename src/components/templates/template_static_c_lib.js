@@ -116,7 +116,24 @@ class TemplateStaticCLib extends Template {
                 }
             }
             out += `        break;\n\n`;
-            out += `    default:\n`;
+            out += `    case EXOS_DATASET_EVENT_PUBLISHED:\n`;
+            out += `        break;\n`;
+            out += `    case EXOS_DATASET_EVENT_DELIVERED:\n`;
+            out += `        break;\n`;
+            out += `    case EXOS_DATASET_EVENT_CONNECTION_CHANGED:\n`;
+            out += `        INFO("dataset %s changed state to %s", dataset->name, exos_get_state_string(dataset->connection_state));\n\n`;
+            out += `        switch (dataset->connection_state)\n`;
+            out += `        {\n`;
+            out += `        case EXOS_STATE_DISCONNECTED:\n`;
+            out += `            break;\n`;
+            out += `        case EXOS_STATE_CONNECTED:\n`;
+            out += `            break;\n`;
+            out += `        case EXOS_STATE_OPERATIONAL:\n`;
+            out += `            break;\n`;
+            out += `        case EXOS_STATE_ABORTED:\n`;
+            out += `            ERROR("dataset %s error %d (%s) occured", dataset->name, dataset->error, exos_get_error_string(dataset->error));\n`;
+            out += `            break;\n`;
+            out += `        }\n`;
             out += `        break;\n`;
             out += `    }\n`;
             out += `}\n\n`;
@@ -172,7 +189,7 @@ class TemplateStaticCLib extends Template {
                 if (dataset.isPub) {
                     out += `static void ${template.datamodel.libStructName}_publish_${dataset.varName}(void)\n`;
                     out += `{\n`;
-                    out += `    exos_dataset_publish(&${template.datamodel.handleName}.${dataset.varName});\n`;
+                    out += `    EXOS_ASSERT_OK(exos_dataset_publish(&${template.datamodel.handleName}.${dataset.varName}));\n`;
                     out += `}\n`;
                 }
             }
