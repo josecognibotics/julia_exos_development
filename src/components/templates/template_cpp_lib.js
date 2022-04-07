@@ -60,14 +60,16 @@ class TemplateCppLib extends Template {
      * @param {boolean} Linux true if generated for Linux, false for AR
      */
     constructor(datamodel, Linux) {
-        super(datamodel,Linux);
-
-        this.datasetHeader = {name: `${this.template.datamodel.datasetClassName}.hpp`, contents:this._generateDatasetHeader(), description:`${this.datamodel.typeName} dataset class`}
-        this.loggerHeader = {name: `${this.template.loggerClassName}.hpp`, contents:this._generateLoggerHeader(), description:`${this.datamodel.typeName} logger class`}
-        this.loggerSource = {name: `${this.template.loggerClassName}.cpp`, contents:this._generateLoggerSource(), description:`${this.datamodel.typeName} logger class implementation`}
-        this.datamodelHeader = {name: `${this.template.datamodel.className}.hpp`, contents:this._generateDatamodelHeader(), description:`${this.datamodel.typeName} datamodel class`}
-        this.datamodelSource = {name: `${this.template.datamodel.className}.cpp`, contents:this._generateDatamodelSource(), description:`${this.datamodel.typeName} datamodel class implementation`}
-        this.datamodelLegend = this._genenerateLegend();
+        super(datamodel, Linux);
+        
+        if (datamodel != undefined) {
+            this.datasetHeader = {name: `${this.template.datamodel.datasetClassName}.hpp`, contents:this._generateDatasetHeader(), description:`${this.datamodel.typeName} dataset class`}
+            this.loggerHeader = {name: `${this.template.loggerClassName}.hpp`, contents:this._generateLoggerHeader(), description:`${this.datamodel.typeName} logger class`}
+            this.loggerSource = {name: `${this.template.loggerClassName}.cpp`, contents:this._generateLoggerSource(), description:`${this.datamodel.typeName} logger class implementation`}
+            this.datamodelHeader = {name: `${this.template.datamodel.className}.hpp`, contents:this._generateDatamodelHeader(), description:`${this.datamodel.typeName} datamodel class`}
+            this.datamodelSource = {name: `${this.template.datamodel.className}.cpp`, contents:this._generateDatamodelSource(), description:`${this.datamodel.typeName} datamodel class implementation`}
+            this.datamodelLegend = this._genenerateLegend();
+        }
     }
 
     /**

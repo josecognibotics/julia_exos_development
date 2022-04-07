@@ -45,6 +45,14 @@ In the editor title menu, under "More Actions...", the exOS Debug Console termin
 
 ![Debug console](https://github.com/br-automation-com/exOS-ComponentExtension/raw/master/images/DebugConsole.gif)
 
+## Update WSL build environment
+
+In order to update the WSL build environment for a new exOS TP version, the exos-data-eth package needs to be installed that the new headerfiles are used when compiling Linux sources.
+This function has been build in by richt-clicking on the `.exospkg` file. It uses the `<BuildCommand>` tag to search for the specific WSL distro that is to be updated.
+The project must have been built with dataconnection support (using at least a default `.exostarget` configuration), that the exos-data-eth drivers are available in the Temp folder of the project.
+
+![Update build environment](https://github.com/br-automation-com/exOS-ComponentExtension/raw/master/images/UpdateBuildEnvironment.gif)
+
 ## Example
 
 The Code generator uses a top-level structure of a given `IEC TYPE` definition file to generate `PUB/SUB` datasets.

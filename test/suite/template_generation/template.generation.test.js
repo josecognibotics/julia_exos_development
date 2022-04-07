@@ -35,26 +35,36 @@ suite('Template generation tests (<name> <AR side> <Linux side>)', () => {
     
     // we could loop and find all .typ if we wanted
     // but lets keep it as an active choice to get them tested
+    // The names must match both the filename and the STRUCT name
+    typNames = [
+        "StringAndArray",
+        "ros_topics_typ"
+    ];
 
-    test('StringAndArray c-api c-api', function() {
-        genAndCompare(this.test.title, function() {
-            let templateC = new ExosComponentC(typFile, selectedStructure.label, selectedOptions);
-            templateC.makeComponent(genPath);
-        }); 
-    });
+    typNames.forEach(typName => {
+        test(`${typName} c-api c-api`, function() {
+            genAndCompare(this.test.title, function() {
+                let templateC = new ExosComponentC(typFile, selectedStructure.label, selectedOptions);
+                templateC.makeComponent(genPath);
+            });
+            this.timeout(0); // avoid Error: Timeout of 2000ms exceeded. For async tests and hooks, ensure "done()" is called; if returning a Promise, ensure it resolves. 
+        });
 
-    test('StringAndArray c-static py', function() { // py is actually only for the title as ExosComponentSWIG doesnt use the linux template in the options
-        genAndCompare(this.test.title, function() {
-            let templateC = new ExosComponentSWIG(typFile, selectedStructure.label, selectedOptions);
-            templateC.makeComponent(genPath);
-        }); 
-    });
+        test(`${typName} c-static py`, function() { // py is actually only for the title as ExosComponentSWIG doesnt use the linux template in the options
+            genAndCompare(this.test.title, function() {
+                let templateC = new ExosComponentSWIG(typFile, selectedStructure.label, selectedOptions);
+                templateC.makeComponent(genPath);
+            });
+            this.timeout(0); // avoid Error: Timeout of 2000ms exceeded. For async tests and hooks, ensure "done()" is called; if returning a Promise, ensure it resolves.
+        });
 
-    test('StringAndArray cpp napi', function() { // napi is actually only for the title as ExosComponentNAPI doesnt use the linux template in the options
-        genAndCompare(this.test.title, function() {
-            let templateC = new ExosComponentNAPI(typFile, selectedStructure.label, selectedOptions);
-            templateC.makeComponent(genPath);
-        }); 
+        test(`${typName} cpp napi`, function() { // napi is actually only for the title as ExosComponentNAPI doesnt use the linux template in the options
+            genAndCompare(this.test.title, function() {
+                let templateC = new ExosComponentNAPI(typFile, selectedStructure.label, selectedOptions);
+                templateC.makeComponent(genPath);
+            });
+            this.timeout(0); // avoid Error: Timeout of 2000ms exceeded. For async tests and hooks, ensure "done()" is called; if returning a Promise, ensure it resolves.
+        });
     });
 
 
@@ -84,7 +94,11 @@ suite('Template generation tests (<name> <AR side> <Linux side>)', () => {
         generator();
 
         // now compare the newly generated output with the expected output
-        dirOptions = { compareSize: true };
+        dirOptions = {
+            compareContent: true,
+            compareFileSync: dircompare.fileCompareHandlers.lineBasedFileCompare.compareSync,
+            ignoreLineEnding: true
+        };
         
         genPath = path.resolve(__dirname, '../template_generation/generated/', typName)
         assert.equal(fse.existsSync(genPath), true, `${genPath} doesnt exist`);

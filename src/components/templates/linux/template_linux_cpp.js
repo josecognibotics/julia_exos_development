@@ -107,10 +107,42 @@ class TemplateLinuxCpp extends TemplateCppLib {
         
             return out;
         }
+        /**
+         * @param {ApplicationTemplate} template 
+         * @param {string} legend
+         * @param {string} terminationHeaderName
+         */
+         function _generateMainLinuxNoDatamodel(terminationHeaderName) {
+            let out = "";
+        
+            out += `#include <string>\n`;
+            out += `#include <csignal>\n`;
+            out += `#include "${terminationHeaderName}"\n\n`;
+            
+            out += `int main(int argc, char ** argv)\n`;
+            out += `{\n`;
+            out += `    catch_termination();\n\n`;
 
+            out += `    while(!is_terminated()) {\n`;
+            out += `        //put your cyclic code here!\n`;
+            out += `    }\n\n`;
+
+            out += `    return 0;\n`;
+            out += `}\n`;
+        
+            return out;
+        }
+        
+        
         super(datamodel,true);
         this.termination = new TemplateLinuxTermination();
-        this.mainSource = {name:`${this.datamodel.typeName.toLowerCase()}.cpp`, contents:_generateMainLinux(this.template,this.datamodelLegend,this.termination.terminationHeader.name), description:"Linux application"};
+        if (datamodel == undefined) {
+            this.mainSource = {name:`main.cpp`, contents:_generateMainLinuxNoDatamodel(this.termination.terminationHeader.name), description:"Linux application"};
+        }
+        else {
+            this.mainSource = {name:`${this.datamodel.typeName.toLowerCase()}.cpp`, contents:_generateMainLinux(this.template,this.datamodelLegend,this.termination.terminationHeader.name), description:"Linux application"};
+        }
+
     }
 
 }

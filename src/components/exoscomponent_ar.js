@@ -15,7 +15,7 @@ const { ExosComponent, ExosComponentUpdate } = require('./exoscomponent');
 class ExosComponentAR extends ExosComponent {
 
     /**
-     * @type {string} `c-static` | `cpp` | `c-api` - default: `c-api` 
+     * @type {string} `c-static` | `cpp` | `c-api` | `deploy-only` - default: `c-api` 
      */
     _template;
 
@@ -28,11 +28,11 @@ class ExosComponentAR extends ExosComponent {
      * 
      * @param {*} fileName 
      * @param {*} typeName 
-     * @param {string} template `c-static` | `cpp` | `c-api` - default: `c-api` 
+     * @param {string} template `c-static` | `cpp` | `c-api` | `deploy-only` - default: `c-api` 
      */
     constructor(fileName, typeName, template) {
         
-        super(fileName, typeName);
+        super(fileName, typeName, template);
 
         this._template = template;
         switch(this._template)
@@ -42,6 +42,9 @@ class ExosComponentAR extends ExosComponent {
                 break;
             case "cpp":
                 this._templateAR = new TemplateARCpp(this._datamodel);
+                break;
+            case "deploy-only":
+                this._templateAR = undefined;
                 break;
             case "c-api":
             default:
@@ -70,6 +73,7 @@ class ExosComponentAR extends ExosComponent {
                 this._cLibrary.addNewFileObj(this._templateAR.loggerSource);
                 break;
             case "c-api":
+            case "deploy-only":
             default:
                 break;
         }
@@ -86,7 +90,7 @@ class ExosComponentAR extends ExosComponent {
 class ExosComponentARUpdate extends ExosComponentUpdate {
 
    /**
-     * @type {string} `c-static` | `cpp` | `c-api` - default: `c-api` 
+     * @type {string} `c-static` | `cpp` | `c-api` | `deploy-only` - default: `c-api` 
      */
     _template;
 
@@ -131,7 +135,8 @@ class ExosComponentARUpdate extends ExosComponentUpdate {
                         if(updateAll == true) {
                             this._templateAR = new TemplateARDynamic(this._datamodel);
                             this._cLibrary.addNewFileObj(this._templateAR.librarySource);
-                        }     
+                        }
+                        break;
                     default:
                         break;
                 }

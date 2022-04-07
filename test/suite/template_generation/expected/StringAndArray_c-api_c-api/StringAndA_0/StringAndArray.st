@@ -10,10 +10,6 @@ PROGRAM _CYCLIC
     //Auto connect:
     //StringAndArrayCyclic_0.Enable := ExComponentInfo_0.Operational; // Component has been deployed and started up successfully
     
-    //Auto connect when deployment is off and manually started in GPOS:
-    //StringAndArrayCyclic_0.Enable := TRUE;
-    //StringAndArrayCyclic_0.Start := StringAndArrayCyclic_0.Connected;
-    
     StringAndArrayCyclic_0(Handle := StringAndArrayInit_0.Handle, pStringAndArray := ADR(StringAndArray_0));
     
     ExComponentInfo_0(ExTargetLink := ADR(gTarget_0), ExComponentLink := ADR(gStringAndArray_0), Enable := TRUE);

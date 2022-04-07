@@ -71,10 +71,13 @@ class Package {
         }
         
         this._objects = [];
-        this._pkgFile = {type:"File", name:packageFileName, contents:""};
+        this._pkgFile = {type:"Package", name:packageFileName, contents:""};
 
-        this._header = "";
+        this._header  = `<?xml version="1.0" encoding="utf-8"?>\n`;
+        this._header += `<?AutomationStudio FileVersion="4.10"?>\n`;
+
         this._footer = "";
+        // if footer is not set by inheriting classes, Package is used directly and header/footer is set accordingly in makePackage
         
     }
 
@@ -112,6 +115,28 @@ class Package {
             this._objects.push({type:"File", name:fileName, attributes:"", description:description, contents:contents});
         }
     }
+
+    /**
+     * Add a Package to this package, which is created externally.
+     * In contrast to {@link getNewFile}, {@link addExistingFile} doesnt return any object, because we expect that the file
+     * is already there, or gets created by some other means (outside the {@link ExosPackage})
+     * 
+     * @param {string} fileName filename within this package
+     * @param {string} [description] description that will appear in AS
+     * @param {boolean} [insert] in case the package should be placed at the beginning of the package rather than at the end
+     */
+    addExistingPackage(fileName, description, insert) {
+        if(description === undefined) {
+            description = "";
+        }
+        if(insert && insert == true) {
+            this._objects.unshift({type:"Package", name:fileName, attributes:"", description:description, contents:""});
+        }
+        else {
+            this._objects.push({type:"Package", name:fileName, attributes:"", description:description, contents:""});
+        }
+    }
+
 
     /**
      * Create a new file in this package using a {@link FileObj} object.
@@ -220,19 +245,17 @@ class Package {
             throw(`Package: folder does not exist: ${location}`);
         }
         
-        if (fs.existsSync(path.join(location,this._folderName))) {
-            throw(`Package: folder already exists: ${path.join(location,this._folderName)}`);
+        if (!fs.existsSync(path.join(location,this._folderName))) {
+            fs.mkdirSync(path.join(location,this._folderName));
         }
 
-        fs.mkdirSync(path.join(location,this._folderName));
-
         //console.log(`Creating package file: ${path.join(location,this._pkgFile.name)}`);
-        fs.writeFileSync(path.join(location,this._folderName,this._pkgFile.name),this._pkgFile.contents);
+        fs.writeFileSync(path.join(location,this._folderName,this._pkgFile.name), this._pkgFile.contents, { flag: "wx" }); // { flag: "wx" } // Like 'w' but fails if the path exists
 
         for (const obj of this._objects) {
             if(obj.type == "File" || obj.type == "HiddenFile") {
                 //console.log(`Creating file: ${path.join(location,obj.name)}`);
-                fs.writeFileSync(path.join(location,this._folderName,obj.name), obj.contents);
+                fs.writeFileSync(path.join(location,this._folderName,obj.name), obj.contents, { flag: "wx" });
             }
         }
     }
@@ -275,6 +298,82 @@ class Package {
         }
         return result;
     }
+
+
+    /**
+     * Create the {@link Package} in the file system with all its current files and packages.
+     * 
+     * The {@link Package} can contain files as well as further packages, like {@link CLibrary} {@link IECProgram} and {@link LinuxPackage},
+     * and has a built-in {@link ExosPkg} if of type {@link ExosPackage}.
+     * When calling this method, all of the contained files and packes are created by calling their respective {@link makePackage}.
+     * 
+     * @example
+     * let myPackage = new ExosPackage("MyPackage");
+     *   
+     * let sampleFile = myPackage.getNewFile("sample.txt", "Sample File");
+     * sampleFile.contents = "hello world!\n";
+     * 
+     * let library = myPackage.getNewCLibrary("Library", "Sample Library");
+     * let libraryFile = library.getNewFile("header.h", "Sample Header");
+     * libraryFile.contents = "#ifndef _HEADER_H_\n#define _HEADER_H_\n\n#endif //_HEADER_H_\n";
+     * 
+     * let program = myPackage.getNewIECProgram("Program", "Sample Program");
+     * let programVar = program.getNewFile("Program.var", "Local Variables");
+     * programVar.contents = "VAR\n\nEND_VAR\n";
+     * programSt = program.getNewFile("Program.st", "Local Variables");
+     * programSt.contents = "PROGRAM _CYCLIC\n\nEND_PROGRAM\n";
+     * 
+     * //create the "MyPackage" with "sample.txt", 
+     * //the "Library" - with "header.h",
+     * //the "Program" with "Program.var" and "Program.st"
+     * myPackage.makePackage();
+     * 
+     * @param {string} location path where this package and all its sub packages (folders + files) should be created
+     */
+     makePackage(location) {
+
+        // if footer is not set, Package is used directly and header/footer is set accordingly
+        if (this._footer == "") {
+            this._header += `<${this._pkgFile.type} xmlns="http://br-automation.co.at/AS/${this._pkgFile.type}">\n`;
+            if (this._pkgFile.type == "Library" || this._pkgFile.type == "Program") {
+                this._header += `  <Files>\n`;
+        
+                this._footer = `  </Files>\n`;
+            }
+            else {
+                this._header += `  <Objects>\n`;
+
+                this._footer = `  </Objects>\n`;
+            }
+            this._footer += `</${this._pkgFile.type}>\n`;
+        }
+        
+        this._pkgFile.contents = this._header;
+
+        for (const obj of this._objects) {
+            if(obj.type != "HiddenFile") {
+                if(this._pkgFile.type == "Library" || this._pkgFile.type == "Program") {
+                    this._pkgFile.contents += `    <File Description="${obj.description}">${obj.name}</File>\n`;
+                }
+                else {
+                    this._pkgFile.contents += [`    <Object Type="${obj.type == "ExistingFile" ? "File" : obj.type}"`, obj.attributes, `Description="${obj.description}">${obj.name}</Object>\n`].filter(Boolean).join(' ');;
+                }
+            }
+        }
+        
+        this._pkgFile.contents += this._footer;
+
+        if(this._exosPkgFile != undefined) // only part of ExosPackage
+            this._exosPkgFile.contents = this._exosPkg.getContents();
+
+        this._createPackage(location);
+
+        for (const obj of this._objects) {
+            if(obj.type == "Library" || obj.type == "Program" || obj.type == "Package") {
+                obj._object.makePackage(path.join(location,this._folderName));
+            }
+        }
+    }
 }
 
 
@@ -305,10 +404,9 @@ class LinuxPackage extends Package {
 
         super(name, "Package.pkg");
 
-        this._header  += `<?xml version="1.0" encoding="utf-8"?>\n`;
-        this._header  += `<?AutomationStudio FileVersion="4.10"?>\n`;
-        this._header  += `<Package SubType="exosLinuxPackage" PackageType="exosLinuxPackage" xmlns="http://br-automation.co.at/AS/Package">\n`;
-        this._header  += `  <Objects>\n`;
+        // from super: <?xml ... and <?AutomationStudio ...
+        this._header += `<Package SubType="exosLinuxPackage" PackageType="exosLinuxPackage" xmlns="http://br-automation.co.at/AS/Package">\n`;
+        this._header += `  <Objects>\n`;
         
         this._footer += `  </Objects>\n`;
         this._footer += `</Package>\n`;
@@ -317,37 +415,7 @@ class LinuxPackage extends Package {
         this._exosPkg = exosPkg;
     }
 
-    /**
-     * Create the {@link LinuxPackage} in the file system with all its current files.
-     * This method is impliclitly called by {@link ExosPackage.makePackage}, so it
-     * is only in specific cases that this method is used.
-     * 
-     * @example
-     * //Standalone usage:
-     * let exosPkg = new ExosPkg();
-     * let linux = new LinuxPackage(exosPkg, "Linux");
-     * let buildFile = linux.getNewFile("build.sh");
-     * buildFile.contents = "echo 'this is a test'\n";
-     * linux.makePackage("C:\\Temp");
-     * 
-     * @param {string} location path where this package (folder + files) should be created
-     */
-    makePackage(location) {
-        //fill the package specific contents
-        this._pkgFile.contents = this._header;
-        for (const obj of this._objects) {
-            if(obj.description === undefined) {
-                obj.description = "";
-            }
-            if(obj.type != "HiddenFile") {
-                //we only write "File" for the objects, because some _objects have special type properties (like "ExistingFile")
-                this._pkgFile.contents += `    <Object Type="File" Description="${obj.description}">${obj.name}</Object>\n`;
-            }
-        }
-        this._pkgFile.contents += this._footer;
 
-        this._createPackage(location);
-    }
 
     /**
      * Shortcut method (also populating the {@link ExosPkg}) for adding an existing file that should be transferred to the target system
@@ -491,7 +559,8 @@ class LinuxPackage extends Package {
      * @param {boolean} [insert] in case the file should be placed at the beginning of the package rather than at the end
      */
     addNewBuildFileObj(buildCommand, fileObj, insert) {
-        this.addNewBuildFile(buildCommand, fileObj.name, fileObj.contents, fileObj.description, insert);
+        if (fileObj)
+            this.addNewBuildFile(buildCommand, fileObj.name, fileObj.contents, fileObj.description, insert);
     }
 
     /**
@@ -540,39 +609,17 @@ class IECProgram extends Package {
     constructor(name) {
 
         super(name, "IEC.prg");
+        this._pkgFile.type = "Program";
 
-        this._header  += `<?xml version="1.0" encoding="utf-8"?>\n`;
-        this._header  += `<?AutomationStudio FileVersion="4.10"?>\n`;
-        this._header  += `<Program SubType="IEC" xmlns="http://br-automation.co.at/AS/Program">\n`;
-        this._header  += `  <Files>\n`;
+        // from super: <?xml ... and <?AutomationStudio ...
+        this._header += `<Program SubType="IEC" xmlns="http://br-automation.co.at/AS/Program">\n`;
+        this._header += `  <Files>\n`;
         
         this._footer += `  </Files>\n`;
         this._footer += `</Program>\n`;
     }
 
-    /**
-     * Create the {@link IECProgram} in the file system with all its current files.
-     * This method is impliclitly called by {@link ExosPackage.makePackage}, so it
-     * is only in specific cases that this method is used.
-     * 
-     * @example
-     * //Standalone usage:
-     * let program = new IECProgram("Program");
-     * let programVar = program.getNewFile("Program.var", "Local Variables");
-     * programVar.contents = "VAR\n\nEND_VAR\n";
-     * program.makePackage("C:\\Temp")
-     * 
-     * @param {string} location path where this package (folder + files) should be created
-     */
-    makePackage(location) {
-        this._pkgFile.contents = this._header;
-        for (const obj of this._objects) {
-            this._pkgFile.contents += `    <File Description="${obj.description}">${obj.name}</File>\n`;
-        }
-        this._pkgFile.contents += this._footer;
 
-        this._createPackage(location);
-    }
 }
 
 /**
@@ -590,11 +637,11 @@ class CLibrary extends Package {
     constructor(name) {
 
         super(name, "ANSIC.lby");
+        this._pkgFile.type = "Library";
 
-        this._header  += `<?xml version="1.0" encoding="utf-8"?>\n`;
-        this._header  += `<?AutomationStudio FileVersion="4.10"?>\n`;
-        this._header  += `<Library SubType="ANSIC" xmlns="http://br-automation.co.at/AS/Library">\n`;
-        this._header  += `  <Files>\n`;
+        // from super: <?xml ... and <?AutomationStudio ...
+        this._header += `<Library SubType="ANSIC" xmlns="http://br-automation.co.at/AS/Library">\n`;
+        this._header += `  <Files>\n`;
         
         this._footer += `  </Files>\n`;
         this._footer += `  <Dependencies>\n`;
@@ -603,29 +650,7 @@ class CLibrary extends Package {
         this._footer += `</Library>\n`;
     }
 
-    /**
-     * Create the {@link CLibrary} in the file system with all its current files.
-     * This method is impliclitly called by {@link ExosPackage.makePackage()}, so it
-     * is only in specific cases that this method is used.
-     * 
-     * @example
-     * //Standalone usage:
-     * let library = new CLibrary("Library");
-     * let libraryFun = program.getNewFile("Library.fun", "Function blocks and functions");
-     * libraryFun.contents = ..;
-     * library.makePackage("C:\\Temp")
-     * 
-     * @param {string} location path where this package (folder + files) should be created
-     */
-    makePackage(location) {
-        this._pkgFile.contents = this._header;
-        for (const obj of this._objects) {
-            this._pkgFile.contents += `    <File Description="${obj.description}">${obj.name}</File>\n`;
-        }
-        this._pkgFile.contents += this._footer;
 
-        this._createPackage(location);
-    }
 }
 
 
@@ -657,68 +682,15 @@ class ExosPackage extends Package {
 
         super(name, "Package.pkg");
 
-        this._header += `<?xml version="1.0" encoding="utf-8"?>\n`;
-        this._header += `<?AutomationStudio FileVersion="4.9"?>\n`;
+        // from super: <?xml ... and <?AutomationStudio ...
         this._header += `<Package SubType="exosPackage" PackageType="exosPackage" xmlns="http://br-automation.co.at/AS/Package">\n`;
         this._header += `  <Objects>\n`;
 
-        this._footer = "";
         this._footer += `  </Objects>\n`;
         this._footer += `</Package>\n`;
 
         this._exosPkgFile = this.getNewFile(`${name}.exospkg`,"exOS package description");
         this._exosPkg = new ExosPkg();
-    }
-
-    /**
-     * Create the {@link ExosPackage} in the file system with all its current files and packages.
-     * 
-     * The {@link ExosPackage} can contain files (inherited from {@link Package}) as well as further packages, like {@link CLibrary} {@link IECProgram} and {@link LinuxPackage},
-     * and has a built-in {@link ExosPkg}. When calling this method, all of the contained files and packes are created by calling their respective {@link makePackage}.
-     * 
-     * @example
-     * let myPackage = new ExosPackage("MyPackage");
-     *   
-     * let sampleFile = myPackage.getNewFile("sample.txt", "Sample File");
-     * sampleFile.contents = "hello world!\n";
-     * 
-     * let library = myPackage.getNewCLibrary("Library", "Sample Library");
-     * let libraryFile = library.getNewFile("header.h", "Sample Header");
-     * libraryFile.contents = "#ifndef _HEADER_H_\n#define _HEADER_H_\n\n#endif //_HEADER_H_\n";
-     * 
-     * let program = myPackage.getNewIECProgram("Program", "Sample Program");
-     * let programVar = program.getNewFile("Program.var", "Local Variables");
-     * programVar.contents = "VAR\n\nEND_VAR\n";
-     * programSt = program.getNewFile("Program.st", "Local Variables");
-     * programSt.contents = "PROGRAM _CYCLIC\n\nEND_PROGRAM\n";
-     * 
-     * //create the "MyPackage" with "sample.txt", 
-     * //the "Library" - with "header.h",
-     * //the "Program" with "Program.var" and "Program.st"
-     * myPackage.makePackage();
-     * 
-     * @param {string} location path where this package and all its sub packages (folders + files) should be created
-     */
-    makePackage(location) {
-        
-        this._pkgFile.contents = this._header;
-        for (const obj of this._objects) {
-            if(obj.type != "HiddenFile") {
-                this._pkgFile.contents += `    <Object Type="${obj.type}" ${obj.attributes} Description="${obj.description}">${obj.name}</Object>\n`;
-            }
-        }
-        this._pkgFile.contents += this._footer;
-
-        this._exosPkgFile.contents = this._exosPkg.getContents();
-
-        this._createPackage(location);
-
-        for (const obj of this._objects) {
-            if(obj.type == "Library" || obj.type == "Program" || obj.type == "Package")
-            {
-                obj._object.makePackage(path.join(location,this._folderName));
-            }
-        }
     }
 
     /**

@@ -7,6 +7,7 @@ const fse = require('fs-extra');
 const { dir } = require('console');
 const os = require('os');
 const net = require('net');
+const {spawn} = require('child_process');
 
 const isDebugMode = () => process.env.VSCODE_DEBUG_MODE === "true";
 
@@ -16,7 +17,11 @@ const { UpdateComponentResults } = require('./src/components/exoscomponent');
 const { ExosComponentC, ExosComponentCUpdate } = require('./src/components/exoscomponent_c');
 const { ExosComponentNAPI, ExosComponentNAPIUpdate } = require('./src/components/exoscomponent_napi');
 const { ExosComponentSWIG, ExosComponentSWIGUpdate } = require('./src/components/exoscomponent_swig');
+const { ExosComponentPython, ExosComponentPythonUpdate } = require('./src/components/exoscomponent_python');
+const { ExosComponentJS, ExosComponentJSUpdate } = require('./src/components/exoscomponent_js');
 const { ExosExport, ASConfiguration } = require('./src/exosexport');
+const { Package } = require('./src/exospackage');
+const { ASProject, ASProjectConfiguration } = require('./src/asproject')
 
 var lastIP = "127.0.0.1"
 
@@ -38,6 +43,181 @@ function activate(context) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
+
+	let updateBuildEnvironment = vscode.commands.registerCommand('exos-component-extension.updateBuildEnvironment', function(uri) {
+		
+		function performUpdate(cwd, args) {
+			const writeEmitter = new vscode.EventEmitter();
+
+			let finished = false;
+			const pty = {
+				onDidWrite: writeEmitter.event,
+				open: () => {writeEmitter.fire(`updating exOS build environment..\r\n\r\n`)},
+				close: () => {},
+				handleInput: data => {
+					if(data === '\r')
+					{
+						if(finished) {
+							terminal.dispose();
+						}
+					}
+				}
+			};		
+			let terminal = vscode.window.createTerminal({ name: 'updating exOS build environment', pty });
+
+			terminal.show();
+			let lineBuffer = [];
+
+			let outputTimer = setInterval(() => {
+				while (line = lineBuffer.shift()) {
+					writeEmitter.fire(`${line}\r\n`);					
+				}
+			}, 100);
+
+			let builder = spawn('wsl', args, { cwd: cwd, shell: true });
+
+            builder.stdout.setEncoding('utf8');
+			builder.stdout.on('data', (chunk) => {
+				let lines = chunk.toString().replace("\r","").split("\n")
+				for(line of lines) {
+					if(line.length > 0) {
+						lineBuffer.push(line);
+					}
+				}
+            });
+            builder.stderr.setEncoding('utf8');
+			builder.stderr.on('data', (chunk) => {
+				let lines = chunk.toString().replace("\r","").split("\n")
+				for(line of lines) {
+					if(line.length > 0) {
+						lineBuffer.push(line);
+					}
+				}
+            });
+			builder.on('error', function (err) {
+				writeEmitter.fire(`error from wsl:\r\n${err}\r\nPress Enter to close\r\n`);				
+				finished = true;
+            });
+            builder.on('exit', (code) => {
+				if (0 == code) {
+					clearInterval(outputTimer);
+					
+					while (line = lineBuffer.shift()) {
+						writeEmitter.fire(`${line}\r\n`);					
+					}
+					writeEmitter.fire(`wsl finished successfully\r\nPress Enter to close\r\n`);
+					finished = true;
+                }
+                else {
+					writeEmitter.fire(`wsl exited with code ${code}\r\nPress Enter to close\r\n`);
+					finished = true;
+                }
+			});
+		}
+
+		try {
+
+			let exospkg = new ExosPkg();
+			let result = exospkg.parseFile(uri.fsPath);
+			
+			if (!result.fileParsed) {
+				throw (`${path.basename(uri.fsPath)} could not be parsed!`);
+			}
+
+			let asProject = new ASProject(uri.fsPath, true);
+
+			/** 
+			* @type {ASProjectConfiguration[]}
+			*/
+			let configurations = asProject.getConfigurations();
+
+			let pickConfiguration = [];
+
+			for(let configuration of configurations) {
+				pickConfiguration.push({label: configuration.name, detail: configuration.cpu, description: configuration.description});
+			}
+
+			vscode.window.showQuickPick(pickConfiguration, { title: `Select configuration` }).then(selectedConfiguration => {
+				
+				let exosDataDir = path.join(asProject.getApjPath(), "Temp", "Transfer", selectedConfiguration.label, selectedConfiguration.detail, "FilesToTransfer", "AddonsData", "exos", "exos-data");
+				
+				try {
+					let stats = fs.statSync(exosDataDir);
+					if (!stats.isDirectory()) {
+						vscode.window.showErrorMessage("exos-data cannot be found in this configuration. Project needs to be built.");
+					}
+				}
+				catch (e) {
+					vscode.window.showErrorMessage(`exos-data cannot be found in this configuration. Project needs to be built. ${e}`);
+					return;
+				}
+
+				let distros = exospkg.getWSLBuildDistros();
+				if (distros.length == 0) {
+					vscode.window.showErrorMessage(`The file ${path.basename(uri.fsPath)} has no WSL build command. Update environment manually`);
+					return;
+				}
+
+				let distroType = [];
+				for (const distro of distros) {
+					if (distro.length > 0) {
+						distroType.push({ label: distro, detail: `WSL distribution "${distro}"` })
+					}
+					else {
+						distroType.push({ label: "(default)", detail: `WSL default distribution` })
+					}
+				}
+				vscode.window.showQuickPick(distroType, { title: "Select WSL distribution to update" }).then(selectedDistro => { 
+			
+					let userType = [];
+					userType.push({label: "sudo user", detail:"The default user is a sudo user"});
+					userType.push({label: "root", detail:"The default user is root"})
+					
+					vscode.window.showQuickPick(userType,{title:"Select default user"}).then(selectedUserType => {
+			
+						let args = [];
+						if (selectedDistro.label != "(default)") {
+							args.push('-d');
+							args.push(selectedDistro.label);
+						}
+
+						if (selectedUserType.label == "root")
+						{
+							args.push('-e');
+							args.push('sh setup_build_environment.sh');
+							performUpdate(exosDataDir, args);				
+						}
+						else
+						{
+							vscode.window.showInputBox({ prompt: "Enter password for default sudo user", password: true }).then(password => { 
+								
+								//create a file passing in the password to the sudo command, this cannot be donw via the wsl cmdline
+								fs.writeFileSync(path.join(exosDataDir,"update.sh"),`echo "${password}" | sudo -S sh setup_build_environment.sh`)
+								//remove the file with the password asap
+								setTimeout(() => {
+									fs.unlinkSync(path.join(exosDataDir, "update.sh"));
+								}, 1000);
+
+								args.push('-e');
+								args.push('sh update.sh')
+								performUpdate(exosDataDir, args);
+							
+							});
+							
+						}
+					});
+
+				});
+			});
+			
+		}
+		catch(error) {
+			vscode.window.showErrorMessage(error);
+		}
+	});
+
+	context.subscriptions.push(updateBuildEnvironment);
+
 
 	let debugTerminal = vscode.commands.registerCommand('exos-component-extension.debugConsole', function() {
 		
@@ -75,7 +255,7 @@ function activate(context) {
 			client.connect(port, ip)
 
 			client.on('timeout', () => {
-				writeEmitter.fire('Disconnected\r\n');
+				writeEmitter.fire('Disconnected\r\nPress Enter to reconnect\r\n');
 				client.destroy();
 			});
 
@@ -96,12 +276,12 @@ function activate(context) {
 
 			client.on('close', function () {
 				client.destroy();
-				writeEmitter.fire('Connection closed\r\n');
+				writeEmitter.fire('Connection closed\r\nPress Enter to reconnect\r\n');
 			});
 
 			client.on('error', function (error) {
 				client.destroy();
-				writeEmitter.fire(`${prepend}Connection error (${error.code})\r\n`);
+				writeEmitter.fire(`Connection error (${error.code})\r\n`);
 			});
 
 
@@ -116,7 +296,13 @@ function activate(context) {
 	let createPackage = vscode.commands.registerCommand('exos-component-extension.createPackage', function (uri) {
 
 		function createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, destination) {
-			function convertLabel2Teplate(label) {
+			let stats = fs.statSync(uri.fsPath);
+			let makeComponentPath = uri.fsPath;
+			if (!stats.isDirectory()) {
+				makeComponentPath = path.dirname(uri.fsPath);
+			}
+
+			function convertLabel2Template(label) {
 				switch(label) {
 					case "C API":
 						return "c-api";
@@ -124,49 +310,85 @@ function activate(context) {
 						return "c-static";
 					case "C++ Class":
 						return "cpp";
+					case "deploy-only":
+						return "deploy-only";
 					default:
 						return "c-api";
 				}
 			}
 
 			/**
-			 * Update the Package file if were in an AS project, so that we delete the typ file and replace the 
-			 * Package file with the new exos package folder (we created in createComponent)
+			 * Update the Package file if we are in an AS project
+			 * If fsPath is a typ file we delete the typ file and replace it in the 
+			 * package file with the new exos package folder (we created in createComponent)
+			 * If fsPath is a folder we are creating a deploy only component and
+			 * we add it to the package file or create a new package file if not existing
 			 * 
-			 * @param {*} fsPath path to the .typ file
+			 * @param {*} fsPath path to the .typ file or exOS deploy only package
 			 * @param {*} typeName name of the new package (the struct name everything is based on)
-			 * @returns {boolean} true if the .typ file was replaced and the Package file updated, otherwise false
+			 * @returns {string} result message, can be used in vscode.window.showInformationMessage
 			 */
-			function replaceTypWithPackage(fsPath, typeName) {
+			function updatePackage(fsPath, typeName) {
 
-				let pkgFileName = `${path.dirname(fsPath)}/Package.pkg`;
+				let pkgFileName = "";
+				let stats = fs.statSync(fsPath);
+				let typMode = false;
+				let insertPackage = true;
+
+				if (!stats.isDirectory()) {
+					typMode = true;
+					pkgFileName = `${path.dirname(fsPath)}/Package.pkg`;
+				}
+				else {
+					pkgFileName = `${fsPath}/Package.pkg`;
+				}
+				
 				pkgFileName = path.normalize(pkgFileName);
 				
 				if (fs.existsSync(pkgFileName)) {
 					let lines = fs.readFileSync(pkgFileName).toString();
-					packageHasTypFile = false;
+					let writeFile = false;
 					lines = lines.split("\r").join("");
 					lines = lines.split("\n");
 					let out = "";
 					for(let line of lines) 
 					{
-						if(line.includes(path.basename(fsPath)) && line.includes("Object") && line.includes("File")) {
+						if(typMode && line.includes(path.basename(fsPath)) && line.includes("Object") && line.includes("File")) {
 							out += `    <Object Type="Package">${typeName}</Object>\r\n`;
-							packageHasTypFile = true;
+							writeFile = true;
+						}
+						if(line.includes(typeName) && line.includes("Object") && line.includes("Package")) {
+							insertPackage = false;
+						}
+						else if (insertPackage && line.includes("</Objects>")) {
+							out += `    <Object Type="Package" Description="Package for deployment only">${typeName}</Object>\r\n`;
+							out += `${line}\r\n`;
+							writeFile = true;
 						}
 						else {
 							out += `${line}\r\n`;
 						}
 					}
 			
-					if(packageHasTypFile)
+					if(writeFile)
 					{
 						fs.writeFileSync(pkgFileName,out);
-						fs.unlinkSync(fsPath);
-						return true;
+						if (typMode) {
+							fs.unlinkSync(fsPath);
+							return `The file ${path.basename(uri.fsPath)} was replaced with the ${selectedStructure.label} exOS package`;
+						}
+						else {
+							return `The exOS package ${typeName} was added to the ${path.dirname(fsPath)} package`;
+						}
 					}
-				}   
-				return false;
+				}
+				else if (!typMode) {
+					let pack = new Package(path.basename(fsPath), "Package.pkg");
+					pack.addExistingPackage(typeName, "Package for deployment only");
+					pack.makePackage(path.dirname(fsPath));
+					return `The exOS package ${typeName} was added to newly created Package file in: ${path.dirname(fsPath)}`;
+				}
+				return "";
 			}
 
 			try
@@ -177,27 +399,49 @@ function activate(context) {
 					case "C++ Class":
 						let templateC = new ExosComponentC(uri.fsPath, selectedStructure.label, {
 							packaging:selectedPackaging.label,
-							templateLinux:convertLabel2Teplate(selectedLinuxType.label), 
-							templateAR:convertLabel2Teplate(selectedASType.label),
+							templateLinux:convertLabel2Template(selectedLinuxType.label), 
+							templateAR:convertLabel2Template(selectedASType.label),
 							destinationDirectory:destination
 						});
-						templateC.makeComponent(path.dirname(uri.fsPath));
+						templateC.makeComponent(makeComponentPath);
 						break;
 					case "Python Module":
-						let templateSWIG = new ExosComponentSWIG(uri.fsPath, selectedStructure.label,{
-							packaging:selectedPackaging.label,
-							templateAR:convertLabel2Teplate(selectedASType.label),
-							destinationDirectory:destination
-						});
-						templateSWIG.makeComponent(path.dirname(uri.fsPath));
+						if (!stats.isDirectory()) {
+							let templateSWIG = new ExosComponentSWIG(uri.fsPath, selectedStructure.label,{
+								packaging:selectedPackaging.label,
+								templateAR:convertLabel2Template(selectedASType.label),
+								destinationDirectory:destination
+							});
+							templateSWIG.makeComponent(makeComponentPath);
+						}
+						else 
+						{
+							let templatePython = new ExosComponentPython(uri.fsPath, selectedStructure.label,{
+								packaging:selectedPackaging.label,
+								templateAR:convertLabel2Template(selectedASType.label),
+								destinationDirectory:destination
+							});
+							templatePython.makeComponent(makeComponentPath);
+						}
 						break;
 					case "JavaScript Module":
-						let templateNAPI = new ExosComponentNAPI(uri.fsPath, selectedStructure.label,{
-							packaging:selectedPackaging.label,
-							templateAR:convertLabel2Teplate(selectedASType.label),
-							destinationDirectory:destination
-						});
-						templateNAPI.makeComponent(path.dirname(uri.fsPath));
+						if (!stats.isDirectory()) {
+							let templateNAPI = new ExosComponentNAPI(uri.fsPath, selectedStructure.label,{
+								packaging:selectedPackaging.label,
+								templateAR:convertLabel2Template(selectedASType.label),
+								destinationDirectory:destination
+							});
+							templateNAPI.makeComponent(makeComponentPath);
+						}
+						else 
+						{
+							let templateJS = new ExosComponentJS(uri.fsPath, selectedStructure.label,{
+								packaging:selectedPackaging.label,
+								templateAR:convertLabel2Template(selectedASType.label),
+								destinationDirectory:destination
+							});
+							templateJS.makeComponent(makeComponentPath);
+						}
 						break;
 					default:
 						vscode.window.showErrorMessage(`The selected template for linux: ${selectedLinuxType.label} not found!`);
@@ -205,8 +449,9 @@ function activate(context) {
 				}
 			
 				vscode.window.showInformationMessage(`Created component ${selectedStructure.label}`);
-				if(replaceTypWithPackage(uri.fsPath, selectedStructure.label)) {
-					vscode.window.showInformationMessage(`The file ${path.basename(uri.fsPath)} was replaced with the ${selectedStructure.label} exOS package`);
+				let ret = updatePackage(uri.fsPath, selectedStructure.label);
+				if(ret != "") {
+					vscode.window.showInformationMessage(ret);
 				}
 			}
 			catch(error) {
@@ -215,88 +460,134 @@ function activate(context) {
 
 		}
 
-		let availableStructures = Datamodel.getDatatypeList(uri.fsPath);
-		if(!Array.isArray(availableStructures) || availableStructures.length == 0)
-		{
-			vscode.window.showErrorMessage(`The file ${path.basename(uri.fsPath)} has no structure definitions!`);
+		// create package by right-clicking on a folder, there will not be generated anything for datamodel
+		let stats = fs.statSync(uri.fsPath);
+		if (stats.isDirectory()) {
+			//vscode.window.showInformationMessage(`Create package in directory will in the future create a Linux only package`);
+
+			vscode.window.showInputBox({prompt:"Name of the deployable component with no datamodel", value:`LinuxComponent`}).then(name => {
+
+				if(!name)
+					return;
+
+				selectedStructure = {label: name, detail:"no datamodel"};
+
+				
+				let pickLinuxType = [];
+				pickLinuxType.push({label: "C API", detail:"C application with no datamodel"});
+				pickLinuxType.push({label: "C++ Class", detail:`C++ application with no datamodel`})
+				pickLinuxType.push({label: "Python Module", detail:`Python application with no datamodel`})
+				pickLinuxType.push({label: "JavaScript Module", detail:`nodejs JavaScript application with no datamodel`})
+				
+				vscode.window.showQuickPick(pickLinuxType,{title:`Using no datamodel - Select which template to use for Linux`}).then(selectedLinuxType => {
+
+					if(!selectedLinuxType)
+						return;
+				
+					let pickPackaging = [];
+					pickPackaging.push({label: "none", detail:"No packaging - files will run in the deployment folder on the target"});
+					pickPackaging.push({label: "deb", detail:"Debian package - files will be packed and extracted at a given destination folder"});
+
+					vscode.window.showQuickPick(pickPackaging,{title:`Select which packaging to use for Linux files`}).then(selectedPackaging => {
+
+						if(!selectedPackaging)
+							return;
+						
+						selectedASType = {label: "deploy-only", detail:"no AS"};
+
+						if(selectedPackaging.label == "deb") {
+							vscode.window.showInputBox({prompt:"Set the .deb package destination folder on the target:", value:`/home/user/${selectedStructure.label.toLowerCase()}`}).then(destination => {
+								if(!destination)
+									return;
+
+								createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, destination);
+							});
+						}
+						else {
+							createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, "");
+						}
+					});
+				})
+			});
+			
 		}
 		else
 		{
-			let pickStructureList = [];
-			for(let struct of availableStructures) {
-				if(struct.members.length > 0) {
-					pickStructureList.push({label:struct.name, detail:`datasets: ${struct.members.join(", ")}`})
-				}
-				else {
-					pickStructureList.push({label:struct.name});
-				}
+			// create package by right-clicking on a typ file.
+			let availableStructures = Datamodel.getDatatypeList(uri.fsPath);
+			if(!Array.isArray(availableStructures) || availableStructures.length == 0)
+			{
+				vscode.window.showErrorMessage(`The file ${path.basename(uri.fsPath)} has no structure definitions!`);
 			}
-			vscode.window.showQuickPick(pickStructureList,{title:"Select datatype which becomes the new component datamodel"}).then(selectedStructure => {
+			else
+			{
+				let pickStructureList = [];
+				for(let struct of availableStructures) {
+					if(struct.members.length > 0) {
+						pickStructureList.push({label:struct.name, detail:`datasets: ${struct.members.join(", ")}`})
+					}
+					else {
+						pickStructureList.push({label:struct.name});
+					}
+				}
+				vscode.window.showQuickPick(pickStructureList,{title:"Select datatype which becomes the new component datamodel"}).then(selectedStructure => {
 
-				if(!selectedStructure)
-					return;
-
-				let pickASType = []
-				pickASType.push({label: "C API", detail:"AR C library direcly using the exOS C-API"});
-				if(selectedStructure.detail)
-				{
-					pickASType.push({label: "C Interface", detail:`AR C library which uses a C interface for the ${selectedStructure.label} datamodel`})
-					pickASType.push({label: "C++ Class", detail:`AR C++ library which uses a C++ class for the ${selectedStructure.label} datamodel`})
-				};
-
-				vscode.window.showQuickPick(pickASType,{title:`Using datamodel: ${selectedStructure.label} - Select which template to use for Automation Runtime`}).then(selectedASType => {
-					
-					if(!selectedASType)
+					if(!selectedStructure)
 						return;
 
-					let pickLinuxType = [];
-					pickLinuxType.push({label: "C API", detail:"C application direcly using the exOS C-API"});
-					if(selectedStructure.detail) {
-						pickLinuxType.push({label: "C Interface", detail:`C application which uses a C interface for the ${selectedStructure.label} datamodel`})
-						pickLinuxType.push({label: "C++ Class", detail:`C++ application which uses a C++ class for the ${selectedStructure.label} datamodel`})
-						pickLinuxType.push({label: "Python Module", detail:`Python application which uses a SWIG module for the ${selectedStructure.label} datamodel`})
-						pickLinuxType.push({label: "JavaScript Module", detail:`nodejs JavaScript application which uses an N-API module for the ${selectedStructure.label} datamodel`})
-					}
-					
-					vscode.window.showQuickPick(pickLinuxType,{title:`Using datamodel: ${selectedStructure.label} - Select which template to use for Linux`}).then(selectedLinuxType => {
+					let pickASType = []
+					pickASType.push({label: "C API", detail:"AR C library directly using the exOS C-API"});
+					if(selectedStructure.detail)
+					{
+						pickASType.push({label: "C Interface", detail:`AR C library which uses a C interface for the ${selectedStructure.label} datamodel`})
+						pickASType.push({label: "C++ Class", detail:`AR C++ library which uses a C++ class for the ${selectedStructure.label} datamodel`})
+					};
 
-						if(!selectedLinuxType)
+					vscode.window.showQuickPick(pickASType,{title:`Using datamodel: ${selectedStructure.label} - Select which template to use for Automation Runtime`}).then(selectedASType => {
+						
+						if(!selectedASType)
 							return;
-					
-						let pickPackaging = [];
-						pickPackaging.push({label: "none", detail:"No packaging - files will run in the deployment folder on the target"});
-						pickPackaging.push({label: "deb", detail:"Debian package - files will be packed and extracted at a given destination folder"});
 
-						vscode.window.showQuickPick(pickPackaging,{title:`Select which packaging to use for Linux files`}).then(selectedPackaging => {
+						let pickLinuxType = [];
+						pickLinuxType.push({label: "C API", detail:"C application directly using the exOS C-API"});
+						if(selectedStructure.detail) {
+							pickLinuxType.push({label: "C Interface", detail:`C application which uses a C interface for the ${selectedStructure.label} datamodel`})
+							pickLinuxType.push({label: "C++ Class", detail:`C++ application which uses a C++ class for the ${selectedStructure.label} datamodel`})
+							pickLinuxType.push({label: "Python Module", detail:`Python application which uses a SWIG module for the ${selectedStructure.label} datamodel`})
+							pickLinuxType.push({label: "JavaScript Module", detail:`nodejs JavaScript application which uses an N-API module for the ${selectedStructure.label} datamodel`})
+						}
+						
+						vscode.window.showQuickPick(pickLinuxType,{title:`Using datamodel: ${selectedStructure.label} - Select which template to use for Linux`}).then(selectedLinuxType => {
 
-							if(!selectedPackaging)
+							if(!selectedLinuxType)
 								return;
 						
-							if(selectedPackaging.label == "deb") {
-								vscode.window.showInputBox({prompt:"Set the .deb package destination folder on the target:", value:`/home/user/${selectedStructure.label.toLowerCase()}`}).then(destination => {
-									if(!destination)
-										return;
+							let pickPackaging = [];
+							pickPackaging.push({label: "none", detail:"No packaging - files will run in the deployment folder on the target"});
+							pickPackaging.push({label: "deb", detail:"Debian package - files will be packed and extracted at a given destination folder"});
 
-									createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, destination);
-								});
-							}
-							else {
-								createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, "");
-							}
-						});
-						
+							vscode.window.showQuickPick(pickPackaging,{title:`Select which packaging to use for Linux files`}).then(selectedPackaging => {
 
-					})
+								if(!selectedPackaging)
+									return;
+							
+								if(selectedPackaging.label == "deb") {
+									vscode.window.showInputBox({prompt:"Set the .deb package destination folder on the target:", value:`/home/user/${selectedStructure.label.toLowerCase()}`}).then(destination => {
+										if(!destination)
+											return;
 
-					
+										createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, destination);
+									});
+								}
+								else {
+									createComponent(uri, selectedStructure, selectedASType, selectedLinuxType, selectedPackaging, "");
+								}
+							});
+						})
+					});
 				});
-
-
-				
-			});
+			}
 		}
-
-
 	});
 	context.subscriptions.push(createPackage);
 
@@ -443,6 +734,10 @@ function activate(context) {
 									componentName = component._name;
 									results = component.updateComponent(recreate);
 								}
+								break;
+							case "ExosComponentJS":
+							case "ExosComponentPython":
+								vscode.window.showInformationMessage(`Component is deploy-only and does not support updating`);
 								break;
 							default:
 								vscode.window.showErrorMessage(`Component can not be updated: class ${exospkg.componentClass} can not be found`);

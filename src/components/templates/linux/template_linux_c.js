@@ -36,11 +36,45 @@ class TemplateLinuxC extends Template {
      * @param {Datamodel} datamodel
      */
     constructor(datamodel) {
-        super(datamodel,true);
+        super(datamodel, true);
         this.termination = new TemplateLinuxTermination();
-        this.mainSource = {name:`${this.datamodel.typeName.toLowerCase()}.c`, contents:this._generateSource(), description:"Linux application"};
+
+        if (datamodel == undefined) {
+            this.mainSource = {name:`main.c`, contents:this._generateSourceNoDatamodel(), description:"Linux application"};
+        }
+        else {
+            this.mainSource = {name:`${this.datamodel.typeName.toLowerCase()}.c`, contents:this._generateSource(), description:"Linux application"};
+        }
     }
 
+    /**
+     * @returns `{main}.c`: main sourcefile for the application when creating without datamodel
+     */
+    _generateSourceNoDatamodel() {
+        let out = "";
+        out += `#include <stdio.h>\n`;
+        out += `#include "${this.termination.terminationHeader.name}"\n\n`;
+    
+        //declarations
+        out += `int main()\n{\n`
+        out += `    catch_termination();\n\n`;
+
+        //main loop
+        out += `    while (true)\n    {\n`;
+        out += `        //put your cyclic code here!\n\n`;
+        out += `        if (is_terminated())\n`;
+        out += `        {\n`;
+        out += `            printf("Application terminated, closing..");\n`;
+        out += `            break;\n`;
+        out += `        }\n`;
+        out += `    }\n\n`;
+
+        out += `    return 0;\n`
+        out += `}\n`
+    
+        return out;
+    }
+    
     /**
      * @returns `{main}.c`: main sourcefile for the application
      */

@@ -5,7 +5,7 @@
     <Service Type="Install" Command="dpkg -i exos-comp-stringandarray_1.0.0_amd64.deb"/>
     <Service Type="Remove" Command="dpkg --purge exos-comp-stringandarray"/>
     <Service Type="Startup" Command="cp stringandarray.py /home/user/stringandarray"/>
-    <Service Type="Runtime" Command="python stringandarray.py" WorkingDirectory="/home/user/stringandarray"/>
+    <Service Type="Runtime" Command="python3 stringandarray.py" WorkingDirectory="/home/user/stringandarray"/>
     <DatamodelInstance Name="StringAndArray_0"/>
     <Build>
         <GenerateDatamodel FileName="StringAndA\StringAndArray.typ" TypeName="StringAndArray">
