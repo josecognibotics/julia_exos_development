@@ -7,7 +7,7 @@ const fse = require('fs-extra');
 const { dir } = require('console');
 const os = require('os');
 const net = require('net');
-const {spawn} = require('child_process');
+const linuxShell = require('./src/linuxshell')
 
 const isDebugMode = () => process.env.VSCODE_DEBUG_MODE === "true";
 
@@ -44,79 +44,54 @@ function activate(context) {
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
 
-	let updateBuildEnvironment = vscode.commands.registerCommand('exos-component-extension.updateBuildEnvironment', function(uri) {
+
+
+	const COMMAND_UPDATE_BUILD = 1;
+	const COMMAND_RUN_DMR = 2;
+
+	/**
+	 * @param {vscode.Uri} uri uri of the .exospkg file
+	 * @param {number} command COMMAND_UPDATE_BUILD || COMMAND_RUN_DMR 
+	 */
+	function runExosDataFromExospkg(uri, command) {
 		
-		function performUpdate(cwd, args) {
-			const writeEmitter = new vscode.EventEmitter();
+		/**
+		 * run the UPDATE_BUILD command by first prompting for the user 
+		 * 
+		 * @param {string} exosDataDir working directory of exos-data
+		 * @param {string} [distro] WSL distribution, undefined if not used
+		 */
+		function updateBuild(exosDataDir, distro) {
+			let userType = [];
+			userType.push({ label: "sudo user", detail: "The default user is a sudo user" });
+			userType.push({ label: "root", detail: "The default user is root" })
+		
+			vscode.window.showQuickPick(userType, { title: "Select default user" }).then(selectedUserType => {
 
-			let finished = false;
-			const pty = {
-				onDidWrite: writeEmitter.event,
-				open: () => {writeEmitter.fire(`updating exOS build environment..\r\n\r\n`)},
-				close: () => {},
-				handleInput: data => {
-					if(data === '\r')
-					{
-						if(finished) {
-							terminal.dispose();
-						}
-					}
+				if (selectedUserType.label == "root") {
+					linuxShell.runCommand('Updating exOS build environment', 'sh', ['setup_build_environment.sh'], exosDataDir, distro);
 				}
-			};		
-			let terminal = vscode.window.createTerminal({ name: 'updating exOS build environment', pty });
-
-			terminal.show();
-			let lineBuffer = [];
-
-			let outputTimer = setInterval(() => {
-				while (line = lineBuffer.shift()) {
-					writeEmitter.fire(`${line}\r\n`);					
-				}
-			}, 100);
-
-			let builder = spawn('wsl', args, { cwd: cwd, shell: true });
-
-            builder.stdout.setEncoding('utf8');
-			builder.stdout.on('data', (chunk) => {
-				let lines = chunk.toString().replace("\r","").split("\n")
-				for(line of lines) {
-					if(line.length > 0) {
-						lineBuffer.push(line);
-					}
-				}
-            });
-            builder.stderr.setEncoding('utf8');
-			builder.stderr.on('data', (chunk) => {
-				let lines = chunk.toString().replace("\r","").split("\n")
-				for(line of lines) {
-					if(line.length > 0) {
-						lineBuffer.push(line);
-					}
-				}
-            });
-			builder.on('error', function (err) {
-				writeEmitter.fire(`error from wsl:\r\n${err}\r\nPress Enter to close\r\n`);				
-				finished = true;
-            });
-            builder.on('exit', (code) => {
-				if (0 == code) {
-					clearInterval(outputTimer);
+				else {
+					vscode.window.showInputBox({ prompt: "Enter password for default sudo user", password: true }).then(password => {
 					
-					while (line = lineBuffer.shift()) {
-						writeEmitter.fire(`${line}\r\n`);					
-					}
-					writeEmitter.fire(`wsl finished successfully\r\nPress Enter to close\r\n`);
-					finished = true;
-                }
-                else {
-					writeEmitter.fire(`wsl exited with code ${code}\r\nPress Enter to close\r\n`);
-					finished = true;
-                }
+						//create a file passing in the password to the sudo command, this cannot be done via the spawn cmdline
+						fs.writeFileSync(path.join(exosDataDir, "update.sh"), `echo "${password}" | sudo -S sh setup_build_environment.sh`)
+						
+						linuxShell.runCommand('Updating exOS build environment', 'sh', ['update.sh'], exosDataDir, distro);
+
+						//remove the file with the password asap..
+						setTimeout(() => {
+							fs.unlinkSync(path.join(exosDataDir, "update.sh"));
+						}, 3000);
+
+					});
+				}
 			});
 		}
 
 		try {
 
+			// the ExosPkg is used for getting the WSLBuildcommands
 			let exospkg = new ExosPkg();
 			let result = exospkg.parseFile(uri.fsPath);
 			
@@ -124,6 +99,7 @@ function activate(context) {
 				throw (`${path.basename(uri.fsPath)} could not be parsed!`);
 			}
 
+			// ASProject is used for locating the Temp directory
 			let asProject = new ASProject(uri.fsPath, true);
 
 			/** 
@@ -152,72 +128,82 @@ function activate(context) {
 					return;
 				}
 
-				let distros = exospkg.getWSLBuildDistros();
-				if (distros.length == 0) {
-					vscode.window.showErrorMessage(`The file ${path.basename(uri.fsPath)} has no WSL build command. Update environment manually`);
-					return;
+				//in linux, we dont use WSL build commands nor specific distributions
+				if (os.platform().includes('linux')) {
+					if (command == COMMAND_RUN_DMR) {
+						linuxShell.runCommand('Running exOS data connection', '/usr/bin/exos_mr', ['-c', './exos-data.conf'], exosDataDir);
+						vscode.window.showWarningMessage(`exOS data connection can currently not be gracefully shut down. Terminating the data connection (Enter) might require a system restart to properly work again`);
+					}
+					else if (command == COMMAND_UPDATE_BUILD) {
+						updateBuild(exosDataDir);
+					}
 				}
+				else if (os.platform().includes('win')) {
 
-				let distroType = [];
-				for (const distro of distros) {
-					if (distro.length > 0) {
-						distroType.push({ label: distro, detail: `WSL distribution "${distro}"` })
+					let distros = exospkg.getWSLBuildDistros();
+					if (distros.length == 0) {
+						vscode.window.showErrorMessage(`The file ${path.basename(uri.fsPath)} has no WSL build command. WSL distribution is unkown`);
+						return;
 					}
-					else {
-						distroType.push({ label: "(default)", detail: `WSL default distribution` })
+
+					let distroType = [];
+					for (const distro of distros) {
+						if (distro.length > 0) {
+							distroType.push({ label: distro, detail: `WSL distribution "${distro}"` })
+						}
+						else {
+							distroType.push({ label: "(default)", detail: `WSL default distribution` })
+						}
 					}
-				}
-				vscode.window.showQuickPick(distroType, { title: "Select WSL distribution to update" }).then(selectedDistro => { 
+					vscode.window.showQuickPick(distroType, { title: "Select WSL distribution" }).then(selectedDistro => {
 			
-					let userType = [];
-					userType.push({label: "sudo user", detail:"The default user is a sudo user"});
-					userType.push({label: "root", detail:"The default user is root"})
-					
-					vscode.window.showQuickPick(userType,{title:"Select default user"}).then(selectedUserType => {
-			
-						let args = [];
+						let distro = undefined;
 						if (selectedDistro.label != "(default)") {
-							args.push('-d');
-							args.push(selectedDistro.label);
+							distro = selectedDistro.label;
 						}
-
-						if (selectedUserType.label == "root")
-						{
-							args.push('-e');
-							args.push('sh setup_build_environment.sh');
-							performUpdate(exosDataDir, args);				
+						
+						if (command == COMMAND_RUN_DMR) {
+							if (distro) {
+								linuxShell.runCommand('Running exOS data connection', '/usr/bin/exos_mr', ['-c', './exos-data.conf'], exosDataDir, distro, true);
+								vscode.window.showWarningMessage(`exOS data connection can currently not be gracefully shut down. Terminating the data connection (Enter) will also terminate the WSL distribution "${selectedDistro.label}"`);
+							}
+							else {
+								vscode.window.showErrorMessage(`The file ${path.basename(uri.fsPath)} has no specific WSL distribution, data connection currently cannot run on default distribution.`);
+								return;
+							}
 						}
-						else
-						{
-							vscode.window.showInputBox({ prompt: "Enter password for default sudo user", password: true }).then(password => { 
-								
-								//create a file passing in the password to the sudo command, this cannot be donw via the wsl cmdline
-								fs.writeFileSync(path.join(exosDataDir,"update.sh"),`echo "${password}" | sudo -S sh setup_build_environment.sh`)
-								//remove the file with the password asap
-								setTimeout(() => {
-									fs.unlinkSync(path.join(exosDataDir, "update.sh"));
-								}, 1000);
-
-								args.push('-e');
-								args.push('sh update.sh')
-								performUpdate(exosDataDir, args);
+						else if (command == COMMAND_UPDATE_BUILD) {
 							
-							});
-							
+							updateBuild(exosDataDir, distro);
 						}
 					});
-
-				});
+				}
+				else {
+					vscode.window.showErrorMessage(`Platform ${os.platform()} is not supported`);
+				}
 			});
 			
 		}
 		catch(error) {
 			vscode.window.showErrorMessage(error);
 		}
+	}
+	
+	let updateBuildEnvironment = vscode.commands.registerCommand('exos-component-extension.updateBuildEnvironment', function (uri) {
+	
+		runExosDataFromExospkg(uri, COMMAND_UPDATE_BUILD);
+
 	});
 
 	context.subscriptions.push(updateBuildEnvironment);
 
+	let runDatasetMessageRouter = vscode.commands.registerCommand('exos-component-extension.runDatasetMessageRouter', function (uri) {
+	
+		runExosDataFromExospkg(uri, COMMAND_RUN_DMR);
+
+	});
+
+	context.subscriptions.push(runDatasetMessageRouter);
 
 	let debugTerminal = vscode.commands.registerCommand('exos-component-extension.debugConsole', function() {
 		

@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.1.0] - 2022-04-17
+
+### Added
+
+- Added "Run exOS data connection" to simplify the local debugging of exOS packages. The update is done via the exospkg file, as this has the reference to the used WSL distro.
+
 ## [2.0.3] - 2022-04-07
 
 ### Added

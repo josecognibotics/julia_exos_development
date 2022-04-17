@@ -53,6 +53,13 @@ The project must have been built with dataconnection support (using at least a d
 
 ![Update build environment](https://github.com/br-automation-com/exOS-ComponentExtension/raw/master/images/UpdateBuildEnvironment.gif)
 
+## Run exOS data connection
+
+When developing the Linux code of an exOS component within an AS project, it can be useful to debug the Linux sources locally (either via the command prompt or via an IDE). This can be done in combination with ARsim without activating Deployment using the "Run exOS data connection". This starts the *Linux DMR* which allows to manually run programs/scripts in Linux/WSL in order to connect to the AR side of the exOS component, and test the code that will eventually be deployed to the target for the production environment.
+This function has been build in by richt-clicking on the `.exospkg` file. It uses the `<BuildCommand>` tag to search for the specific WSL distro that the data connection should run under.
+
+![Run exOS data connection](https://github.com/br-automation-com/exOS-ComponentExtension/raw/master/images/RunDataConnection.gif)
+
 ## Example
 
 The Code generator uses a top-level structure of a given `IEC TYPE` definition file to generate `PUB/SUB` datasets.
