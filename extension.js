@@ -334,6 +334,7 @@ function activate(context) {
 				if (fs.existsSync(pkgFileName)) {
 					let lines = fs.readFileSync(pkgFileName).toString();
 					let writeFile = false;
+					let goNextLine = false;
 					lines = lines.split("\r").join("");
 					lines = lines.split("\n");
 					let out = "";
@@ -342,18 +343,23 @@ function activate(context) {
 						if(typMode && line.includes(path.basename(fsPath)) && line.includes("Object") && line.includes("File")) {
 							out += `    <Object Type="Package">${typeName}</Object>\r\n`;
 							writeFile = true;
-						}
-						if(line.includes(typeName) && line.includes("Object") && line.includes("Package")) {
 							insertPackage = false;
+							goNextLine = true;
 						}
-						else if (insertPackage && line.includes("</Objects>")) {
-							out += `    <Object Type="Package" Description="Package for deployment only">${typeName}</Object>\r\n`;
-							out += `${line}\r\n`;
-							writeFile = true;
+						if (!goNextLine) {
+							if(line.includes(typeName) && line.includes("Object") && line.includes("Package")) {
+								insertPackage = false;
+							}
+							else if (insertPackage && line.includes("</Objects>")) {
+								out += `    <Object Type="Package" Description="Package for deployment only">${typeName}</Object>\r\n`;
+								out += `${line}\r\n`;
+								writeFile = true;
+							}
+							else {
+								out += `${line}\r\n`;
+							}
 						}
-						else {
-							out += `${line}\r\n`;
-						}
+						goNextLine = false;
 					}
 			
 					if(writeFile)
