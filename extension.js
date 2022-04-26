@@ -342,15 +342,16 @@ function activate(context) {
 						if(typMode && line.includes(path.basename(fsPath)) && line.includes("Object") && line.includes("File")) {
 							out += `    <Object Type="Package">${typeName}</Object>\r\n`;
 							writeFile = true;
-						}
-						if(line.includes(typeName) && line.includes("Object") && line.includes("Package")) {
 							insertPackage = false;
+						}
+						else if (line.includes(typeName) && line.includes("Object") && line.includes("Package")) {
+								insertPackage = false;
 						}
 						else if (insertPackage && line.includes("</Objects>")) {
 							out += `    <Object Type="Package" Description="Package for deployment only">${typeName}</Object>\r\n`;
 							out += `${line}\r\n`;
 							writeFile = true;
-						}
+						} 
 						else {
 							out += `${line}\r\n`;
 						}
