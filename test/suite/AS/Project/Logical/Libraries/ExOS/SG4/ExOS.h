@@ -1,6 +1,6 @@
 /* Automation Studio generated header file */
 /* Do not edit ! */
-/* ExOS 2.00.0 */
+/* ExOS 2.01.0 */
 
 #ifndef _EXOS_
 #define _EXOS_
@@ -9,7 +9,7 @@ extern "C"
 {
 #endif
 #ifndef _ExOS_VERSION
-#define _ExOS_VERSION 2.00.0
+#define _ExOS_VERSION 2.01.0
 #endif
 
 #include <bur/plctypes.h>
@@ -42,13 +42,15 @@ typedef enum ExLogLevelEnum
 
 typedef enum ExErrorEnum
 {	exOS_ERR_OK = 0,
-	exOS_ERR_BAD_TARGET_LINK = 4482,
-	exOS_ERR_BAD_COMPONENT_LINK = 4483,
-	exOS_ERR_INVALID_DATAMODEL = 4484,
-	exOS_ERR_NOT_CONNECTED = 4485,
-	exOS_ERR_NOT_SYNCHRONIZED = 4485,
-	exOS_ERR_NOT_CONFIGURED = 4486,
-	exOS_ERR_OVERFLOW = 4487
+	exOS_ERR_BAD_TARGET_LINK,
+	exOS_ERR_BAD_COMPONENT_LINK,
+	exOS_ERR_INVALID_DATAMODEL,
+	exOS_ERR_NOT_RESPONSIVE,
+	exOS_ERR_NOT_SYNCHRONIZED,
+	exOS_ERR_NOT_CONFIGURED,
+	exOS_ERR_OVERFLOW,
+	exOS_ERR_PARAMETER_MISSING,
+	exOS_ERR_API_ERROR
 } ExErrorEnum;
 
 typedef struct ExComponentLink
@@ -167,9 +169,11 @@ typedef struct ExComponenInfoDiagType
 typedef struct ExLogConfig
 {
 	/* VAR_INPUT (analog) */
+	struct ExTargetLink* ExTargetLink;
 	struct ExLogConfigType* LogConfig;
 	/* VAR_OUTPUT (analog) */
 	signed long StatusID;
+	signed long ErrorID;
 	/* VAR (analog) */
 	unsigned long Internal;
 	/* VAR_INPUT (digital) */
