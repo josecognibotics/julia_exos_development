@@ -115,6 +115,7 @@ suite('Template generation tests (<name> <AR side> <Linux side>)', () => {
         compRes = dircompare.compareSync(genPath, expectedPath, dirOptions);
         if (compRes.differences > 0) {
             unexpectedPath = path.resolve(__dirname, '../template_generation/unexpected/', `${typName}_${selectedOptions.templateAR}_${selectedOptions.templateLinux}`)
+            fse.emptyDirSync(unexpectedPath);
             fse.copySync(genPath, unexpectedPath);
             assert.equal(compRes.differences, 0, `Generated output for ${typName} differs from expected (if the output is the new expected, manually copy it from the unexpected folder)`);
         }
