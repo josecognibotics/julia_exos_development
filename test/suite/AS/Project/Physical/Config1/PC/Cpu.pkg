@@ -21,8 +21,9 @@
   </Objects>
   <Configuration ModuleId="PC_any">
     <AutomationRuntime Version="B4.91" />
-    <Build GccVersion="4.1.2" AnsicIncludeDirectories="\Logical\Libraries\ExData\SG4\" />
+    <Build AnsicIncludeDirectories="\Logical\Libraries\ExData\SG4\" GccVersion="6.3.0" />
     <DefaultTargetMemory Tasks="UserROM" />
+    <Safety SafetyRelease="0.0" />
     <Vc FirmwareVersion="V4.72.3" />
   </Configuration>
 </Cpu>
