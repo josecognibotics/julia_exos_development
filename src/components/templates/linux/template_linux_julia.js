@@ -48,7 +48,10 @@ class TemplateLinuxJulia extends Template {
         out += `using StaticArrays\n\n`;
 
         out += `const libexos_api = "/usr/lib/libexos-api.so"\n`
-        out += `const EXOS_ARRAY_DEPTH = 10\n`
+        out += `const EXOS_ARRAY_DEPTH          = 10\n`
+        out += `const EXOS_LOG_EXCLUDE_LIST_LEN = 20\n`
+        out += `const EXOS_LOG_MAX_NAME_LENGTH  = 35\n`
+        out += `const EXOS_LOG_MESSAGE_LENGTH   = 256\n`
         out += `const config_${this.datamodel.typeName.toLowerCase()} = ${this.JSONString()}\n\n`;
 
         out += `export\n`;
@@ -331,7 +334,115 @@ class TemplateLinuxJulia extends Template {
 
         return out;
         }
+    /**
+     * Creates the script for the enums that will be used in the structures
+     */
+    _generateExosLog() {
+        let out = "";
 
+        out += `function test()\n`;
+        out += `\tprintln("HELLO")\n`;
+        out += `end\n`;
+        out += `\n`;
+
+        out += `# ------------------------------------ EXOS LOG: ------------------------------------ #\n\n`;
+        out += `@enum EXOS_LOG_FACILITY begin\n`;
+        out += `\tEXOS_LOG_FACILITY_AR = 0\n`;
+        out += `\tEXOS_LOG_FACILITY_GPOS = 1\n`;
+        out += `end\n`;
+        out += `\n`;
+        out += `@enum EXOS_LOG_LEVEL begin\n`;
+        out += `\tEXOS_LOG_LEVEL_ERROR\n`;
+        out += `\tEXOS_LOG_LEVEL_WARNING\n`;
+        out += `\tEXOS_LOG_LEVEL_SUCCESS\n`;
+        out += `\tEXOS_LOG_LEVEL_INFO\n`;
+        out += `\tEXOS_LOG_LEVEL_DEBUG\n`;
+        out += `end\n`;
+        out += `\n`;
+        out += `@enum EXOS_LOG_TYPE begin\n`;
+        out += `\tEXOS_LOG_TYPE_ALWAYS = 0\n`;
+        out += `\tEXOS_LOG_TYPE_USER = 1\n`;
+        out += `\tEXOS_LOG_TYPE_SYSTEM = 2\n`;
+        out += `\tEXOS_LOG_TYPE_VERBOSE = 4\n`;
+        out += `end\n`;
+        out += `\n`;
+
+        out += `struct julia_exos_log_private\n`;
+        out += `\t_magic::UInt32\n`;
+        out += `\t_log::Ptr{Cvoid}\n`;
+        out += `\t_reserved::NTuple{4, Ptr{Cvoid}}\n`;
+        out += `end\n`;
+        out += `\n`;
+
+        out += `# INITIALIZATION: julia_exos_log_private #\n`;
+        out += `log_private = julia_exos_log_private(\n`;
+        out += `\t0,\n`;
+        out += `\tC_NULL,\n`;
+        out += `\t(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL))\n`;
+        out += `)\n`;
+        out += `\n`;
+
+        out += `struct julia_exos_log_handle\n`;
+        out += `\tname::Ptr{Cchar} \n`;
+        out += `\tready::Bool\n`;
+        out += `\texcluded::Bool \n`;
+        out += `\tconsole::Bool\n`;
+        out += `\tconfig_change_cb::Function\n`;
+        out += `\tconfig_change_user_context::Ptr{Cvoid}\n`;
+        out += `\t_reserved_bool::NTuple{4, Bool} \n`;
+        out += `\t_reserved_uint32::NTuple{4, UInt32}\n`;
+        out += `\t_reserved::NTuple{4, UInt32}\n`;
+        out += `\t_private::julia_exos_log_private\n`;
+        out += `end\n`;
+        out += `\n`;
+
+        out += `# INITIALIZATION: julia_exos_log_handle #\n`;
+        out += `log_handle = julia_exos_log_handle(\n`;
+        out += `\tC_NULL,\n`;
+        out += `\t0,\n`;
+        out += `\t0,\n`;
+        out += `\t0,\n`;
+        out += `\ttest,\n`;
+        out += `\tC_NULL,\n`;
+        out += `\t(Bool(0), Bool(0), Bool(0) , Bool(0)),\n`;
+        out += `\t(UInt32(0), UInt32(0), UInt32(0), UInt32(0)),\n`;
+        out += `\t(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL)),\n`;
+        out += `\tlog_private\n`;
+        out += `)\n`;
+        out += `\n`;
+
+        out += `struct julia_exos_log_config_type\n`;
+        out += `\tuser::Bool\n`;
+        out += `\tsystem::Bool\n`;
+        out += `\tverbose::Bool\n`;
+        out += `\t_reserved_bool::NTuple{8, Bool}\n`;
+        out += `end\n`;
+        out += `\n`;
+
+        out += `# INITIALIZATION: julia_exos_log_config_type #\n`;
+        out += `log_config_type = julia_exos_log_config_type(\n`;
+        out += `\t0,\n`;
+        out += `\t0,\n`;
+        out += `\t0,\n`;
+        out += `\t(Bool(0), Bool(0), Bool(0) , Bool(0), Bool(0), Bool(0), Bool(0) , Bool(0))\n`;
+        out += `)\n`;
+        out += `\n`;
+
+        out += `struct julia_exos_log_config\n`;
+        out += `\tlevel::Bool\n`;
+        out += `\ttype::Bool\n`;
+        out += `\t_reserved_int32::Bool\n`;
+        out += `\t_reserved_boo::NTuple{8, Bool}\n`;
+        out += `\texclude::Matrix{Cchar}\n`;
+        out += `end\n`;
+        out += `\n`;
+
+
+
+        return out;
+
+
+    }
     /**
      * Creates the script for the enums that will be used in the structures
      */
@@ -401,8 +512,8 @@ class TemplateLinuxJulia extends Template {
         out += `\n`;
         
         out += `struct julia_exos_datamodel_sync_info\n`;
-        out += `\tin_sync::Cint\n`;
-        out += `\t_reserved_bool::NTuple{8, Cint}\n`;
+        out += `\tin_sync::Bool\n`;
+        out += `\t_reserved_bool::NTuple{8, Bool}\n`;
         out += `\tmissed_dmr_cycles::UInt32\n`;
         out += `\tmissed_ar_cycles::UInt32\n`;
         out += `\t_reserved_uint32::NTuple{7, UInt32}\n`;
@@ -412,7 +523,7 @@ class TemplateLinuxJulia extends Template {
         out += `# INITIALIZATION: julia_exos_datamodel_sync_info #\n`;
         out += `datamodel_sync_info = julia_exos_datamodel_sync_info(\n`;
         out += `\t0,\n`;
-        out += `\t(Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0)),\n`;
+        out += `\t(Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0)),\n`;
         out += `\t0,\n`;
         out += `\t0,\n`;
         out += `\t(UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0))\n`;
@@ -445,7 +556,7 @@ class TemplateLinuxJulia extends Template {
         out += `\tuser_alias::Ptr{Cchar}\n`;
         out += `\tdatamodel_event_callback::Function\n`;
         out += `\tsync_info::julia_exos_datamodel_sync_info\n`;
-        out += `\t_reserved_bool::NTuple{8, Cint}\n`;
+        out += `\t_reserved_bool::NTuple{8, Bool}\n`;
         out += `\t_reserved_uint32::NTuple{8, UInt32}\n`;
         out += `\t_reserved_void::NTuple{8, Ptr{Cvoid}}\n`;
         out += `\t_private::julia_exos_datamodel_private\n`;
@@ -455,10 +566,7 @@ class TemplateLinuxJulia extends Template {
         out += `state = EXOS_CONNECTION_STATE(0)\n`;
         out += `err = EXOS_ERROR_CODE(0)\n`;
         out += `\n`;
-        out += `function test()\n`;
-        out += `\tprintln("HELLO")\n`;
-        out += `end\n`;
-        out += `\n`;
+
 
         out += `# INITIALIZATION: julia_exos_datamodel_handle #\n`;
         out += `datamodel_handle = julia_exos_datamodel_handle(\n`;
@@ -470,7 +578,7 @@ class TemplateLinuxJulia extends Template {
         out += `\tC_NULL,\n`;
         out += `\ttest,\n`;
         out += `\tdatamodel_sync_info,\n`;
-        out += `\t(Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0)),\n`;
+        out += `\t(Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0)),\n`;
         out += `\t(UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0)),\n`;
         out += `\t(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL)),\n`;
         out += `\tdatamodel_private\n`;
@@ -535,7 +643,7 @@ class TemplateLinuxJulia extends Template {
         out += `\tuser_tag::Int32\n`;
         out += `\tuser_context::Ptr{Cvoid}\n`;
         out += `\tdataset_event_callback::Function\n`;
-        out += `\t_reserved_bool::NTuple{8, Cint}\n`;
+        out += `\t_reserved_bool::NTuple{8, Bool}\n`;
         out += `\t_reserved_uint32::NTuple{8, UInt32}\n`;
         out += `\t_reserved_void::NTuple{8, Ptr{Cvoid}}\n`;
         out += `\t_private::julia_exos_dataset_private\n`;
@@ -559,7 +667,7 @@ class TemplateLinuxJulia extends Template {
         out += `\t0,\n`;
         out += `\tC_NULL,\n`;
         out += `\ttest,\n`;
-        out += `\t(Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0)),\n`;
+        out += `\t(Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0)),\n`;
         out += `\t(UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0)),\n`;
         out += `\t(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL)),\n`;
         out += `\tdataset_private\n`;
@@ -656,6 +764,7 @@ class TemplateLinuxJulia extends Template {
         let out = "";
         out += this.generateInit(this.template);
         out += this._makeDataTypes(false);
+        out += this._generateExosLog();
         out += this._generateStructsAndEnums();
         out += this._generateCallBacks();
 

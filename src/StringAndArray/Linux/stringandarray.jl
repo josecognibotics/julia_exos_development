@@ -3,7 +3,10 @@ module exos_stringandarray
 using StaticArrays
 
 const libexos_api = "/usr/lib/libexos-api.so"
-const EXOS_ARRAY_DEPTH = 10
+const EXOS_ARRAY_DEPTH          = 10
+const EXOS_LOG_EXCLUDE_LIST_LEN = 20
+const EXOS_LOG_MAX_NAME_LENGTH  = 35
+const EXOS_LOG_MESSAGE_LENGTH   = 256
 const config_stringandarray = "{\"name\":\"struct\",\"attributes\":{\"name\":\"<NAME>\",\"dataType\":\"StringAndArray\",\"info\":\"<infoId0>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt1\",\"dataType\":\"UDINT\",\"comment\":\"PUB\",\"info\":\"<infoId1>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyString\",\"dataType\":\"STRING\",\"stringLength\":81,\"comment\":\"PUB\",\"arraySize\":3,\"info\":\"<infoId2>\",\"info2\":\"<infoId3>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt2\",\"dataType\":\"USINT\",\"comment\":\"PUB SUB\",\"arraySize\":5,\"info\":\"<infoId4>\",\"info2\":\"<infoId5>\"}},{\"name\":\"struct\",\"attributes\":{\"name\":\"MyIntStruct\",\"dataType\":\"IntStruct_typ\",\"comment\":\"PUB SUB\",\"arraySize\":6,\"info\":\"<infoId6>\",\"info2\":\"<infoId7>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt13\",\"dataType\":\"UDINT\",\"info\":\"<infoId8>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt14\",\"dataType\":\"USINT\",\"arraySize\":3,\"info\":\"<infoId9>\",\"info2\":\"<infoId10>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt133\",\"dataType\":\"UDINT\",\"info\":\"<infoId11>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt124\",\"dataType\":\"USINT\",\"arraySize\":3,\"info\":\"<infoId12>\",\"info2\":\"<infoId13>\"}}]},{\"name\":\"struct\",\"attributes\":{\"name\":\"MyIntStruct1\",\"dataType\":\"IntStruct1_typ\",\"comment\":\"PUB SUB\",\"info\":\"<infoId14>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt13\",\"dataType\":\"UDINT\",\"info\":\"<infoId15>\"}}]},{\"name\":\"struct\",\"attributes\":{\"name\":\"MyIntStruct2\",\"dataType\":\"IntStruct2_typ\",\"comment\":\"PUB SUB\",\"info\":\"<infoId16>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt23\",\"dataType\":\"UDINT\",\"info\":\"<infoId17>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt24\",\"dataType\":\"USINT\",\"arraySize\":4,\"info\":\"<infoId18>\",\"info2\":\"<infoId19>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt25\",\"dataType\":\"UDINT\",\"info\":\"<infoId20>\"}}]}]}"
 
 export
@@ -40,6 +43,103 @@ export
 		MyIntStruct2::IntStruct2_typ #PUB SUB
 	end
 
+function test()
+	println("HELLO")
+end
+
+# ------------------------------------ EXOS LOG: ------------------------------------ #
+
+@enum EXOS_LOG_FACILITY begin
+	EXOS_LOG_FACILITY_AR = 0
+	EXOS_LOG_FACILITY_GPOS = 1
+end
+
+@enum EXOS_LOG_LEVEL begin
+	EXOS_LOG_LEVEL_ERROR
+	EXOS_LOG_LEVEL_WARNING
+	EXOS_LOG_LEVEL_SUCCESS
+	EXOS_LOG_LEVEL_INFO
+	EXOS_LOG_LEVEL_DEBUG
+end
+
+@enum EXOS_LOG_TYPE begin
+	EXOS_LOG_TYPE_ALWAYS = 0
+	EXOS_LOG_TYPE_USER = 1
+	EXOS_LOG_TYPE_SYSTEM = 2
+	EXOS_LOG_TYPE_VERBOSE = 4
+end
+
+struct julia_exos_log_private
+	_magic::UInt32
+	_log::Ptr{Cvoid}
+	_reserved::NTuple{4, Ptr{Cvoid}}
+end
+
+# INITIALIZATION: julia_exos_log_private #
+log_private = julia_exos_log_private(
+	0,
+	C_NULL,
+	(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL))
+)
+
+struct julia_exos_log_handle
+	name::Ptr{Cchar} 
+	ready::Bool
+	excluded::Bool 
+	console::Bool
+	config_change_cb::Function
+	config_change_user_context::Ptr{Cvoid}
+	_reserved_bool::NTuple{4, Bool} 
+	_reserved_uint32::NTuple{4, UInt32}
+	_reserved::NTuple{4, UInt32}
+	_private::julia_exos_log_private
+end
+
+# INITIALIZATION: julia_exos_log_handle #
+log_handle = julia_exos_log_handle(
+	C_NULL,
+	0,
+	0,
+	0,
+	test,
+	C_NULL,
+	(Bool(0), Bool(0), Bool(0) , Bool(0)),
+	(UInt32(0), UInt32(0), UInt32(0), UInt32(0)),
+	(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL)),
+	log_private
+)
+
+struct julia_exos_log_config_type
+	user::Bool
+	system::Bool
+	verbose::Bool
+	_reserved_bool::NTuple{8, Bool}
+end
+
+# INITIALIZATION: julia_exos_log_config_type #
+log_config_type = julia_exos_log_config_type(
+	0,
+	0,
+	0,
+	(Bool(0), Bool(0), Bool(0) , Bool(0), Bool(0), Bool(0), Bool(0) , Bool(0))
+)
+
+struct julia_exos_log_config
+	level::Bool
+	type::Bool
+	_reserved_int32::Bool
+	_reserved_boo::NTuple{8, Bool}
+	exclude::Matrix{Int64}(undef, 2, 2)
+end
+
+log_config = julia_exos_log_config(
+	0,
+	0,
+	0,
+	(Bool(0), Bool(0), Bool(0) , Bool(0), Bool(0), Bool(0), Bool(0) , Bool(0)),
+	[12 12; 12 12]
+)
+println(log_config)
 # ----------------------------- DECLARATIONS ----------------------------- #
 
 struct julia_exos_dataset_info
@@ -98,8 +198,8 @@ end
 end
 
 struct julia_exos_datamodel_sync_info
-	in_sync::Cint
-	_reserved_bool::NTuple{8, Cint}
+	in_sync::Bool
+	_reserved_bool::NTuple{8, Bool}
 	missed_dmr_cycles::UInt32
 	missed_ar_cycles::UInt32
 	_reserved_uint32::NTuple{7, UInt32}
@@ -108,7 +208,7 @@ end
 # INITIALIZATION: julia_exos_datamodel_sync_info #
 datamodel_sync_info = julia_exos_datamodel_sync_info(
 	0,
-	(Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0)),
+	(Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0)),
 	0,
 	0,
 	(UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0))
@@ -136,7 +236,7 @@ struct julia_exos_datamodel_handle
 	user_alias::Ptr{Cchar}
 	datamodel_event_callback::Function
 	sync_info::julia_exos_datamodel_sync_info
-	_reserved_bool::NTuple{8, Cint}
+	_reserved_bool::NTuple{8, Bool}
 	_reserved_uint32::NTuple{8, UInt32}
 	_reserved_void::NTuple{8, Ptr{Cvoid}}
 	_private::julia_exos_datamodel_private
@@ -144,10 +244,6 @@ end
 
 state = EXOS_CONNECTION_STATE(0)
 err = EXOS_ERROR_CODE(0)
-
-function test()
-	println("HELLO")
-end
 
 # INITIALIZATION: julia_exos_datamodel_handle #
 datamodel_handle = julia_exos_datamodel_handle(
@@ -159,7 +255,7 @@ datamodel_handle = julia_exos_datamodel_handle(
 	C_NULL,
 	test,
 	datamodel_sync_info,
-	(Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0)),
+	(Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0)),
 	(UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0)),
 	(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL)),
 	datamodel_private
@@ -217,7 +313,7 @@ struct julia_exos_dataset_handle
 	user_tag::Int32
 	user_context::Ptr{Cvoid}
 	dataset_event_callback::Function
-	_reserved_bool::NTuple{8, Cint}
+	_reserved_bool::NTuple{8, Bool}
 	_reserved_uint32::NTuple{8, UInt32}
 	_reserved_void::NTuple{8, Ptr{Cvoid}}
 	_private::julia_exos_dataset_private
@@ -239,7 +335,7 @@ dataset_handle = julia_exos_dataset_handle(
 	0,
 	C_NULL,
 	test,
-	(Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0)),
+	(Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0), Bool(0)),
 	(UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0)),
 	(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL)),
 	dataset_private
