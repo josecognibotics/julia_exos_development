@@ -19,6 +19,7 @@ const { ExosComponentNAPI, ExosComponentNAPIUpdate } = require('./src/components
 const { ExosComponentSWIG, ExosComponentSWIGUpdate } = require('./src/components/exoscomponent_swig');
 const { ExosComponentPython, ExosComponentPythonUpdate } = require('./src/components/exoscomponent_python');
 const { ExosComponentJS, ExosComponentJSUpdate } = require('./src/components/exoscomponent_js');
+const { ExosComponentJulia, ExosComponentJuliaUpdate } = require('./src/components/exoscomponent_julia');
 const { ExosExport, ASConfiguration } = require('./src/exosexport');
 const { Package } = require('./src/exospackage');
 const { ASProject, ASProjectConfiguration } = require('./src/asproject')
@@ -430,6 +431,15 @@ function activate(context) {
 							templateJS.makeComponent(makeComponentPath);
 						}
 						break;
+					case "Julia Module":
+							let templateJulia = new ExosComponentJulia(uri.fsPath, selectedStructure.label, {
+								packaging:selectedPackaging.label,
+								templateLinux:convertLabel2Template(selectedLinuxType.label), 
+								templateAR:convertLabel2Template(selectedASType.label),
+								destinationDirectory:destination
+							});
+							templateJulia.makeComponent(makeComponentPath);
+							break;
 					default:
 						vscode.window.showErrorMessage(`The selected template for linux: ${selectedLinuxType.label} not found!`);
 						return;
@@ -462,6 +472,7 @@ function activate(context) {
 				
 				let pickLinuxType = [];
 				pickLinuxType.push({label: "C API", detail:"C application with no datamodel"});
+				pickLinuxType.push({label: "Julia Module", detail:`Julia application with no datamodel`})
 				pickLinuxType.push({label: "C++ Class", detail:`C++ application with no datamodel`})
 				pickLinuxType.push({label: "Python Module", detail:`Python application with no datamodel`})
 				pickLinuxType.push({label: "JavaScript Module", detail:`nodejs JavaScript application with no datamodel`})
@@ -539,6 +550,7 @@ function activate(context) {
 						pickLinuxType.push({label: "C API", detail:"C application directly using the exOS C-API"});
 						if(selectedStructure.detail) {
 							pickLinuxType.push({label: "C Interface", detail:`C application which uses a C interface for the ${selectedStructure.label} datamodel`})
+							pickLinuxType.push({label: "Julia Module", detail:`Julia application which uses a Julia interface for the ${selectedStructure.label} datamodel`})
 							pickLinuxType.push({label: "C++ Class", detail:`C++ application which uses a C++ class for the ${selectedStructure.label} datamodel`})
 							pickLinuxType.push({label: "Python Module", detail:`Python application which uses a SWIG module for the ${selectedStructure.label} datamodel`})
 							pickLinuxType.push({label: "JavaScript Module", detail:`nodejs JavaScript application which uses an N-API module for the ${selectedStructure.label} datamodel`})
@@ -704,6 +716,13 @@ function activate(context) {
 							case "ExosComponentC":
 								{
 									let component = new ExosComponentCUpdate(uri.fsPath, updateAll);
+									componentName = component._name;
+									results = component.updateComponent(recreate);
+								}
+								break;
+							case "ExosComponentJulia":
+								{
+									let component = new ExosComponentJuliaUpdate(uri.fsPath, updateAll);
 									componentName = component._name;
 									results = component.updateComponent(recreate);
 								}

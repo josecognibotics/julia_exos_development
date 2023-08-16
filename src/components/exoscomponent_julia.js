@@ -155,8 +155,8 @@ class ExosComponentJuliaUpdate extends ExosComponentARUpdate {
                 this._options = {packaging: "", destinationDirectory: "", templateAR: "", templateLinux: this._exospackage.exospkg.componentOptions.templateLinux};
 
                 this._templateLinux = new TemplateLinuxJulia(this._datamodel);
-                //this._linuxPackage.addNewFileObj(this._templateLinux.staticLibraryHeader);
-                //this._linuxPackage.addNewFileObj(this._templateLinux.staticLibrarySource);
+                this._linuxPackage.addNewFileObj(this._templateLinux.staticLibraryHeader);
+                this._linuxPackage.addNewFileObj(this._templateLinux.staticLibrarySource);
                 if(updateAll) {
                     this._linuxPackage.addNewFileObj(this._templateLinux.mainSource);
                 }

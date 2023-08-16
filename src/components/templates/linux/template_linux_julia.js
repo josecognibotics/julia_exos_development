@@ -338,10 +338,10 @@ class TemplateLinuxJulia extends Template {
     _generateStructsAndEnums() {
         let out = "";
         out += `# ----------------------------- DECLARATIONS ----------------------------- #\n`;
-
         out += `\n`;
+
         out += `struct julia_exos_dataset_info\n`;
-        out += `\tname::Ptr{CUInt8}\n`;
+        out += `\tname::Ptr{UInt8}\n`;
         out += `\tadr::Ptr{Cvoid}\n`;
         out += `\tsize::Csize_t\n`;
         out += `\toffset::Clong\n`;
@@ -349,8 +349,17 @@ class TemplateLinuxJulia extends Template {
         out += `end\n`;
         out += `\n`;
 
+        out += `# INITIALIZATION: julia_exos_dataset_info #\n`;
+        out += `dataset_info = julia_exos_dataset_info(\n`;
+        out += `\tC_NULL,\n`;
+        out += `\tC_NULL,\n`;
+        out += `\t0,\n`;
+        out += `\t0,\n`;
+        out += `\t(UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0))\n`;
+        out += `)\n`;
+
         out += `@enum EXOS_ERROR_CODE begin\n`;
-        out += `\tEXOS_ERROR_OK = 1\n`;
+        out += `\tEXOS_ERROR_OK = 0\n`;
         out += `\tEXOS_ERROR_NOT_IMPLEMENTED = 5000\n`;
         out += `\tEXOS_ERROR_PARAMETER_NULL\n`;
         out += `\tEXOS_ERROR_BAD_DATAMODEL_HANDLE\n`;
@@ -391,7 +400,7 @@ class TemplateLinuxJulia extends Template {
         out += `end\n`;
         out += `\n`;
         
-        out += `struct exos_datamodel_sync_info\n`;
+        out += `struct julia_exos_datamodel_sync_info\n`;
         out += `\tin_sync::Cint\n`;
         out += `\t_reserved_bool::NTuple{8, Cint}\n`;
         out += `\tmissed_dmr_cycles::UInt32\n`;
@@ -400,29 +409,72 @@ class TemplateLinuxJulia extends Template {
         out += `end\n`;
         out += `\n`;
 
-        out += `struct exos_datamodel_private\n`;
+        out += `# INITIALIZATION: julia_exos_datamodel_sync_info #\n`;
+        out += `datamodel_sync_info = julia_exos_datamodel_sync_info(\n`;
+        out += `\t0,\n`;
+        out += `\t(Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0)),\n`;
+        out += `\t0,\n`;
+        out += `\t0,\n`;
+        out += `\t(UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0))\n`;
+        out += `)\n`;
+        out += `\n`;
+
+        out += `struct julia_exos_datamodel_private\n`;
         out += `\t_magic::UInt32\n`;
         out += `\t_artefact::Ptr{Cvoid}\n`;
         out += `\t_reserved::NTuple{8, Ptr{Cvoid}}\n`;
         out += `end\n`;
         out += `\n`;
 
-        out += `const exos_datamodel_event_cb = Function[[Ptr{julia_exos_datamodel_handle}, EXOS_DATAMODEL_EVENT_TYPE, Ptr{Cvoid}]]\n\n`;
+        out += `# INITIALIZATION: julia_exos_datamodel_private #\n`;
+        out += `datamodel_private = julia_exos_datamodel_private(\n`;
+        out += `\t0,\n`;
+        out += `\tC_NULL,\n`;
+        out += `\t(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL)),\n`;
+        out += `)\n`;
+        out += `\n`;
+
+        //out += `const exos_datamodel_event_cb = Function[[Ptr{julia_exos_datamodel_handle}, EXOS_DATAMODEL_EVENT_TYPE, Ptr{Cvoid}]]\n\n`;
 
         out += `struct julia_exos_datamodel_handle\n`;
-        out += `\tname::Ptr{CUInt8} #Are they null terminated??? if null Cstring otherwise, Ptr(Cchar) or Ptr(UInt8)\n`;
+        out += `\tname::Ptr{UInt8}\n`;
         out += `\tconnection_state::EXOS_CONNECTION_STATE\n`;
         out += `\terror::EXOS_ERROR_CODE\n`;
         out += `\tuser_context::Ptr{Cvoid}\n`;
         out += `\tuser_tag::Clong\n`;
         out += `\tuser_alias::Ptr{Cchar}\n`;
-        out += `\tdatamodel_event_callback::exos_datamodel_event_cb\n`;
-        out += `\tsync_info::exos_datamodel_sync_info\n`;
+        out += `\tdatamodel_event_callback::Function\n`;
+        out += `\tsync_info::julia_exos_datamodel_sync_info\n`;
         out += `\t_reserved_bool::NTuple{8, Cint}\n`;
         out += `\t_reserved_uint32::NTuple{8, UInt32}\n`;
         out += `\t_reserved_void::NTuple{8, Ptr{Cvoid}}\n`;
-        out += `\t_private::exos_datamodel_private\n`;
+        out += `\t_private::julia_exos_datamodel_private\n`;
         out += `end\n`;
+        out += `\n`;
+
+        out += `state = EXOS_CONNECTION_STATE(0)\n`;
+        out += `err = EXOS_ERROR_CODE(0)\n`;
+        out += `\n`;
+        out += `function test()\n`;
+        out += `\tprintln("HELLO")\n`;
+        out += `end\n`;
+        out += `\n`;
+
+        out += `# INITIALIZATION: julia_exos_datamodel_handle #\n`;
+        out += `datamodel_handle = julia_exos_datamodel_handle(\n`;
+        out += `\tC_NULL,\n`;
+        out += `\tstate,\n`;
+        out += `\terr,\n`;
+        out += `\tC_NULL,\n`;
+        out += `\t0,\n`;
+        out += `\tC_NULL,\n`;
+        out += `\ttest,\n`;
+        out += `\tdatamodel_sync_info,\n`;
+        out += `\t(Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0)),\n`;
+        out += `\t(UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0)),\n`;
+        out += `\t(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL)),\n`;
+        out += `\tdatamodel_private\n`;
+        out += `)\n`;
         out += `\n`;
 
         out += `@enum EXOS_DATASET_EVENT_TYPE begin\n`;
@@ -434,13 +486,20 @@ class TemplateLinuxJulia extends Template {
         out += `end\n`;
         out += `\n`;
 
-        out += `struct exos_buffer_info\n`;
+        out += `struct julia_exos_buffer_info\n`;
         out += `\tsize::UInt32\n`;
         out += `\tfree::UInt32\n`;
         out += `\tused::UInt32\n`;
         out += `end\n`;
         out += `\n`;
 
+        out += `# INITIALIZATION: julia_exos_buffer_info #\n`;
+        out += `buffer_info = julia_exos_buffer_info(\n`;
+        out += `\t0,\n`;
+        out += `\t0,\n`;
+        out += `\t0\n`;
+        out += `)\n`;
+        out += `\n`;
 
         out += `@enum EXOS_DATASET_TYPE begin\n`;
         out += `\tEXOS_DATASET_SUBSCRIBE = 1\n`;
@@ -448,15 +507,21 @@ class TemplateLinuxJulia extends Template {
         out += `end\n`;
         out += `\n`;
 
-        out += `struct exos_dataset_private\n`;
+        out += `struct julia_exos_dataset_private\n`;
         out += `\t_magic::UInt32\n`;
         out += `\t_value::Ptr{Cvoid}\n`;
         out += `\t_reserved::NTuple{8, Ptr{Cvoid}}\n`;
         out += `end\n`;
         out += `\n`;
 
-        out += `const exos_dataset_event_cb = Function[[Ptr{julia_exos_dataset_handle}, EXOS_DATASET_EVENT_TYPE, Ptr{Cvoid}]]\n\n`;
-        
+        out += `# INITIALIZATION: julia_exos_dataset_private #\n`;
+        out += `dataset_private = julia_exos_dataset_private(\n`;
+        out += `\t0,\n`;
+        out += `\tC_NULL,\n`;
+        out += `\t(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL)),\n`;
+        out += `)\n`;
+        out += `\n`;
+
         out += `struct julia_exos_dataset_handle\n`;
         out += `\tname::Ptr{Cchar}\n`;
         out += `\ttype::EXOS_DATASET_TYPE\n`;
@@ -465,16 +530,40 @@ class TemplateLinuxJulia extends Template {
         out += `\tsize::Csize_t\n`;
         out += `\terror::EXOS_ERROR_CODE\n`;
         out += `\tconnection_state::EXOS_CONNECTION_STATE\n`;
-        out += `\tsend_buffer::exos_buffer_info\n`;
+        out += `\tsend_buffer::julia_exos_buffer_info\n`;
         out += `\tnettime::Int32\n`;
         out += `\tuser_tag::Int32\n`;
         out += `\tuser_context::Ptr{Cvoid}\n`;
-        out += `\tdataset_event_callback::exos_dataset_event_cb\n`;
+        out += `\tdataset_event_callback::Function\n`;
         out += `\t_reserved_bool::NTuple{8, Cint}\n`;
         out += `\t_reserved_uint32::NTuple{8, UInt32}\n`;
         out += `\t_reserved_void::NTuple{8, Ptr{Cvoid}}\n`;
-        out += `\t_private::exos_dataset_private\n`;
+        out += `\t_private::julia_exos_dataset_private\n`;
         out += ` end\n`;
+        out += `\n`;
+
+        out += `type = EXOS_DATASET_TYPE(1)\n`;
+        out += `\n`;
+
+        out += `# INITIALIZATION: julia_exos_dataset_handle #\n`;
+        out += `dataset_handle = julia_exos_dataset_handle(\n`;
+        out += `\tC_NULL,\n`;
+        out += `\ttype,\n`;
+        out += `\tdatamodel_handle,\n`;
+        out += `\tC_NULL,\n`;
+        out += `\t0,\n`;
+        out += `\terr,\n`;
+        out += `\tstate,\n`;
+        out += `\tbuffer_info,\n`;
+        out += `\t0,\n`;
+        out += `\t0,\n`;
+        out += `\tC_NULL,\n`;
+        out += `\ttest,\n`;
+        out += `\t(Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0), Cint(0)),\n`;
+        out += `\t(UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0), UInt32(0)),\n`;
+        out += `\t(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL)),\n`;
+        out += `\tdataset_private\n`;
+        out += `)\n`;
         out += `\n`;
 
         out += `@enum EXOS_DATAMODEL_PROCESS_MODE begin\n`;
@@ -494,109 +583,67 @@ class TemplateLinuxJulia extends Template {
 
         let out = "";
         
-        out += `# ------------------------------------ C FUNCTIONS: ------------------------------------ #\n`;
-        out += `\n`;
+        out += `# ------------------------------------ Julia FUNCTIONS: ------------------------------------ #\n\n`;
 
-        out += `#### char *exos_get_error_string(EXOS_ERROR_CODE error) ####\n`;
-        out += `#### char *exos_get_state_string(EXOS_CONNECTION_STATE state) ####\n`;
-        out += `\n`;
-        out += `#### typedef void (*exos_datamodel_event_cb)(exos_datamodel_handle_t *datamodel, const EXOS_DATAMODEL_EVENT_TYPE event_type, void *info) ####\n`;
-        out += `#### exos_dataset_handle_t *exos_datamodel_get_dataset(exos_datamodel_handle_t *datamodel, exos_dataset_handle_t *previous) ####\n`;
-        out += `\n`;
-        out += `#### exos_datamodel_init(exos_datamodel_handle_t *datamodel, const char *datamodel_instance_name, const char *user_alias) ####\n`;
-        out += `#### exos_datamodel_calc_dataset_info(exos_dataset_info_t *info, size_t info_size) ####\n`;
-        out += `#### exos_datamodel_connect(exos_datamodel_handle_t *datamodel, const char *config, const exos_dataset_info_t *info, size_t info_size, exos_datamodel_event_cb datamodel_event_callback) ####\n`;
-        out += `#### exos_datamodel_set_operational(exos_datamodel_handle_t *datamodel) ####\n`;
-        out += `#### exos_datamodel_disconnect(exos_datamodel_handle_t *datamodel) ####\n`;
-        out += `#### exos_datamodel_delete(exos_datamodel_handle_t *datamodel) ####\n`;
-        out += `#### exos_datamodel_process(exos_datamodel_handle_t *datamodel) ####\n`;
-        out += `#### int32_t exos_datamodel_get_nettime(exos_datamodel_handle_t *datamodel) ####\n`;
-        out += `\n`;
-        out += `#### exos_dataset_init(exos_dataset_handle_t *dataset, exos_datamodel_handle_t *datamodel, const char *browse_name, const void *data, size_t size) ####\n`;
-        out += `#### exos_dataset_connect(exos_dataset_handle_t *dataset, EXOS_DATASET_TYPE type, exos_dataset_event_cb dataset_event_callback) ####\n`;
-        out += `#### exos_dataset_publish(exos_dataset_handle_t *dataset) ####\n`;
-        out += `#### exos_dataset_disconnect(exos_dataset_handle_t *dataset) ####\n`;
-        out += `#### exos_dataset_delete(exos_dataset_handle_t *dataset) ####\n`;
-        out += `\n`;
-        
-        out += `# ------------------------------------ Julia FUNCTIONS: ------------------------------------ #\n`;
-        out += `\n`;
+        out += `get_error_string = @ccall libexos_api.exos_get_error_string(err::EXOS_ERROR_CODE)::Ptr{Cchar}\n`;
+        out += `@show unsafe_string(get_error_string)\n\n`;
 
-        out += `function exos_datamodel_event_cb(dataset::Ptr{julia_exos_dataset_handle}, event_type::EXOS_DATAMODEL_EVENT_TYPE, info::Ptr{Cvoid})\n`;
-        out += `\n`;
-        out += `end\n`;
-        out += `\n`;
+        out += `get_state_string = @ccall libexos_api.exos_get_state_string(state::EXOS_CONNECTION_STATE)::Ptr{Cchar}\n`;
+        out += `@show unsafe_string(get_state_string)\n\n`;
 
-        out += `function julia_exos_get_error_string("EXOS_ERROR_CODE error")\n`;
+        out += `println("\\n---------------- DATAMODEL FUNCTION CALLS ----------------\\n")\n`;
+        out += `datamodel_init = @ccall libexos_api.exos_datamodel_init(datamodel_handle::Ref{julia_exos_datamodel_handle}, C_NULL::Ref{Cchar}, C_NULL::Ref{Cchar})::Cint\n`;
+        out += `datamodel_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_init)::EXOS_ERROR_CODE)::Ptr{Cchar})\n`;
+        out += `println("datamodel_init\\t\\t\\t-> ERROR_CODE: $datamodel_init_string")\n`;
         out += `\n`;
-        out += `end\n`;
+        out += `datamodel_calc_dataset_info = @ccall libexos_api.exos_datamodel_calc_dataset_info(dataset_info::Ref{julia_exos_dataset_info}, 0::Csize_t)::Cint\n`;
+        out += `datamodel_calc_dataset_info_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_calc_dataset_info)::EXOS_ERROR_CODE)::Ptr{Cchar})\n`;
+        out += `println("datamodel_calc_dataset_info\\t-> ERROR_CODE: $datamodel_calc_dataset_info_string")\n`;
         out += `\n`;
-
-        out += `function julia_exos_datamodel_init("julia_exos_datamodel_handle *datamodel", "const char *datamodel_instance_name", "const char *user_alias")\n`;
+        out += `datamodel_connect = @ccall libexos_api.exos_datamodel_connect(datamodel_handle::Ref{julia_exos_datamodel_handle}, C_NULL::Ref{Cchar}, dataset_info::Ref{julia_exos_dataset_info}, 0::Csize_t, test::Function)::Cint\n`;
+        out += `datamodel_connect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_connect)::EXOS_ERROR_CODE)::Ptr{Cchar})\n`;
+        out += `println("datamodel_connect\\t\\t-> ERROR_CODE: $datamodel_connect_string")\n`;
         out += `\n`;
-        out += `end\n`;
+        out += `datamodel_set_operational = @ccall libexos_api.exos_datamodel_set_operational(datamodel_handle::Ref{julia_exos_datamodel_handle})::Cint\n`;
+        out += `datamodel_set_operational_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_set_operational)::EXOS_ERROR_CODE)::Ptr{Cchar})\n`;
+        out += `println("datamodel_set_operational\\t-> ERROR_CODE: $datamodel_set_operational_string")\n`;
         out += `\n`;
-
-        out += `function julia_exos_datamodel_calc_dataset_info("julia_exos_dataset_info *info", "size_t info_size")\n`;
+        out += `datamodel_disconnect = @ccall libexos_api.exos_datamodel_disconnect(datamodel_handle::Ref{julia_exos_datamodel_handle})::Cint\n`;
+        out += `datamodel_disconnect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_disconnect)::EXOS_ERROR_CODE)::Ptr{Cchar})\n`;
+        out += `println("datamodel_disconnect\\t\\t-> ERROR_CODE: $datamodel_disconnect_string")\n`;
         out += `\n`;
-        out += `end\n`;
+        out += `datamodel_delete = @ccall libexos_api.exos_datamodel_disconnect(datamodel_handle::Ref{julia_exos_datamodel_handle})::Cint\n`;
+        out += `datamodel_delete_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_delete)::EXOS_ERROR_CODE)::Ptr{Cchar})\n`;
+        out += `println("datamodel_delete\\t\\t-> ERROR_CODE: $datamodel_delete_string")\n`;
         out += `\n`;
-
-        out += `function julia_exos_datamodel_connect("julia_exos_datamodel_handle *datamodel", "const char *config", "const julia_exos_dataset_info *info", "size_t info_size", "julia_exos_datamodel_event_cb datamodel_event_callback")\n`;
-        out += `@ccall libexos_api.\n`;
-        out += `end\n`;
+        out += `datamodel_process = @ccall libexos_api.exos_datamodel_process(datamodel_handle::Ref{julia_exos_datamodel_handle})::Cint\n`;
+        out += `datamodel_process_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_process)::EXOS_ERROR_CODE)::Ptr{Cchar})\n`;
+        out += `println("datamodel_process\\t\\t-> ERROR_CODE: $datamodel_process_string")\n`;
         out += `\n`;
-
-        out += `function julia_exos_datamodel_set_operational("julia_exos_datamodel_handle *datamodel")\n`;
+        out += `datamodel_get_nettime = @ccall libexos_api.exos_datamodel_get_nettime(datamodel_handle::Ref{julia_exos_datamodel_handle})::Int32\n`;
+        out += `println("datamodel_get_nettime\\t\\t-> AR NETTIME: $datamodel_get_nettime")\n`;
         out += `\n`;
-        out += `end\n`;
+        out += `println("\\n---------------- DATASET FUNCTION CALLS ----------------\\n")\n`;
+        out += `dataset_init = @ccall libexos_api.exos_dataset_init(dataset_handle::Ref{julia_exos_dataset_handle}, datamodel_handle::Ref{julia_exos_datamodel_handle}, C_NULL::Ref{Cchar}, C_NULL::Ref{Cvoid}, 0::Csize_t)::Cint\n`;
+        out += `dataset_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_init)::EXOS_ERROR_CODE)::Ptr{Cchar})\n`;
+        out += `println("dataset_init\\t\\t\\t-> ERROR_CODE: $dataset_init_string")\n`;
         out += `\n`;
-
-        out += `function julia_exos_datamodel_disconnect("julia_exos_datamodel_handle *datamodel")\n`;
+        out += `dataset_connect = @ccall libexos_api.exos_dataset_connect(dataset_handle::Ref{julia_exos_dataset_handle}, type::EXOS_DATASET_TYPE, test::Function)::Cint\n`;
+        out += `dataset_connect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_connect)::EXOS_ERROR_CODE)::Ptr{Cchar})\n`;
+        out += `println("dataset_connect\\t\\t\\t-> ERROR_CODE: $dataset_connect_string")\n`;
         out += `\n`;
-        out += `end\n`;
+        out += `dataset_publish = @ccall libexos_api.exos_dataset_publish(dataset_handle::Ref{julia_exos_dataset_handle})::Cint\n`;
+        out += `dataset_publish_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_publish)::EXOS_ERROR_CODE)::Ptr{Cchar})\n`;
+        out += `println("dataset_publish\\t\\t\\t-> ERROR_CODE: $dataset_publish_string")\n`;
         out += `\n`;
-
-        out += `function julia_exos_datamodel_delete("julia_exos_datamodel_handle *datamodel")\n`;
+        out += `dataset_disconnect = @ccall libexos_api.exos_dataset_disconnect(dataset_handle::Ref{julia_exos_dataset_handle})::Cint\n`;
+        out += `dataset_disconnect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_disconnect)::EXOS_ERROR_CODE)::Ptr{Cchar})\n`;
+        out += `println("dataset_disconnect\\t\\t-> ERROR_CODE: $dataset_disconnect_string")\n`;
         out += `\n`;
-        out += `end\n`;
-        out += `\n`;
-
-        out += `function julia_exos_datamodel_process("julia_exos_datamodel_handle *datamodel")\n`;
-        out += `\n`;
-        out += `end\n`;
-        out += `\n`;
-
-        out += `function julia_exos_datamodel_get_nettime("julia_exos_datamodel_handle *datamodel")\n`;
-        out += `\n`;
-        out += `end\n`;
-        out += `\n`;
-
-        out += `function julia_exos_dataset_init("julia_exos_dataset_handle *dataset, julia_exos_datamodel_handle *datamodel, const char *browse_name, const void *data, size_t size")\n`;
-        out += `\n`;
-        out += `end\n`;
-        out += `\n`;
-
-        out += `function julia_exos_dataset_connect("julia_exos_dataset_handle *dataset, EXOS_DATASET_TYPE type, julia_exos_dataset_event_cb dataset_event_callback")\n`;
-        out += `\n`;
-        out += `end\n`;
-        out += `\n`;
-
-        out += `function julia_exos_dataset_publish("julia_exos_dataset_handle *dataset")\n`;
-        out += `\n`;
-        out += `end\n`;
-        out += `\n`;
-
-        out += `function julia_exos_dataset_disconnect("julia_exos_dataset_handle *dataset")\n`;
-        out += `\n`;
-        out += `end\n`;
-        out += `\n`;
-
-        out += `function julia_exos_dataset_delete("julia_exos_dataset_handle *dataset")\n`;
-        out += `\n`;
-        out += `end\n`;
-        out += `\n`;
-
+        out += `dataset_delete = @ccall libexos_api.exos_dataset_disconnect(dataset_handle::Ref{julia_exos_dataset_handle})::Cint\n`;
+        out += `dataset_delete_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_delete)::EXOS_ERROR_CODE)::Ptr{Cchar})\n`;
+        out += `println("dataset_delete\\t\\t\\t-> ERROR_CODE: $dataset_delete_string")\n`;
+        out += `println("")\n`;
 
         return out;
     }
@@ -609,8 +656,8 @@ class TemplateLinuxJulia extends Template {
         let out = "";
         out += this.generateInit(this.template);
         out += this._makeDataTypes(false);
-        //out += this._generateStructsAndEnums();
-        //out += this._generateCallBacks();
+        out += this._generateStructsAndEnums();
+        out += this._generateCallBacks();
 
         out += `end\n`
 
