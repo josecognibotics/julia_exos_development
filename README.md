@@ -289,4 +289,4 @@ There is still a difference of SWIG versions dependent on the used distribution,
 - sid (unstable): 4.0.2-1
 
 
-If newer versions are needed, the source pacakges can be downloaded via http://www.swig.org/download.html
+If newer versions are needed, the source pacakges can be downloaded via http://www.swig.org/download.html# julia_exos_development

@@ -240,7 +240,10 @@ if (require.main === module) {
                 let datamodel = new Datamodel(fileName, structName, [`${structName}.h`]);
                 let outDir = path.join(__dirname,path.dirname(fileName));
                 let template = new Template(datamodel, true, true);
-
+                console.log(`DATAMODEL\n`)
+                console.log(datamodel)
+                console.log(`TEMPLATE\n`)
+                console.log(template)
                 process.stdout.write(`Writing ${structName} to folder: ${outDir}\r\n`);
 
                 fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.json`),JSON.stringify(template.template,null,4));

@@ -238,14 +238,33 @@ class ExosComponent extends Component {
     constructor(fileName, typeName, template) {
 
         super(typeName);
-
         this._templateBuild = new TemplateLinuxBuild(typeName);
         this._linuxBuild = this._exospackage.exospkg.getNewWSLBuildCommand("Linux", this._templateBuild.buildScript.name);
 
         this._typeName = typeName;
+        if (template == "julia"){
+            this._fileName = fileName;
+            this._typeFileName = `${typeName}.typ`;
 
-        if (template != "deploy-only")
+            this._typFile = {name:this._typeFileName, contents:fs.readFileSync(fileName).toString(), description:`${typeName} datamodel declaration`}
+            this._SG4Includes = [`${typeName.substr(0,10)}.h`];
+
+            this._datamodel = new Datamodel(fileName, typeName, this._SG4Includes);
+            
+            this._iecProgram = this._exospackage.getNewIECProgram(`${typeName.substr(0,10)}_0`,`${typeName} application`);
+
+            this._cLibrary = this._exospackage.getNewCLibrary(typeName.substr(0,10), `${typeName} exOS library`);
+            this._cLibrary.addNewFileObj(this._typFile);
+            this._cLibrary.addNewFileObj(this._datamodel.headerFile);
+            this._cLibrary.addNewFileObj(this._datamodel.sourceFile);
+
+            this._exospackage.exospkg.addGenerateDatamodel(path.join(this._cLibrary._folderName,this._typeFileName), typeName, this._SG4Includes, [typeName.substr(0,10), "Linux"]);
+
+            this._linuxPackage = this._exospackage.getNewLinuxPackage("Linux", `${typeName} Linux resources`);
+        }
+        else if (template != "deploy-only" )
         {
+            
             this._fileName = fileName;
             this._typeFileName = `${typeName}.typ`;
 
@@ -266,6 +285,7 @@ class ExosComponent extends Component {
             this._linuxPackage = this._exospackage.getNewLinuxPackage("Linux", `${typeName} Linux resources`);
             this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._datamodel.headerFile);
             this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._datamodel.sourceFile);
+
         }
         else
         {
@@ -289,6 +309,7 @@ class ExosComponent extends Component {
         if(this._templateBuild.options.debPackage.enable == true) {
             this._gitIgnore.contents += "exos-comp-*.deb\n";
         }
+
     }
 
     makeComponent(location)

@@ -1,0 +1,119 @@
+{
+    "targetName": "gTarget_0",
+    "headerName": "exos_mouse.h",
+    "datamodelInstanceName": "Mouse_0",
+    "logname": "logger",
+    "aliasName": "gMouse_0",
+    "loggerClassName": "MouseLogger",
+    "datasetClassName": "",
+    "handle": {
+        "dataType": "MouseHandle_t",
+        "name": "handle"
+    },
+    "libHeaderName": "libmouse.h",
+    "datamodel": {
+        "structName": "Mouse",
+        "varName": "mouse",
+        "dataType": "Mouse",
+        "comment": "",
+        "libStructName": "libMouse",
+        "handleName": "h_Mouse",
+        "className": "MouseDatamodel",
+        "datasetClassName": "MouseDataset"
+    },
+    "datasets": [
+        {
+            "type": "variable",
+            "structName": "ResetXY",
+            "varName": "resetxy",
+            "dataType": "BOOL",
+            "libDataType": "libMouseResetXY",
+            "arraySize": 0,
+            "comment": " ",
+            "isPub": true,
+            "isSub": true,
+            "isPrivate": false,
+            "datasets": []
+        },
+        {
+            "type": "struct",
+            "structName": "Movement",
+            "varName": "movement",
+            "dataType": "MouseMovement",
+            "libDataType": "libMouseMovement",
+            "arraySize": 0,
+            "comment": "",
+            "isPub": true,
+            "isSub": false,
+            "isPrivate": false,
+            "datasets": [
+                {
+                    "type": "variable",
+                    "structName": "X",
+                    "varName": "x",
+                    "dataType": "INT",
+                    "libDataType": "libMouseX",
+                    "arraySize": 0,
+                    "comment": "",
+                    "isPub": false,
+                    "isSub": false,
+                    "isPrivate": false,
+                    "datasets": []
+                },
+                {
+                    "type": "variable",
+                    "structName": "Y",
+                    "varName": "y",
+                    "dataType": "INT",
+                    "libDataType": "libMouseY",
+                    "arraySize": 0,
+                    "comment": "",
+                    "isPub": false,
+                    "isSub": false,
+                    "isPrivate": false,
+                    "datasets": []
+                }
+            ]
+        },
+        {
+            "type": "struct",
+            "structName": "Buttons",
+            "varName": "buttons",
+            "dataType": "MouseButtons",
+            "libDataType": "libMouseButtons",
+            "arraySize": 0,
+            "comment": "",
+            "isPub": true,
+            "isSub": false,
+            "isPrivate": false,
+            "datasets": [
+                {
+                    "type": "variable",
+                    "structName": "LeftButton",
+                    "varName": "leftbutton",
+                    "dataType": "BOOL",
+                    "libDataType": "libMouseLeftButton",
+                    "arraySize": 0,
+                    "comment": "",
+                    "isPub": false,
+                    "isSub": false,
+                    "isPrivate": false,
+                    "datasets": []
+                },
+                {
+                    "type": "variable",
+                    "structName": "RightButton",
+                    "varName": "rightbutton",
+                    "dataType": "BOOL",
+                    "libDataType": "libMouseRightButton",
+                    "arraySize": 0,
+                    "comment": "",
+                    "isPub": false,
+                    "isSub": false,
+                    "isPrivate": false,
+                    "datasets": []
+                }
+            ]
+        }
+    ]
+}

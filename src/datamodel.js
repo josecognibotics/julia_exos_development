@@ -1100,7 +1100,12 @@ if (require.main === module) {
                 fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.c`),datamodel.sourceFile.contents);
                 fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}.json`),JSON.stringify(datamodel.dataset,null,4));
                 fs.writeFileSync(path.join(outDir,`exos_${structName.toLowerCase()}_swig.c`),datamodel.dataTypeCodeSWIG);
-
+                process.stdout.write(`DATAMODEL\r\n`);
+                console.log(datamodel);
+                process.stdout.write(`---------------\r\n`);
+                process.stdout.write(`DATAMODEL - DATASET\r\n`);
+                console.log(datamodel.dataset);
+                process.stdout.write(`---------------\r\n`);
                 console.log(datamodel.sortedStructs);
 
                 console.log(Datamodel.getDatatypeList(fileName));
