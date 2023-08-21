@@ -206,7 +206,8 @@ int main()
         exos_log_process(&logger);
 
         //put your cyclic code here!
-
+        memcpy(&data.MyIntStruct[0], &data.MyIntStruct[1], sizeof(data.MyIntStruct[0]));
+        exos_dataset_publish(&myintstruct);
         if (is_terminated())
         {
             SUCCESS("StringAndArray application terminated, closing..");

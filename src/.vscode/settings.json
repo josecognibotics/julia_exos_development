@@ -4,11 +4,9 @@
         "*.js": "javascript",
         "*.jl": "julia",
         "exos_log.h": "c",
-        "exos_stringandarray.h": "c",
         "exos_api.h": "c",
-        "stddef.h": "c",
+        "stdbool.h": "c",
         "string.h": "c",
-        "stdint.h": "c",
-        "stdbool.h": "c"
+        "termination.h": "c"
     }
 }
