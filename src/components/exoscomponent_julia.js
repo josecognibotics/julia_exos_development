@@ -11,6 +11,7 @@ const { TemplateLinuxJulia } = require('./templates/linux/template_linux_julia')
 const { ExosComponentAR, ExosComponentARUpdate } = require('./exoscomponent_ar');
 const { EXOS_COMPONENT_VERSION } = require("./exoscomponent");
 const { ExosPkg } = require('../exospkg');
+const { TemplateLinuxBuild } = require('./templates/linux/template_linux_build');
 
 const path = require('path');
 
@@ -65,7 +66,8 @@ class ExosComponentJulia extends ExosComponentAR {
         if(this._options.packaging == "none") {
             this._options.destinationDirectory = undefined;
         }
-
+        
+        this._templateBuild = new TemplateLinuxBuild(typeName);
         this._templateLinux = new TemplateLinuxJulia(this._datamodel);
 
         
@@ -87,28 +89,20 @@ class ExosComponentJulia extends ExosComponentAR {
             this._templateBuild.options.executable.sourceFiles.push(this._templateLinux.loggerSource.name)
         }
         if(this._options.packaging == "deb") {
-            this._templateBuild.options.debPackage.enable = true;
-            this._templateBuild.options.debPackage.destination = this._options.destinationDirectory;
-            this._exospackage.exospkg.addService("Runtime", `./${this._templateBuild.options.executable.executableName}`, this._templateBuild.options.debPackage.destination);
+            this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName, this._templateBuild.options.debPackage.packageName, `${this._typeName} debian package`);
+            this._exospackage.exospkg.addService("Startup", `cp ${this._templateLinux.mainSource.name} ${this._templateBuild.options.debPackage.destination}`);
+            this._exospackage.exospkg.addService("Runtime", `julia ${this._templateLinux.mainSource.name}`, this._templateBuild.options.debPackage.destination);
         }
         else {
             this._templateBuild.options.debPackage.enable = false;
+            this._exospackage.exospkg.addService("Runtime", `julia ${this._templateLinux.mainSource.name}`);
             this._exospackage.exospkg.addService("Startup", `chmod +x ${this._templateBuild.options.executable.executableName}`);
-            this._exospackage.exospkg.addService("Runtime", `./${this._templateBuild.options.executable.executableName}`);
         }
 
         //this._templateBuild.makeBuildFiles();
 
         //this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateBuild.CMakeLists);
         //this._linuxPackage.addNewBuildFileObj(this._linuxBuild, this._templateBuild.buildScript);
-        
-        if(this._options.packaging == "deb") {
-            this._linuxPackage.addExistingTransferDebFile(this._templateBuild.options.debPackage.fileName, this._templateBuild.options.debPackage.packageName, `${this._typeName} debian package`);
-            this._linuxPackage.addExistingFile(this._templateBuild.options.executable.executableName, `${this._typeName} application`)
-        }
-        else {
-            this._linuxPackage.addExistingTransferFile(this._templateBuild.options.executable.executableName, "Restart", `${this._typeName} application`);
-        }
 
         if (this._templateAR != undefined)
             this._exospackage.exospkg.addDatamodelInstance(`${this._templateAR.template.datamodelInstanceName}`);

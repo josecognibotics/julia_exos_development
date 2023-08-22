@@ -131,6 +131,13 @@ class TemplateLinuxBuild {
                 soFileName: `_lib${this.name}.so`,
                 pyFileName: `lib${this.name}.py`
             },
+            swigJulia: {
+                enable: false,
+                sourceFiles: [],
+                moduleName: `lib${this.name}`,
+                soFileName: `_lib${this.name}.so`,
+                jlFileName: `lib${this.name}.jl`
+            },
             napi: {
                 enable: false,
                 includeNodeModules: true,
@@ -138,6 +145,9 @@ class TemplateLinuxBuild {
                 nodeFileName: `l_${this.name}.node`
             },
             python: {
+                enable: false
+            },
+            julia: {
                 enable: false
             },
             js: {
@@ -260,6 +270,51 @@ class TemplateLinuxBuild {
                 out += `set(${this.name.toUpperCase()}_MODULE_FILES\n`;
                 out += `    build/${this.options.swigPython.soFileName}\n`;
                 out += `    build/${this.options.swigPython.pyFileName}\n`;
+                out += `    )\n`;
+                out += `\n`;
+                out += `install(FILES \${${this.name.toUpperCase()}_MODULE_FILES} DESTINATION ${this.options.debPackage.destination})\n`;
+            }
+        }
+        else if(this.options.swigJulia.enable) {
+            this.options.swigJulia.soFileName = `_${this.options.swigJulia.moduleName}.so`;
+            this.options.swigJulia.jlFileName = `${this.options.swigJulia.moduleName}.jl`;
+
+            out += `find_package(SWIG REQUIRED)\n`;
+            out += `include(\${SWIG_USE_FILE})\n`;
+            out += `\n`;
+            out += `# Load Python Libraries\n`;
+            out += `# ---------------------\n`;
+            out += `# a.) use Python 3 \n`;
+            out += `find_package(PythonLibs 3)\n`;
+            out += `# b.) use Python 2.7 (  change the Runtime service command to 'python2' in the .exospkg file)\n`;
+            out += `# - update the DEPENDS to python-dev\n`;
+            out += `# find_package(PythonLibs 2)\n`;
+            out += `# c.) use pyenv to manually install a version matching the Python version on the target distro https://realpython.com/intro-to-pyenv/\n`;
+            out += `# set(PYTHON_INCLUDE_PATH ~/.pyenv/versions/3.9-dev/include/python3.9)\n`;
+            out += `# set(PYTHON_LIBRARIES ~/.pyenv/versions/3.9-dev/lib/libpython3.9.so)\n`;
+            out += `\n`;
+            out += `include_directories(\${PYTHON_INCLUDE_PATH})\n`;
+            out += `\n`;
+            out += `include_directories(\${CMAKE_CURRENT_SOURCE_DIR})\n`;
+            out += `\n`;
+            out += `set(CMAKE_SWIG_FLAGS "")\n`;
+            out += `\n`;
+            out += `set(${this.name.toUpperCase()}_SOURCES\n`;
+            for (const source of this.options.swigJulia.sourceFiles) {
+                out += `    ${source}\n`;
+            }
+            out += `    )\n`;
+            out += `\n`;
+            out += `set_source_files_properties(\${${this.name.toUpperCase()}_SOURCES} PROPERTIES CPLUSPLUS ON)\n`;
+            out += `\n`;
+            out += `swig_add_module(${this.options.swigJulia.moduleName} python \${${this.name.toUpperCase()}_SOURCES})\n`;
+            out += `swig_link_libraries(${this.options.swigPytswigJuliahon.moduleName} \${PYTHON_LIBRARIES} zmq exos-api)\n`;
+
+            if(this.options.debPackage.enable) {
+                out += `\n`;
+                out += `set(${this.name.toUpperCase()}_MODULE_FILES\n`;
+                out += `    build/${this.options.swigJulia.soFileName}\n`;
+                out += `    build/${this.options.swigJulia.jlFileName}\n`;
                 out += `    )\n`;
                 out += `\n`;
                 out += `install(FILES \${${this.name.toUpperCase()}_MODULE_FILES} DESTINATION ${this.options.debPackage.destination})\n`;
@@ -445,6 +500,10 @@ class TemplateLinuxBuild {
         if(this.options.swigPython.enable) {
             out += `cp -f ${this.options.swigPython.soFileName} ..\n\n`;
             out += `cp -f ${this.options.swigPython.pyFileName} ..\n\n`;
+        }
+        if(this.options.swigJulia.enable) {
+            out += `cp -f ${this.options.swigJulia.soFileName} ..\n\n`;
+            out += `cp -f ${this.options.swigJulia.jlFileName} ..\n\n`;
         }
         else {
             if(this.options.executable.enable) {

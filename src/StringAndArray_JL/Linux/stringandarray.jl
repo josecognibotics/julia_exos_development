@@ -7,7 +7,8 @@ const EXOS_ARRAY_DEPTH          = 10
 const EXOS_LOG_EXCLUDE_LIST_LEN = 20
 const EXOS_LOG_MAX_NAME_LENGTH  = 35
 const EXOS_LOG_MESSAGE_LENGTH   = 256
-const config_stringandarray = "{\"name\":\"struct\",\"attributes\":{\"name\":\"<NAME>\",\"dataType\":\"StringAndArray\",\"info\":\"<infoId0>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt1\",\"dataType\":\"UDINT\",\"comment\":\"PUB\",\"info\":\"<infoId1>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyString\",\"dataType\":\"STRING\",\"stringLength\":81,\"comment\":\"PUB\",\"arraySize\":3,\"info\":\"<infoId2>\",\"info2\":\"<infoId3>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt2\",\"dataType\":\"USINT\",\"comment\":\"PUB SUB\",\"arraySize\":5,\"info\":\"<infoId4>\",\"info2\":\"<infoId5>\"}},{\"name\":\"struct\",\"attributes\":{\"name\":\"MyIntStruct\",\"dataType\":\"IntStruct_typ\",\"comment\":\"PUB SUB\",\"arraySize\":6,\"info\":\"<infoId6>\",\"info2\":\"<infoId7>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt13\",\"dataType\":\"UDINT\",\"info\":\"<infoId8>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt14\",\"dataType\":\"USINT\",\"arraySize\":3,\"info\":\"<infoId9>\",\"info2\":\"<infoId10>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt133\",\"dataType\":\"UDINT\",\"info\":\"<infoId11>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt124\",\"dataType\":\"USINT\",\"arraySize\":3,\"info\":\"<infoId12>\",\"info2\":\"<infoId13>\"}}]},{\"name\":\"struct\",\"attributes\":{\"name\":\"MyIntStruct1\",\"dataType\":\"IntStruct1_typ\",\"comment\":\"PUB SUB\",\"info\":\"<infoId14>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt13\",\"dataType\":\"UDINT\",\"info\":\"<infoId15>\"}}]},{\"name\":\"struct\",\"attributes\":{\"name\":\"MyIntStruct2\",\"dataType\":\"IntStruct2_typ\",\"comment\":\"PUB SUB\",\"info\":\"<infoId16>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt23\",\"dataType\":\"UDINT\",\"info\":\"<infoId17>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt24\",\"dataType\":\"USINT\",\"arraySize\":4,\"info\":\"<infoId18>\",\"info2\":\"<infoId19>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt25\",\"dataType\":\"UDINT\",\"info\":\"<infoId20>\"}}]}]}"
+#const config_stringandarray = "{\"name\":\"struct\",\"attributes\":{\"name\":\"<NAME>\",\"dataType\":\"StringAndArray\",\"info\":\"<infoId0>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt1\",\"dataType\":\"UDINT\",\"comment\":\"PUB\",\"info\":\"<infoId1>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyString\",\"dataType\":\"STRING\",\"stringLength\":81,\"comment\":\"PUB\",\"arraySize\":3,\"info\":\"<infoId2>\",\"info2\":\"<infoId3>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt2\",\"dataType\":\"USINT\",\"comment\":\"PUB SUB\",\"arraySize\":5,\"info\":\"<infoId4>\",\"info2\":\"<infoId5>\"}},{\"name\":\"struct\",\"attributes\":{\"name\":\"MyIntStruct\",\"dataType\":\"IntStruct_typ\",\"comment\":\"PUB SUB\",\"arraySize\":6,\"info\":\"<infoId6>\",\"info2\":\"<infoId7>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt13\",\"dataType\":\"UDINT\",\"info\":\"<infoId8>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt14\",\"dataType\":\"USINT\",\"arraySize\":3,\"info\":\"<infoId9>\",\"info2\":\"<infoId10>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt133\",\"dataType\":\"UDINT\",\"info\":\"<infoId11>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt124\",\"dataType\":\"USINT\",\"arraySize\":3,\"info\":\"<infoId12>\",\"info2\":\"<infoId13>\"}}]},{\"name\":\"struct\",\"attributes\":{\"name\":\"MyIntStruct1\",\"dataType\":\"IntStruct1_typ\",\"comment\":\"PUB SUB\",\"info\":\"<infoId14>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt13\",\"dataType\":\"UDINT\",\"info\":\"<infoId15>\"}}]},{\"name\":\"struct\",\"attributes\":{\"name\":\"MyIntStruct2\",\"dataType\":\"IntStruct2_typ\",\"comment\":\"PUB SUB\",\"info\":\"<infoId16>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt23\",\"dataType\":\"UDINT\",\"info\":\"<infoId17>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt24\",\"dataType\":\"USINT\",\"arraySize\":4,\"info\":\"<infoId18>\",\"info2\":\"<infoId19>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt25\",\"dataType\":\"UDINT\",\"info\":\"<infoId20>\"}}]}]}"
+const config_stringandarray = "{\"name\":\"struct\",\"attributes\":{\"name\":\"<NAME>\",\"dataType\":\"StringAndArray\",\"info\":\"<infoId0>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt1\",\"dataType\":\"UDINT\",\"comment\":\"PUB\",\"info\":\"<infoId1>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt3\",\"dataType\":\"USINT\",\"comment\":\"PUB SUB\",\"arraySize\":5,\"info\":\"<infoId2>\",\"info2\":\"<infoId3>\"}}]}"
 
 export
 	MyInt1,
@@ -35,7 +36,7 @@ export
 	end
 
 	struct StringAndArray
-		MyInt1::Cuint #SUB
+		MyInt1::Cuint #PUB
 		MyInt3::Cuint #PUB SUB
 		#MyString::MVector{3, String} #PUB
 		#MyInt2::MVector{5, UInt8} #PUB SUB
@@ -73,10 +74,8 @@ mutable struct julia_exos_log_private
 	_reserved::NTuple{4, Ptr{Cvoid}}
 end
 
-
-
 mutable struct julia_exos_log_handle
-	name::String
+	name::Cstring
 	ready::Cuchar
 	excluded::Cuchar 
 	console::Cuchar
@@ -87,16 +86,16 @@ mutable struct julia_exos_log_handle
 	_reserved::NTuple{4,Cuint}
 	_private::julia_exos_log_private
 end
-
-# INITIALIZATION: julia_exos_log_handle #
-
-
 mutable struct julia_exos_log_config_type
 	user::Bool
 	system::Bool
 	verbose::Bool
 	_reserved_bool::NTuple{8,Cuchar}
 end
+
+# INITIALIZATION: julia_exos_log_handle #
+
+
 
 
 
@@ -241,6 +240,7 @@ mutable struct julia_exos_dataset_handle
 # ------------------------------------ INITIALIZATIONS: ------------------------------------ #
 datamodel_instance_name = Base.unsafe_convert(Cstring,"StringAndArray_0")::Cstring
 user_alias = Base.unsafe_convert(Cstring, "gStringAndArray_0")::Cstring
+
 empty_string = Base.unsafe_convert(Cstring, "")::Cstring
 config_Cstring = Base.unsafe_convert(Cstring, config_stringandarray)::Cstring
 config_string = unsafe_string(config_Cstring)
@@ -258,14 +258,14 @@ my_c_callback = @cfunction(my_callback, Cvoid, (julia_exos_datamodel_handle, EXO
 
 # INITIALIZATION: julia_exos_dataset_info #
 MyInt1_dataset = julia_exos_dataset_info(
-	MyInt1_Cstring,
+	empty_string,
 	C_NULL,
 	0,
 	0,
 	(0,0,0,0,0,0,0,0,0,0)
 )
 MyInt3_dataset = julia_exos_dataset_info(
-	MyInt3_Cstring,
+	empty_string,
 	C_NULL,
 	0,
 	0,
@@ -385,14 +385,14 @@ get_state_string = @ccall libexos_api.exos_get_state_string(state::EXOS_CONNECTI
 @show unsafe_string(get_state_string)
 
 
-datamodel_init = @ccall libexos_api.exos_datamodel_init(stringandarray::Ref{julia_exos_datamodel_handle}, "StringAndArray_0"::Cstring,  "gStringAndArray_0"::Cstring)::Cint
+datamodel_init = @ccall libexos_api.exos_datamodel_init(stringandarray::Ref{julia_exos_datamodel_handle}, datamodel_instance_name::Cstring, user_alias::Cstring)::Cint
 datamodel_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_init)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_init\t\t\t-> ERROR_CODE: $datamodel_init_string")
 
 stringandarray.user_context = C_NULL
 stringandarray.user_tag = 0
 
-dataset_init = @ccall libexos_api.exos_dataset_init(myint1::Ref{julia_exos_dataset_handle}, stringandarray::Ref{julia_exos_datamodel_handle}, MyInt1_Cstring::Cstring, data.MyInt1::Cuint, sizeof(data.MyInt1)::Csize_t)::Cint
+#=dataset_init = @ccall libexos_api.exos_dataset_init(myint1::Ref{julia_exos_dataset_handle}, stringandarray::Ref{julia_exos_datamodel_handle}, MyInt1_Cstring::Cstring, data.MyInt1::Cuint, sizeof(data.MyInt1)::Csize_t)::Cint
 dataset_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_init)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("dataset_init\t\t\t-> ERROR_CODE: $dataset_init_string")
 
@@ -410,9 +410,9 @@ myint3.user_tag = 0
 datamodel_calc_dataset_info = @ccall libexos_api.exos_datamodel_calc_dataset_info(datasets::Ref{julia_exos_dataset_info}, sizeof(datasets)::Csize_t)::Cint
 datamodel_calc_dataset_info_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_calc_dataset_info)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_calc_dataset_info\t-> ERROR_CODE: $datamodel_calc_dataset_info_string")
+=#
 
-
-datamodel_connect = @ccall libexos_api.exos_datamodel_connect(stringandarray::Ref{julia_exos_datamodel_handle}, config_string::Cstring, datasets::Ref{julia_exos_dataset_info}, sizeof(datasets)::Csize_t, my_c_callback::Ptr{Cvoid})::Cint
+datamodel_connect = @ccall libexos_api.exos_datamodel_connect(stringandarray::Ref{julia_exos_datamodel_handle}, Base.unsafe_convert(Cstring, config_stringandarray)::Cstring, datasets::Ref{julia_exos_dataset_info}, sizeof(datasets)::Csize_t, my_c_callback::Ptr{Cvoid})::Cint
 datamodel_connect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_connect)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_connect\t\t-> ERROR_CODE: $datamodel_connect_string")
 #=

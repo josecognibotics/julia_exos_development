@@ -16,7 +16,7 @@ const path = require('path')
 const fs = require('fs');
 const { IndentAction } = require('vscode');
 
-const EXOS_COMPONENT_VERSION = "2.0.1"
+const EXOS_COMPONENT_VERSION = "2.1.0"
 
 class Component {
 

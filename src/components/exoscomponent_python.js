@@ -94,6 +94,10 @@ class ExosComponentPython extends ExosComponentAR {
 
         this._exospackage.exospkg.setComponentGenerator("ExosComponentPython", EXOS_COMPONENT_VERSION, []);
 
+
+
+
+        
         if(this._options.packaging == "deb") {
             this._exospackage.exospkg.addGeneratorOption("exportLinux",[this._templateBuild.options.debPackage.fileName,
                                                                         this._templatePython.pythonMain.name]);
