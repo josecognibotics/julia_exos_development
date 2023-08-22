@@ -92,7 +92,7 @@ mutable struct julia_exos_log_config_type
 	_reserved_bool::NTuple{8,Cuchar}
 end
 
-# -----------------------------STRUCTURES, ENUMS DECLARATIONS ----------------------------- #
+# -----------------------------STRUCTURES, ENUMS & FUNCTIONS DECLARATIONS ----------------------------- #
 
 mutable struct julia_exos_dataset_info
 	name::Cstring
@@ -178,7 +178,7 @@ end
 
 # JULIA callback function
 function my_callback(datamodel::julia_exos_datamodel_handle, event_type::EXOS_DATAMODEL_EVENT_TYPE, info::Ptr{Cvoid})
-    println("Callback function called")
+    println("\nI am a very nice callback function, you are calling me\n")
 end
 
 @enum EXOS_DATASET_EVENT_TYPE begin
@@ -228,7 +228,6 @@ mutable struct julia_exos_dataset_handle
 # ------------------------------------ INITIALIZATIONS: ------------------------------------ #
 
 
-
 # Test to use CString convertion for strings in functions call
 datamodel_instance_name = Base.unsafe_convert(Cstring,"StringAndArray_0")::Cstring
 user_alias = Base.unsafe_convert(Cstring, "gStringAndArray_0")::Cstring
@@ -251,8 +250,6 @@ event_type = EXOS_DATAMODEL_EVENT_TYPE(0)
 # Callback function
 my_c_callback = @cfunction(my_callback, Cvoid, (julia_exos_datamodel_handle, EXOS_DATAMODEL_EVENT_TYPE, Ptr{Cvoid} ))
 
-
-
 # INITIALIZATION: julia_exos_log_private #
 log_private = julia_exos_log_private(
 	0,
@@ -269,7 +266,7 @@ log_config_type = julia_exos_log_config_type(
 # INITIALIZATION: julia_exos_datamodel_sync_info #
 datamodel_sync_info = julia_exos_datamodel_sync_info(
 	0,
-	(Bool(0),Cuchar(0),Cuchar(0),Cuchar(0),Cuchar(0),Cuchar(0),Cuchar(0),Cuchar(0)),
+	(Cuchar(0),Cuchar(0),Cuchar(0),Cuchar(0),Cuchar(0),Cuchar(0),Cuchar(0),Cuchar(0)),
 	0,
 	10,
 	process_mode,
@@ -277,8 +274,8 @@ datamodel_sync_info = julia_exos_datamodel_sync_info(
 )
 # INITIALIZATION: julia_exos_datamodel_private #
 datamodel_private = julia_exos_datamodel_private(
-	240,
-	0x00007f09e71ab6e0,
+	0,
+	C_NULL,
 	(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL)),
 )
 # INITIALIZATION: julia_exos_buffer_info #
@@ -290,8 +287,8 @@ buffer_info = julia_exos_buffer_info(
 # INITIALIZATION: julia_exos_dataset_private #
 dataset_private = julia_exos_dataset_private(
 	0,
-	0x00007f09e71ab6e0,
-	(Ptr{Cvoid}(0x00007f09e71ab6e0), Ptr{Cvoid}(0x00007f09e71ab6e0), Ptr{Cvoid}(0x00007f09e71ab6e0), Ptr{Cvoid}(0x00007f09e71ab6e0), Ptr{Cvoid}(0x00007f09e71ab6e0), Ptr{Cvoid}(0x00007f09e71ab6e0), Ptr{Cvoid}(0x00007f09e71ab6e0), Ptr{Cvoid}(0x00007f09e71ab6e0)),
+	C_NULL,
+	(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL)),
 )
 
 data = StringAndArray(
@@ -353,33 +350,50 @@ myint3 = julia_exos_dataset_handle(
 	(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL)),
 	dataset_private
 )
+
 println(" SUCCESS(\"starting StringAndArray application..\")\n")
 
 # ------------------------------------ Julia FUNCTIONS: ------------------------------------ #
-
-
+println("Test for printing back strings")
+println("----------------------------------------------------------------")
+# Returns a string when passing an ERROR CODE
 get_error_string = @ccall libexos_api.exos_get_error_string(err::EXOS_ERROR_CODE)::Ptr{Cchar}
 @show unsafe_string(get_error_string)
-println(get_error_string)
 
+# Returns a string when passing an ERROR CODE
 get_state_string = @ccall libexos_api.exos_get_state_string(state::EXOS_CONNECTION_STATE)::Ptr{Cchar}
 @show unsafe_string(get_state_string)
+println("----------------------------------------------------------------\n")
 
-
+println("Starting communication with AS...\n")
+println("----------------------------------------------------------------\n")
+#= Initialize the datamodel handle
+* 
+* This function intializes (resets) a datamodel handle and gives it a `user_alias` via a `datamodel_instance_name`.
+* The datamodel handle is then used for receiving incoming messages using the `exos_datamodel_process()`
+=#
 datamodel_init = @ccall libexos_api.exos_datamodel_init(stringandarray::Ref{julia_exos_datamodel_handle}, "StringAndArray_0"::Cstring, "gStringAndArray_0"::Cstring)::Cint
 datamodel_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_init)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_init\t\t\t-> ERROR_CODE: $datamodel_init_string")
 
 stringandarray.user_context = C_NULL
 stringandarray.user_tag = 0
-
+#=
+ * Initialize a dataset handle and attach it to a datamodel
+ * 
+ * This function initializes the `exos_dataset_handle_t` structure, meaning it zeroes all members and sets artefact, data and size members.
+=#
 dataset_init = @ccall libexos_api.exos_dataset_init(myint1::Ref{julia_exos_dataset_handle}, stringandarray::Ref{julia_exos_datamodel_handle}, "MyInt1"::Cstring, ptr_data::Ptr{Cvoid}, sizeof(data.MyInt1)::Csize_t)::Cint
 dataset_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_init)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("dataset_init\t\t\t-> ERROR_CODE: $dataset_init_string")
 
 myint1.user_context = C_NULL
 myint1.user_tag = 0
-
+#=
+ * Initialize a dataset handle and attach it to a datamodel
+ * 
+ * This function initializes the `exos_dataset_handle_t` structure, meaning it zeroes all members and sets artefact, data and size members.
+=#
 dataset_init = @ccall libexos_api.exos_dataset_init(myint3::Ref{julia_exos_dataset_handle}, stringandarray::Ref{julia_exos_datamodel_handle}, "MyInt3"::Cstring, ptr_data::Ptr{Cvoid}, sizeof(data.MyInt3)::Csize_t)::Cint
 dataset_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_init)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("dataset_init\t\t\t-> ERROR_CODE: $dataset_init_string")
@@ -400,36 +414,100 @@ myInt2_cstring = Base.unsafe_convert(Cstring, "MyInt2")::Cstring
 
 datasets = [julia_exos_dataset_info(myInt1_cstring, ptr_data, size, offset), julia_exos_dataset_info(myInt2_cstring, ptr_data, size, offset)]
 	
+#=
+ * (internal) Calculate dataset_info_t offsets from the EXOS_DATASET_BROWSE_NAME macros
+ * 
+ * The offsets of the various datasets of a datamodel are entered in a exos_dataset_info_t list, basically pointing out the start address of the given dataset.
+ * This function creates offsets of the absolute addresses by subtracting the first (info[0]) dataset info from the absolute address
+ * The function is "internal" meaning it shouldnt be used in an application unless there are specific reasons to do so. Applications should refer to the automatically generated headerfile.
+=#
+
 datamodel_calc_dataset_info = @ccall libexos_api.exos_datamodel_calc_dataset_info(datasets::Ref{julia_exos_dataset_info}, sizeof(datasets)::Csize_t)::Cint
 datamodel_calc_dataset_info_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_calc_dataset_info)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_calc_dataset_info\t-> ERROR_CODE: $datamodel_calc_dataset_info_string")
 
+#=
+ * (internal) Connect a datamodel to the Dataset Message Router
+ * 
+ * The connect function used in an application is code generated from a `.typ` file and will have the name of the specified main data structure of the datamodel.
+ * 
+ * For example, lets say the MyApp datamodel uses a MyApp.typ file, and in that file, the main datamodel structure is called MyApplication.
+ * In that case the generated header (`exos_myapplication.h`) will declare the function `exos_datamodel_connect_myapplication()`
+ * 
+ * This function is the "raw" version, which provides a JSON template (describing the datamodel) and a list of exos_dataset_info_t describing the offsets of the datasets within the datamodel
+ * The function is "internal" meaning it shouldnt be used in an application unless there are specific reasons to do so. Applications should refer to the automatically generated headerfile.
+=#
 datamodel_connect = @ccall libexos_api.exos_datamodel_connect(stringandarray::Ref{julia_exos_datamodel_handle}, config_stringandarray::Cstring, datasets::Ref{julia_exos_dataset_info}, sizeof(datasets)::Csize_t, my_c_callback::Ptr{Cvoid})::Cint
 datamodel_connect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_connect)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_connect\t\t-> ERROR_CODE: $datamodel_connect_string")
 
+#=
+* Set the datamodel into OPERATIONAL state
+* 
+* The `EXOS_STATE_OPERATIONAL` is merely to provide a built-in feature to distinguish between an operational and a preoperational state from an application perspective.
+* If there is no need for this distinction, then an application can suffice with using the `EXOS_STATE_CONNECTED` as "active" state. 
+* 
+=#
 datamodel_set_operational = @ccall libexos_api.exos_datamodel_set_operational(stringandarray::Ref{julia_exos_datamodel_handle})::Cint
 datamodel_set_operational_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_set_operational)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_set_operational\t-> ERROR_CODE: $datamodel_set_operational_string")
 
+#=
+ * Disconnect a datamodel from the Dataset Message Router
+ * 
+ * Triggers the `EXOS_STATE_DISCONNECTED` event on the datamodel before removing the callback instruction.
+ * Here all internal ZMQ sockets are closed and there is no data transfer between the application and the server after this function has been called.
+ * Before closing, however, the application sends a disconnection message to the *Dataset Message Router*.
+ * 
+ * All datasets assigned to the datamodel will be automatically disconnected (and receive a respective `EXOS_STATE_DISCONNECTED` event) 
+=#
 datamodel_disconnect = @ccall libexos_api.exos_datamodel_disconnect(stringandarray::Ref{julia_exos_datamodel_handle})::Cint
 datamodel_disconnect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_disconnect)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_disconnect\t\t-> ERROR_CODE: $datamodel_disconnect_string")
 
+#=
+ * Release all resources from a datamodel (and disconnect from the Dataset Message Router)
+ * 
+ * This function will free up all allocated memory allocated for this datamodel, including all assigned datasets.
+ * If a connection to the *Dataset Message Router* is active, it will be disconnected, independent of the current datamodel state.
+=#
 datamodel_delete = @ccall libexos_api.exos_datamodel_disconnect(stringandarray::Ref{julia_exos_datamodel_handle})::Cint
 datamodel_delete_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_delete)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_delete\t\t-> ERROR_CODE: $datamodel_delete_string")
 
+#=
+ * Cyclic main function - poll datamodel for incoming messages
+ * 
+ * The `exos_datamodel_process()` polls incoming messages in a blocking manner in Linux, where it synchronizes with the loop of the *Dataset Message Router*, 
+ * which - in a shared memory connection - is synchronized with a configured AR task class. 
+ * 
+ * If there are many incoming messages, for example a lot of dataset updates, the `exos_datamodel_process()` will read out all pending messages and 
+ * call the registered callbacks from the context it is called, until there are no more messages.
+=#
 datamodel_process = @ccall libexos_api.exos_datamodel_process(stringandarray::Ref{julia_exos_datamodel_handle})::Cint
 datamodel_process_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_process)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_process\t\t-> ERROR_CODE: $datamodel_process_string")
 
+#=
+ * Get the current AR NETTIME (synchronized)
+ * 
+ * This function returns the current AR NETTIME (extrapolated in Linux)
+=#
 datamodel_get_nettime = @ccall libexos_api.exos_datamodel_get_nettime(stringandarray::Ref{julia_exos_datamodel_handle})::Int32
 println("datamodel_get_nettime\t\t-> AR NETTIME: $datamodel_get_nettime")
 
+#=
+ * Initialize a dataset handle and attach it to a datamodel
+ * 
+ * This function initializes the `exos_dataset_handle_t` structure, meaning it zeroes all members and sets artefact, data and size members.
+=#
 dataset_init = @ccall libexos_api.exos_dataset_init(myint1::Ref{julia_exos_dataset_handle}, stringandarray::Ref{julia_exos_datamodel_handle}, "BROWSE_NAME"::Cstring, ptr_data::Ptr{Cvoid}, sizeof(data.MyInt1)::Csize_t)::Cint
 dataset_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_init)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("dataset_init\t\t\t-> ERROR_CODE: $dataset_init_string")
+
+#=
+ * Connect a dataset to the Dataset Message Router and register an event callback
+=#
 
 dataset_connect = @ccall libexos_api.exos_dataset_connect(myint1::Ref{julia_exos_dataset_handle}, type::EXOS_DATASET_TYPE, my_c_callback::Ptr{Cvoid})::Cint
 dataset_connect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_connect)::EXOS_ERROR_CODE)::Ptr{Cchar})
@@ -439,12 +517,26 @@ dataset_publish = @ccall libexos_api.exos_dataset_publish(myint1::Ref{julia_exos
 dataset_publish_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_publish)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("dataset_publish\t\t\t-> ERROR_CODE: $dataset_publish_string")
 =#
+
+#=
+ * Disconnect a dataset from the Dataset Message Router
+ * 
+ * This will disconnect the datasetEvent from the dataset (after receiving an `EXOS_STATE_DISCONNECTED` event), and no values can be published using this dataset. 
+ * This function should be called in case the datamodel should stay connected, but the individual dataset should be disconnected
+ =#
 dataset_disconnect = @ccall libexos_api.exos_dataset_disconnect(myint1::Ref{julia_exos_dataset_handle})::Cint
 dataset_disconnect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_disconnect)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("dataset_disconnect\t\t-> ERROR_CODE: $dataset_disconnect_string")
 
-dataset_delete = @ccall libexos_api.exos_dataset_disconnect(myint1::Ref{julia_exos_dataset_handle})::Cint
+#=
+ * Release all resources from a dataset (and disconnect from the Dataset Message Router)
+ * 
+ * Delete (and disconnect) a dataset and free up all allocated resources.
+ * If the dataset is connected, it will be disconnected before being deleted.
+=#
+dataset_delete = @ccall libexos_api.exos_dataset_delete(myint1::Ref{julia_exos_dataset_handle})::Cint
 dataset_delete_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_delete)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("dataset_delete\t\t\t-> ERROR_CODE: $dataset_delete_string")
+println("----------------------------------------------------------------\n")
 
 end
