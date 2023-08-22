@@ -7,7 +7,6 @@ const EXOS_ARRAY_DEPTH          = 10
 const EXOS_LOG_EXCLUDE_LIST_LEN = 20
 const EXOS_LOG_MAX_NAME_LENGTH  = 35
 const EXOS_LOG_MESSAGE_LENGTH   = 256
-#const config_stringandarray = "{\"name\":\"struct\",\"attributes\":{\"name\":\"<NAME>\",\"dataType\":\"StringAndArray\",\"info\":\"<infoId0>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt1\",\"dataType\":\"UDINT\",\"comment\":\"PUB\",\"info\":\"<infoId1>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyString\",\"dataType\":\"STRING\",\"stringLength\":81,\"comment\":\"PUB\",\"arraySize\":3,\"info\":\"<infoId2>\",\"info2\":\"<infoId3>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt2\",\"dataType\":\"USINT\",\"comment\":\"PUB SUB\",\"arraySize\":5,\"info\":\"<infoId4>\",\"info2\":\"<infoId5>\"}},{\"name\":\"struct\",\"attributes\":{\"name\":\"MyIntStruct\",\"dataType\":\"IntStruct_typ\",\"comment\":\"PUB SUB\",\"arraySize\":6,\"info\":\"<infoId6>\",\"info2\":\"<infoId7>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt13\",\"dataType\":\"UDINT\",\"info\":\"<infoId8>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt14\",\"dataType\":\"USINT\",\"arraySize\":3,\"info\":\"<infoId9>\",\"info2\":\"<infoId10>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt133\",\"dataType\":\"UDINT\",\"info\":\"<infoId11>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt124\",\"dataType\":\"USINT\",\"arraySize\":3,\"info\":\"<infoId12>\",\"info2\":\"<infoId13>\"}}]},{\"name\":\"struct\",\"attributes\":{\"name\":\"MyIntStruct1\",\"dataType\":\"IntStruct1_typ\",\"comment\":\"PUB SUB\",\"info\":\"<infoId14>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt13\",\"dataType\":\"UDINT\",\"info\":\"<infoId15>\"}}]},{\"name\":\"struct\",\"attributes\":{\"name\":\"MyIntStruct2\",\"dataType\":\"IntStruct2_typ\",\"comment\":\"PUB SUB\",\"info\":\"<infoId16>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt23\",\"dataType\":\"UDINT\",\"info\":\"<infoId17>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt24\",\"dataType\":\"USINT\",\"arraySize\":4,\"info\":\"<infoId18>\",\"info2\":\"<infoId19>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt25\",\"dataType\":\"UDINT\",\"info\":\"<infoId20>\"}}]}]}"
 const config_stringandarray = "{\"name\":\"struct\",\"attributes\":{\"name\":\"<NAME>\",\"dataType\":\"StringAndArray\",\"info\":\"<infoId0>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt1\",\"dataType\":\"UDINT\",\"comment\":\"PUB\",\"info\":\"<infoId1>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt3\",\"dataType\":\"USINT\",\"comment\":\"PUB SUB\",\"arraySize\":5,\"info\":\"<infoId2>\",\"info2\":\"<infoId3>\"}}]}"
 
 export
@@ -35,7 +34,7 @@ export
 		MyInt124::MVector{3, UInt8}
 	end
 
-	struct StringAndArray
+	mutable struct StringAndArray
 		MyInt1::Cuint #PUB
 		MyInt3::Cuint #PUB SUB
 		#MyString::MVector{3, String} #PUB
@@ -93,13 +92,7 @@ mutable struct julia_exos_log_config_type
 	_reserved_bool::NTuple{8,Cuchar}
 end
 
-# INITIALIZATION: julia_exos_log_handle #
-
-
-
-
-
-# ----------------------------- DECLARATIONS ----------------------------- #
+# -----------------------------STRUCTURES, ENUMS DECLARATIONS ----------------------------- #
 
 mutable struct julia_exos_dataset_info
 	name::Cstring
@@ -152,8 +145,6 @@ end
 	EXOS_DATAMODEL_PROCESS_BLOCKING
 	EXOS_DATAMODEL_PROCESS_NON_BLOCKING
 end
-process_mode = EXOS_DATAMODEL_PROCESS_MODE(1)
-event_type = EXOS_DATAMODEL_EVENT_TYPE(0)
 
 mutable struct julia_exos_datamodel_sync_info
 	in_sync::Cuchar
@@ -164,13 +155,11 @@ mutable struct julia_exos_datamodel_sync_info
 	_reserved_uint32::NTuple{7,Cuint}
 end
 
-
 mutable struct julia_exos_datamodel_private
 	_magic::Cuint
 	_artefact::Ptr{Cvoid}
 	_reserved::NTuple{8, Ptr{Cvoid}}
 end
-
 
 mutable struct julia_exos_datamodel_handle
 	name::Cstring
@@ -187,11 +176,10 @@ mutable struct julia_exos_datamodel_handle
 	_private::julia_exos_datamodel_private
 end
 
-
+# JULIA callback function
 function my_callback(datamodel::julia_exos_datamodel_handle, event_type::EXOS_DATAMODEL_EVENT_TYPE, info::Ptr{Cvoid})
     println("Callback function called")
 end
-
 
 @enum EXOS_DATASET_EVENT_TYPE begin
 	EXOS_DATASET_EVENT_CONNECTION_CHANGED
@@ -238,40 +226,33 @@ mutable struct julia_exos_dataset_handle
  end
 
 # ------------------------------------ INITIALIZATIONS: ------------------------------------ #
+
+
+
+# Test to use CString convertion for strings in functions call
 datamodel_instance_name = Base.unsafe_convert(Cstring,"StringAndArray_0")::Cstring
 user_alias = Base.unsafe_convert(Cstring, "gStringAndArray_0")::Cstring
-
 empty_string = Base.unsafe_convert(Cstring, "")::Cstring
 config_Cstring = Base.unsafe_convert(Cstring, config_stringandarray)::Cstring
-config_string = unsafe_string(config_Cstring)
 stringAndArray_Cstring = Base.unsafe_convert(Cstring, "stringandarray")::Cstring
+
 MyInt1_Cstring = Base.unsafe_convert(Cstring, "MyInt1")::Cstring
 MyInt3_Cstring = Base.unsafe_convert(Cstring, "MyInt3")::Cstring
 
-state = EXOS_CONNECTION_STATE(2)
-err = EXOS_ERROR_CODE(5017)
+#Initialise @enums to be used in the functions call
+state = EXOS_CONNECTION_STATE(1)
+err = EXOS_ERROR_CODE(0)
 type = EXOS_DATASET_TYPE(1)
 event = EXOS_DATAMODEL_EVENT_TYPE(0)
 inf = C_NULL
+process_mode = EXOS_DATAMODEL_PROCESS_MODE(1)
+event_type = EXOS_DATAMODEL_EVENT_TYPE(0)
+
+# Callback function
 my_c_callback = @cfunction(my_callback, Cvoid, (julia_exos_datamodel_handle, EXOS_DATAMODEL_EVENT_TYPE, Ptr{Cvoid} ))
 
 
-# INITIALIZATION: julia_exos_dataset_info #
-MyInt1_dataset = julia_exos_dataset_info(
-	empty_string,
-	C_NULL,
-	0,
-	0,
-	(0,0,0,0,0,0,0,0,0,0)
-)
-MyInt3_dataset = julia_exos_dataset_info(
-	empty_string,
-	C_NULL,
-	0,
-	0,
-	(0,0,0,0,0,0,0,0,0,0)
-)
-datasets = [MyInt1_dataset, MyInt3_dataset]
+
 # INITIALIZATION: julia_exos_log_private #
 log_private = julia_exos_log_private(
 	0,
@@ -313,12 +294,12 @@ dataset_private = julia_exos_dataset_private(
 	(Ptr{Cvoid}(0x00007f09e71ab6e0), Ptr{Cvoid}(0x00007f09e71ab6e0), Ptr{Cvoid}(0x00007f09e71ab6e0), Ptr{Cvoid}(0x00007f09e71ab6e0), Ptr{Cvoid}(0x00007f09e71ab6e0), Ptr{Cvoid}(0x00007f09e71ab6e0), Ptr{Cvoid}(0x00007f09e71ab6e0), Ptr{Cvoid}(0x00007f09e71ab6e0)),
 )
 
-
-
 data = StringAndArray(
 	3,
 	3
 )
+ptr_data = pointer_from_objref(data)
+
 # INITIALIZATION: julia_exos_datamodel_handle #
 stringandarray = julia_exos_datamodel_handle(
 	empty_string,
@@ -385,76 +366,85 @@ get_state_string = @ccall libexos_api.exos_get_state_string(state::EXOS_CONNECTI
 @show unsafe_string(get_state_string)
 
 
-datamodel_init = @ccall libexos_api.exos_datamodel_init(stringandarray::Ref{julia_exos_datamodel_handle}, datamodel_instance_name::Cstring, user_alias::Cstring)::Cint
+datamodel_init = @ccall libexos_api.exos_datamodel_init(stringandarray::Ref{julia_exos_datamodel_handle}, "StringAndArray_0"::Cstring, "gStringAndArray_0"::Cstring)::Cint
 datamodel_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_init)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_init\t\t\t-> ERROR_CODE: $datamodel_init_string")
 
 stringandarray.user_context = C_NULL
 stringandarray.user_tag = 0
 
-#=dataset_init = @ccall libexos_api.exos_dataset_init(myint1::Ref{julia_exos_dataset_handle}, stringandarray::Ref{julia_exos_datamodel_handle}, MyInt1_Cstring::Cstring, data.MyInt1::Cuint, sizeof(data.MyInt1)::Csize_t)::Cint
+dataset_init = @ccall libexos_api.exos_dataset_init(myint1::Ref{julia_exos_dataset_handle}, stringandarray::Ref{julia_exos_datamodel_handle}, "MyInt1"::Cstring, ptr_data::Ptr{Cvoid}, sizeof(data.MyInt1)::Csize_t)::Cint
 dataset_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_init)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("dataset_init\t\t\t-> ERROR_CODE: $dataset_init_string")
 
 myint1.user_context = C_NULL
 myint1.user_tag = 0
 
-dataset_init = @ccall libexos_api.exos_dataset_init(myint3::Ref{julia_exos_dataset_handle}, stringandarray::Ref{julia_exos_datamodel_handle}, MyInt3_Cstring::Cstring, data.MyInt3::Cuint, sizeof(data.MyInt3)::Csize_t)::Cint
+dataset_init = @ccall libexos_api.exos_dataset_init(myint3::Ref{julia_exos_dataset_handle}, stringandarray::Ref{julia_exos_datamodel_handle}, "MyInt3"::Cstring, ptr_data::Ptr{Cvoid}, sizeof(data.MyInt3)::Csize_t)::Cint
 dataset_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_init)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("dataset_init\t\t\t-> ERROR_CODE: $dataset_init_string")
 
 myint3.user_context = C_NULL
 myint3.user_tag = 0
 
+# INITIALIZATION: DATASETS & julia_exos_dataset_info #
 
+function julia_exos_dataset_info(name::Cstring, adr::Ptr{Cvoid}, size::Csize_t, offset::Clong) 
+	return  julia_exos_dataset_info(name, adr, size, offset, ntuple(x->Cuint(0), EXOS_ARRAY_DEPTH))	
+end
+
+size = Csize_t(0)
+offset = Clong(0)
+myInt1_cstring = Base.unsafe_convert(Cstring, "MyInt1")::Cstring
+myInt2_cstring = Base.unsafe_convert(Cstring, "MyInt2")::Cstring
+
+datasets = [julia_exos_dataset_info(myInt1_cstring, ptr_data, size, offset), julia_exos_dataset_info(myInt2_cstring, ptr_data, size, offset)]
+	
 datamodel_calc_dataset_info = @ccall libexos_api.exos_datamodel_calc_dataset_info(datasets::Ref{julia_exos_dataset_info}, sizeof(datasets)::Csize_t)::Cint
 datamodel_calc_dataset_info_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_calc_dataset_info)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_calc_dataset_info\t-> ERROR_CODE: $datamodel_calc_dataset_info_string")
-=#
 
-datamodel_connect = @ccall libexos_api.exos_datamodel_connect(stringandarray::Ref{julia_exos_datamodel_handle}, Base.unsafe_convert(Cstring, config_stringandarray)::Cstring, datasets::Ref{julia_exos_dataset_info}, sizeof(datasets)::Csize_t, my_c_callback::Ptr{Cvoid})::Cint
+datamodel_connect = @ccall libexos_api.exos_datamodel_connect(stringandarray::Ref{julia_exos_datamodel_handle}, config_stringandarray::Cstring, datasets::Ref{julia_exos_dataset_info}, sizeof(datasets)::Csize_t, my_c_callback::Ptr{Cvoid})::Cint
 datamodel_connect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_connect)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_connect\t\t-> ERROR_CODE: $datamodel_connect_string")
-#=
-datamodel_set_operational = @ccall libexos_api.exos_datamodel_set_operational(datamodel_handle::Ref{julia_exos_datamodel_handle})::Cint
+
+datamodel_set_operational = @ccall libexos_api.exos_datamodel_set_operational(stringandarray::Ref{julia_exos_datamodel_handle})::Cint
 datamodel_set_operational_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_set_operational)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_set_operational\t-> ERROR_CODE: $datamodel_set_operational_string")
 
-datamodel_disconnect = @ccall libexos_api.exos_datamodel_disconnect(datamodel_handle::Ref{julia_exos_datamodel_handle})::Cint
+datamodel_disconnect = @ccall libexos_api.exos_datamodel_disconnect(stringandarray::Ref{julia_exos_datamodel_handle})::Cint
 datamodel_disconnect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_disconnect)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_disconnect\t\t-> ERROR_CODE: $datamodel_disconnect_string")
 
-datamodel_delete = @ccall libexos_api.exos_datamodel_disconnect(datamodel_handle::Ref{julia_exos_datamodel_handle})::Cint
+datamodel_delete = @ccall libexos_api.exos_datamodel_disconnect(stringandarray::Ref{julia_exos_datamodel_handle})::Cint
 datamodel_delete_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_delete)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_delete\t\t-> ERROR_CODE: $datamodel_delete_string")
 
-datamodel_process = @ccall libexos_api.exos_datamodel_process(datamodel_handle::Ref{julia_exos_datamodel_handle})::Cint
+datamodel_process = @ccall libexos_api.exos_datamodel_process(stringandarray::Ref{julia_exos_datamodel_handle})::Cint
 datamodel_process_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_process)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("datamodel_process\t\t-> ERROR_CODE: $datamodel_process_string")
 
-datamodel_get_nettime = @ccall libexos_api.exos_datamodel_get_nettime(datamodel_handle::Ref{julia_exos_datamodel_handle})::Int32
+datamodel_get_nettime = @ccall libexos_api.exos_datamodel_get_nettime(stringandarray::Ref{julia_exos_datamodel_handle})::Int32
 println("datamodel_get_nettime\t\t-> AR NETTIME: $datamodel_get_nettime")
 
-println("\n---------------- DATASET FUNCTION CALLS ----------------\n")
-dataset_init = @ccall libexos_api.exos_dataset_init(dataset_handle::Ref{julia_exos_dataset_handle}, datamodel_handle::Ref{julia_exos_datamodel_handle}, "BROWSE_NAME"::Cstring, stringAnd0::StringAndArray, 2::Csize_t)::Cint
+dataset_init = @ccall libexos_api.exos_dataset_init(myint1::Ref{julia_exos_dataset_handle}, stringandarray::Ref{julia_exos_datamodel_handle}, "BROWSE_NAME"::Cstring, ptr_data::Ptr{Cvoid}, sizeof(data.MyInt1)::Csize_t)::Cint
 dataset_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_init)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("dataset_init\t\t\t-> ERROR_CODE: $dataset_init_string")
 
-dataset_connect = @ccall libexos_api.exos_dataset_connect(dataset_handle::Ref{julia_exos_dataset_handle}, type::EXOS_DATASET_TYPE, test::Function)::Cint
+dataset_connect = @ccall libexos_api.exos_dataset_connect(myint1::Ref{julia_exos_dataset_handle}, type::EXOS_DATASET_TYPE, my_c_callback::Ptr{Cvoid})::Cint
 dataset_connect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_connect)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("dataset_connect\t\t\t-> ERROR_CODE: $dataset_connect_string")
-
-dataset_publish = @ccall libexos_api.exos_dataset_publish(dataset_handle::Ref{julia_exos_dataset_handle})::Cint
+#=
+dataset_publish = @ccall libexos_api.exos_dataset_publish(myint1::Ref{julia_exos_dataset_handle})::Cint
 dataset_publish_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_publish)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("dataset_publish\t\t\t-> ERROR_CODE: $dataset_publish_string")
-
-dataset_disconnect = @ccall libexos_api.exos_dataset_disconnect(dataset_handle::Ref{julia_exos_dataset_handle})::Cint
+=#
+dataset_disconnect = @ccall libexos_api.exos_dataset_disconnect(myint1::Ref{julia_exos_dataset_handle})::Cint
 dataset_disconnect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_disconnect)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("dataset_disconnect\t\t-> ERROR_CODE: $dataset_disconnect_string")
 
-dataset_delete = @ccall libexos_api.exos_dataset_disconnect(dataset_handle::Ref{julia_exos_dataset_handle})::Cint
+dataset_delete = @ccall libexos_api.exos_dataset_disconnect(myint1::Ref{julia_exos_dataset_handle})::Cint
 dataset_delete_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_delete)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("dataset_delete\t\t\t-> ERROR_CODE: $dataset_delete_string")
-println("")
-=#
+
 end

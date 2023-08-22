@@ -7,6 +7,7 @@
         "exos_api.h": "c",
         "stdbool.h": "c",
         "string.h": "c",
-        "termination.h": "c"
+        "termination.h": "c",
+        "stddef.h": "c"
     }
 }
