@@ -12,37 +12,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef struct IntStruct2_typ
-{
-    uint32_t MyInt23;
-    uint8_t MyInt24[4];
-    uint32_t MyInt25;
-
-} IntStruct2_typ;
-
-typedef struct IntStruct1_typ
-{
-    uint32_t MyInt13;
-
-} IntStruct1_typ;
-
-typedef struct IntStruct_typ
-{
-    uint32_t MyInt13;
-    uint8_t MyInt14[3];
-    uint32_t MyInt133;
-    uint8_t MyInt124[3];
-
-} IntStruct_typ;
-
 typedef struct StringAndArray
 {
     uint32_t MyInt1; //PUB
-    char MyString[3][81]; //PUB
-    uint8_t MyInt2[5]; //PUB SUB
-    struct IntStruct_typ MyIntStruct[6]; //PUB SUB
-    struct IntStruct1_typ MyIntStruct1; //PUB SUB
-    struct IntStruct2_typ MyIntStruct2; //PUB SUB
+    uint8_t MyInt3[5][4]; //PUB SUB
 
 } StringAndArray;
 

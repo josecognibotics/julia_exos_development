@@ -1,0 +1,8 @@
+VAR
+    exos_juliaInit_0 : exos_juliaInit;
+    exos_juliaCyclic_0 : exos_juliaCyclic;
+    exos_juliaExit_0 : exos_juliaExit;
+    exos_julia_0 : exos_julia;
+    ExComponentInfo_0 : ExComponentInfo;
+    ExDatamodelInfo_0 : ExDatamodelInfo;
+END_VAR

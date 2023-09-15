@@ -24,67 +24,27 @@ static void datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE
         {
             uint32_t *myint1 = (uint32_t *)dataset->data;
         }
-        else if(0 == strcmp(dataset->name,"MyString"))
+        else if(0 == strcmp(dataset->name,"MyInt3"))
         {
-            char *mystring = (char *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name,"MyInt2"))
-        {
-            uint8_t *myint2 = (uint8_t *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name,"MyIntStruct"))
-        {
-            IntStruct_typ *myintstruct = (IntStruct_typ *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name,"MyIntStruct1"))
-        {
-            IntStruct1_typ *myintstruct1 = (IntStruct1_typ *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name,"MyIntStruct2"))
-        {
-            IntStruct2_typ *myintstruct2 = (IntStruct2_typ *)dataset->data;
+            uint8_t *myint3 = (uint8_t *)dataset->data;
         }
         break;
 
     case EXOS_DATASET_EVENT_PUBLISHED:
         VERBOSE("dataset %s published to local server for distribution! send buffer free:%i", dataset->name, dataset->send_buffer.free);
         //handle each published dataset separately
-        if(0 == strcmp(dataset->name, "MyInt2"))
+        if(0 == strcmp(dataset->name, "MyInt3"))
         {
-            uint8_t *myint2 = (uint8_t *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name, "MyIntStruct"))
-        {
-            IntStruct_typ *myintstruct = (IntStruct_typ *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name, "MyIntStruct1"))
-        {
-            IntStruct1_typ *myintstruct1 = (IntStruct1_typ *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name, "MyIntStruct2"))
-        {
-            IntStruct2_typ *myintstruct2 = (IntStruct2_typ *)dataset->data;
+            uint8_t *myint3 = (uint8_t *)dataset->data;
         }
         break;
 
     case EXOS_DATASET_EVENT_DELIVERED:
         VERBOSE("dataset %s delivered to remote server for distribution! send buffer free:%i", dataset->name, dataset->send_buffer.free);
         //handle each published dataset separately
-        if(0 == strcmp(dataset->name, "MyInt2"))
+        if(0 == strcmp(dataset->name, "MyInt3"))
         {
-            uint8_t *myint2 = (uint8_t *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name, "MyIntStruct"))
-        {
-            IntStruct_typ *myintstruct = (IntStruct_typ *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name, "MyIntStruct1"))
-        {
-            IntStruct1_typ *myintstruct1 = (IntStruct1_typ *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name, "MyIntStruct2"))
-        {
-            IntStruct2_typ *myintstruct2 = (IntStruct2_typ *)dataset->data;
+            uint8_t *myint3 = (uint8_t *)dataset->data;
         }
         break;
 
@@ -148,11 +108,7 @@ int main()
     exos_datamodel_handle_t stringandarray;
 
     exos_dataset_handle_t myint1;
-    exos_dataset_handle_t mystring;
-    exos_dataset_handle_t myint2;
-    exos_dataset_handle_t myintstruct;
-    exos_dataset_handle_t myintstruct1;
-    exos_dataset_handle_t myintstruct2;
+    exos_dataset_handle_t myint3;
     
     exos_log_init(&logger, "gStringAndArray_0");
 
@@ -168,36 +124,16 @@ int main()
     myint1.user_context = NULL; //user defined
     myint1.user_tag = 0; //user defined
 
-    EXOS_ASSERT_OK(exos_dataset_init(&mystring, &stringandarray, "MyString", &data.MyString, sizeof(data.MyString)));
-    mystring.user_context = NULL; //user defined
-    mystring.user_tag = 0; //user defined
-
-    EXOS_ASSERT_OK(exos_dataset_init(&myint2, &stringandarray, "MyInt2", &data.MyInt2, sizeof(data.MyInt2)));
-    myint2.user_context = NULL; //user defined
-    myint2.user_tag = 0; //user defined
-
-    EXOS_ASSERT_OK(exos_dataset_init(&myintstruct, &stringandarray, "MyIntStruct", &data.MyIntStruct, sizeof(data.MyIntStruct)));
-    myintstruct.user_context = NULL; //user defined
-    myintstruct.user_tag = 0; //user defined
-
-    EXOS_ASSERT_OK(exos_dataset_init(&myintstruct1, &stringandarray, "MyIntStruct1", &data.MyIntStruct1, sizeof(data.MyIntStruct1)));
-    myintstruct1.user_context = NULL; //user defined
-    myintstruct1.user_tag = 0; //user defined
-
-    EXOS_ASSERT_OK(exos_dataset_init(&myintstruct2, &stringandarray, "MyIntStruct2", &data.MyIntStruct2, sizeof(data.MyIntStruct2)));
-    myintstruct2.user_context = NULL; //user defined
-    myintstruct2.user_tag = 0; //user defined
+    EXOS_ASSERT_OK(exos_dataset_init(&myint3, &stringandarray, "MyInt3", &data.MyInt3, sizeof(data.MyInt3)));
+    myint3.user_context = NULL; //user defined
+    myint3.user_tag = 0; //user defined
 
     //connect the datamodel
     EXOS_ASSERT_OK(exos_datamodel_connect_stringandarray(&stringandarray, datamodelEvent));
     
     //connect datasets
     EXOS_ASSERT_OK(exos_dataset_connect(&myint1, EXOS_DATASET_SUBSCRIBE, datasetEvent));
-    EXOS_ASSERT_OK(exos_dataset_connect(&mystring, EXOS_DATASET_SUBSCRIBE, datasetEvent));
-    EXOS_ASSERT_OK(exos_dataset_connect(&myint2, EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, datasetEvent));
-    EXOS_ASSERT_OK(exos_dataset_connect(&myintstruct, EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, datasetEvent));
-    EXOS_ASSERT_OK(exos_dataset_connect(&myintstruct1, EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, datasetEvent));
-    EXOS_ASSERT_OK(exos_dataset_connect(&myintstruct2, EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, datasetEvent));
+    EXOS_ASSERT_OK(exos_dataset_connect(&myint3, EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, datasetEvent));
     
     catch_termination();
     while (true)
@@ -206,8 +142,7 @@ int main()
         exos_log_process(&logger);
 
         //put your cyclic code here!
-        memcpy(&data.MyIntStruct[0], &data.MyIntStruct[1], sizeof(data.MyIntStruct[0]));
-        exos_dataset_publish(&myintstruct);
+
         if (is_terminated())
         {
             SUCCESS("StringAndArray application terminated, closing..");

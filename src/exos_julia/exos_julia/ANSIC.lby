@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?AutomationStudio FileVersion="4.10"?>
+<Library SubType="ANSIC" xmlns="http://br-automation.co.at/AS/Library">
+  <Files>
+    <File Description="exos_julia datamodel declaration">exos_julia.typ</File>
+    <File Description="Generated datamodel header for exos_julia">exos_exos_julia.h</File>
+    <File Description="Generated datamodel source for exos_julia">exos_exos_julia.c</File>
+    <File Description="exos_julia function blocks">exos_julia.fun</File>
+    <File Description="exos_julia library source">exos_julia.c</File>
+    <File Description="Dynamic heap configuration">heapsize.cpp</File>
+  </Files>
+  <Dependencies>
+    <Dependency ObjectName="ExData" />
+  </Dependencies>
+</Library>

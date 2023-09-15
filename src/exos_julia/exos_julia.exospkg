@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ComponentPackage Version="2.1.0" ErrorHandling="Component" StartupTimeout="0">
+    <File FileName="Linux/exos_julia.jl" ChangeEvent="Restart"/>
+    <File FileName="Linux/exos-comp-exos_julia_1.0.0_amd64.deb" ChangeEvent="Reinstall"/>
+    <Service Type="Install" Command="dpkg -i exos-comp-exos_julia_1.0.0_amd64.deb"/>
+    <Service Type="Remove" Command="dpkg --purge exos-comp-exos_julia"/>
+    <Service Type="Startup" Command="cp exos_julia.jl /home/user/exos_julia"/>
+    <Service Type="Runtime" Command="julia exos_julia.jl" WorkingDirectory="/home/user/exos_julia"/>
+    <Build>
+        <GenerateDatamodel FileName="exos_julia/exos_julia.typ" TypeName="exos_julia">
+            <SG4 Include="exos_julia.h"/>
+            <Output Path="exos_julia"/>
+            <Output Path="Linux"/>
+        </GenerateDatamodel>
+    </Build>
+    <!-- ComponentGenerator info - do not change! -->
+    <ComponentGenerator Class="ExosComponentJulia" Version="2.1.0">
+        <Option Name="exportLinux" Value="exos-comp-exos_julia_1.0.0_amd64.deb,exos_julia.jl"/>
+        <Option Name="templateAR" Value="c-api"/>
+        <Option Name="typeName" Value="exos_julia"/>
+        <Option Name="typeFile" Value="exos_julia/exos_julia.typ"/>
+        <Option Name="SG4Includes" Value="exos_julia.h"/>
+    </ComponentGenerator>
+</ComponentPackage>

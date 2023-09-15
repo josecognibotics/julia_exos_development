@@ -16,11 +16,7 @@ typedef struct libStringAndArrayHandle
     exos_datamodel_handle_t stringandarray;
 
     exos_dataset_handle_t myint1;
-    exos_dataset_handle_t mystring;
-    exos_dataset_handle_t myint2;
-    exos_dataset_handle_t myintstruct;
-    exos_dataset_handle_t myintstruct1;
-    exos_dataset_handle_t myintstruct2;
+    exos_dataset_handle_t myint3;
 } libStringAndArrayHandle_t;
 
 static libStringAndArrayHandle_t h_StringAndArray;
@@ -43,59 +39,15 @@ static void libStringAndArray_datasetEvent(exos_dataset_handle_t *dataset, EXOS_
                 h_StringAndArray.ext_stringandarray.MyInt1.on_change();
             }
         }
-        else if (0 == strcmp(dataset->name, "MyString"))
+        else if (0 == strcmp(dataset->name, "MyInt3"))
         {
             //update the nettime
-            h_StringAndArray.ext_stringandarray.MyString.nettime = dataset->nettime;
+            h_StringAndArray.ext_stringandarray.MyInt3.nettime = dataset->nettime;
 
             //trigger the callback if assigned
-            if (NULL != h_StringAndArray.ext_stringandarray.MyString.on_change)
+            if (NULL != h_StringAndArray.ext_stringandarray.MyInt3.on_change)
             {
-                h_StringAndArray.ext_stringandarray.MyString.on_change();
-            }
-        }
-        else if (0 == strcmp(dataset->name, "MyInt2"))
-        {
-            //update the nettime
-            h_StringAndArray.ext_stringandarray.MyInt2.nettime = dataset->nettime;
-
-            //trigger the callback if assigned
-            if (NULL != h_StringAndArray.ext_stringandarray.MyInt2.on_change)
-            {
-                h_StringAndArray.ext_stringandarray.MyInt2.on_change();
-            }
-        }
-        else if (0 == strcmp(dataset->name, "MyIntStruct"))
-        {
-            //update the nettime
-            h_StringAndArray.ext_stringandarray.MyIntStruct.nettime = dataset->nettime;
-
-            //trigger the callback if assigned
-            if (NULL != h_StringAndArray.ext_stringandarray.MyIntStruct.on_change)
-            {
-                h_StringAndArray.ext_stringandarray.MyIntStruct.on_change();
-            }
-        }
-        else if (0 == strcmp(dataset->name, "MyIntStruct1"))
-        {
-            //update the nettime
-            h_StringAndArray.ext_stringandarray.MyIntStruct1.nettime = dataset->nettime;
-
-            //trigger the callback if assigned
-            if (NULL != h_StringAndArray.ext_stringandarray.MyIntStruct1.on_change)
-            {
-                h_StringAndArray.ext_stringandarray.MyIntStruct1.on_change();
-            }
-        }
-        else if (0 == strcmp(dataset->name, "MyIntStruct2"))
-        {
-            //update the nettime
-            h_StringAndArray.ext_stringandarray.MyIntStruct2.nettime = dataset->nettime;
-
-            //trigger the callback if assigned
-            if (NULL != h_StringAndArray.ext_stringandarray.MyIntStruct2.on_change)
-            {
-                h_StringAndArray.ext_stringandarray.MyIntStruct2.on_change();
+                h_StringAndArray.ext_stringandarray.MyInt3.on_change();
             }
         }
         break;
@@ -174,21 +126,9 @@ static void libStringAndArray_datamodelEvent(exos_datamodel_handle_t *datamodel,
     }
 }
 
-static void libStringAndArray_publish_myint2(void)
+static void libStringAndArray_publish_myint3(void)
 {
-    EXOS_ASSERT_OK(exos_dataset_publish(&h_StringAndArray.myint2));
-}
-static void libStringAndArray_publish_myintstruct(void)
-{
-    EXOS_ASSERT_OK(exos_dataset_publish(&h_StringAndArray.myintstruct));
-}
-static void libStringAndArray_publish_myintstruct1(void)
-{
-    EXOS_ASSERT_OK(exos_dataset_publish(&h_StringAndArray.myintstruct1));
-}
-static void libStringAndArray_publish_myintstruct2(void)
-{
-    EXOS_ASSERT_OK(exos_dataset_publish(&h_StringAndArray.myintstruct2));
+    EXOS_ASSERT_OK(exos_dataset_publish(&h_StringAndArray.myint3));
 }
 
 static void libStringAndArray_connect(void)
@@ -198,11 +138,7 @@ static void libStringAndArray_connect(void)
     
     //connect datasets
     EXOS_ASSERT_OK(exos_dataset_connect(&(h_StringAndArray.myint1), EXOS_DATASET_SUBSCRIBE, libStringAndArray_datasetEvent));
-    EXOS_ASSERT_OK(exos_dataset_connect(&(h_StringAndArray.mystring), EXOS_DATASET_SUBSCRIBE, libStringAndArray_datasetEvent));
-    EXOS_ASSERT_OK(exos_dataset_connect(&(h_StringAndArray.myint2), EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, libStringAndArray_datasetEvent));
-    EXOS_ASSERT_OK(exos_dataset_connect(&(h_StringAndArray.myintstruct), EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, libStringAndArray_datasetEvent));
-    EXOS_ASSERT_OK(exos_dataset_connect(&(h_StringAndArray.myintstruct1), EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, libStringAndArray_datasetEvent));
-    EXOS_ASSERT_OK(exos_dataset_connect(&(h_StringAndArray.myintstruct2), EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, libStringAndArray_datasetEvent));
+    EXOS_ASSERT_OK(exos_dataset_connect(&(h_StringAndArray.myint3), EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, libStringAndArray_datasetEvent));
 }
 static void libStringAndArray_disconnect(void)
 {
@@ -271,10 +207,7 @@ libStringAndArray_t *libStringAndArray_init(void)
 {
     memset(&h_StringAndArray, 0, sizeof(h_StringAndArray));
 
-    h_StringAndArray.ext_stringandarray.MyInt2.publish = libStringAndArray_publish_myint2;
-    h_StringAndArray.ext_stringandarray.MyIntStruct.publish = libStringAndArray_publish_myintstruct;
-    h_StringAndArray.ext_stringandarray.MyIntStruct1.publish = libStringAndArray_publish_myintstruct1;
-    h_StringAndArray.ext_stringandarray.MyIntStruct2.publish = libStringAndArray_publish_myintstruct2;
+    h_StringAndArray.ext_stringandarray.MyInt3.publish = libStringAndArray_publish_myint3;
     
     h_StringAndArray.ext_stringandarray.connect = libStringAndArray_connect;
     h_StringAndArray.ext_stringandarray.disconnect = libStringAndArray_disconnect;
@@ -303,25 +236,9 @@ libStringAndArray_t *libStringAndArray_init(void)
     h_StringAndArray.myint1.user_context = NULL; //not used
     h_StringAndArray.myint1.user_tag = 0; //not used
 
-    EXOS_ASSERT_OK(exos_dataset_init(&h_StringAndArray.mystring, &h_StringAndArray.stringandarray, "MyString", &h_StringAndArray.ext_stringandarray.MyString.value, sizeof(h_StringAndArray.ext_stringandarray.MyString.value)));
-    h_StringAndArray.mystring.user_context = NULL; //not used
-    h_StringAndArray.mystring.user_tag = 0; //not used
-
-    EXOS_ASSERT_OK(exos_dataset_init(&h_StringAndArray.myint2, &h_StringAndArray.stringandarray, "MyInt2", &h_StringAndArray.ext_stringandarray.MyInt2.value, sizeof(h_StringAndArray.ext_stringandarray.MyInt2.value)));
-    h_StringAndArray.myint2.user_context = NULL; //not used
-    h_StringAndArray.myint2.user_tag = 0; //not used
-
-    EXOS_ASSERT_OK(exos_dataset_init(&h_StringAndArray.myintstruct, &h_StringAndArray.stringandarray, "MyIntStruct", &h_StringAndArray.ext_stringandarray.MyIntStruct.value, sizeof(h_StringAndArray.ext_stringandarray.MyIntStruct.value)));
-    h_StringAndArray.myintstruct.user_context = NULL; //not used
-    h_StringAndArray.myintstruct.user_tag = 0; //not used
-
-    EXOS_ASSERT_OK(exos_dataset_init(&h_StringAndArray.myintstruct1, &h_StringAndArray.stringandarray, "MyIntStruct1", &h_StringAndArray.ext_stringandarray.MyIntStruct1.value, sizeof(h_StringAndArray.ext_stringandarray.MyIntStruct1.value)));
-    h_StringAndArray.myintstruct1.user_context = NULL; //not used
-    h_StringAndArray.myintstruct1.user_tag = 0; //not used
-
-    EXOS_ASSERT_OK(exos_dataset_init(&h_StringAndArray.myintstruct2, &h_StringAndArray.stringandarray, "MyIntStruct2", &h_StringAndArray.ext_stringandarray.MyIntStruct2.value, sizeof(h_StringAndArray.ext_stringandarray.MyIntStruct2.value)));
-    h_StringAndArray.myintstruct2.user_context = NULL; //not used
-    h_StringAndArray.myintstruct2.user_tag = 0; //not used
+    EXOS_ASSERT_OK(exos_dataset_init(&h_StringAndArray.myint3, &h_StringAndArray.stringandarray, "MyInt3", &h_StringAndArray.ext_stringandarray.MyInt3.value, sizeof(h_StringAndArray.ext_stringandarray.MyInt3.value)));
+    h_StringAndArray.myint3.user_context = NULL; //not used
+    h_StringAndArray.myint3.user_tag = 0; //not used
 
     return &(h_StringAndArray.ext_stringandarray);
 }

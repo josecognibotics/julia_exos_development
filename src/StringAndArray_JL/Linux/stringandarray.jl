@@ -7,7 +7,7 @@ const EXOS_ARRAY_DEPTH          = 10
 const EXOS_LOG_EXCLUDE_LIST_LEN = 20
 const EXOS_LOG_MAX_NAME_LENGTH  = 35
 const EXOS_LOG_MESSAGE_LENGTH   = 256
-const config_stringandarray = "{\"name\":\"struct\",\"attributes\":{\"name\":\"<NAME>\",\"dataType\":\"StringAndArray\",\"info\":\"<infoId0>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt1\",\"dataType\":\"UDINT\",\"comment\":\"PUB\",\"info\":\"<infoId1>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt3\",\"dataType\":\"USINT\",\"comment\":\"PUB SUB\",\"arraySize\":5,\"info\":\"<infoId2>\",\"info2\":\"<infoId3>\"}}]}"
+config_stringandarray = "{\"name\":\"struct\",\"attributes\":{\"name\":\"<NAME>\",\"dataType\":\"StringAndArray\",\"info\":\"<infoId0>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt1\",\"dataType\":\"UDINT\",\"comment\":\"PUB\",\"info\":\"<infoId1>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt3\",\"dataType\":\"USINT\",\"comment\":\"PUB SUB\",\"arraySize\":5,\"info\":\"<infoId2>\",\"info2\":\"<infoId3>\"}}]}"
 
 export
 	MyInt1,
@@ -78,7 +78,7 @@ mutable struct julia_exos_log_handle
 	ready::Cuchar
 	excluded::Cuchar 
 	console::Cuchar
-	config_change_cb::Function
+	config_change_cb::Ptr{Cvoid}
 	config_change_user_context::Ptr{Cvoid}
 	_reserved_bool::NTuple{4,Cuchar} 
 	_reserved_uint32::NTuple{4,Cuint}
@@ -250,6 +250,8 @@ event_type = EXOS_DATAMODEL_EVENT_TYPE(0)
 # Callback function
 my_c_callback = @cfunction(my_callback, Cvoid, (julia_exos_datamodel_handle, EXOS_DATAMODEL_EVENT_TYPE, Ptr{Cvoid} ))
 
+#Log callback
+my_c_log = @cfucntion(my_callback, Cvoid, (julia_exos_log_handle, EXOS_DATAMODEL_EVENT_TYPE, Ptr{Cvoid} ) )
 # INITIALIZATION: julia_exos_log_private #
 log_private = julia_exos_log_private(
 	0,
@@ -313,6 +315,19 @@ stringandarray = julia_exos_datamodel_handle(
 	datamodel_private
 )
 
+exos_log_init = julia_exos_log_handle(
+	empty_string,
+	0,
+	0,
+	0,
+	my_c_callback,
+	C_NULL,
+	(Cuchar(0),Cuchar(0),Cuchar(0),Cuchar(0)),
+	(Cuint(0),Cuint(0),Cuint(0),Cuint(0)),
+	(Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL), Ptr{Cvoid}(C_NULL)),
+	log_private
+)
+
 # INITIALIZATION: julia_exos_dataset_handle #
 myint1 = julia_exos_dataset_handle(
 	empty_string,
@@ -367,6 +382,10 @@ println("----------------------------------------------------------------\n")
 
 println("Starting communication with AS...\n")
 println("----------------------------------------------------------------\n")
+
+exos_log_init = @ccall libexos_api.exos_log_init(stringandarray::Ref{julia_exos_log_handle}, "StringAndArray_0"::Cstring)::Cint
+
+#log_init = @ccall libexos_api.exos_
 #= Initialize the datamodel handle
 * 
 * This function intializes (resets) a datamodel handle and gives it a `user_alias` via a `datamodel_instance_name`.
@@ -374,7 +393,7 @@ println("----------------------------------------------------------------\n")
 =#
 datamodel_init = @ccall libexos_api.exos_datamodel_init(stringandarray::Ref{julia_exos_datamodel_handle}, "StringAndArray_0"::Cstring, "gStringAndArray_0"::Cstring)::Cint
 datamodel_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_init)::EXOS_ERROR_CODE)::Ptr{Cchar})
-println("datamodel_init\t\t\t-> ERROR_CODE: $datamodel_init_string")
+println("datamodel_init\t\t\t-> ERROR_CODE: $datamodel_init: $datamodel_init_string")
 
 stringandarray.user_context = C_NULL
 stringandarray.user_tag = 0
@@ -385,7 +404,7 @@ stringandarray.user_tag = 0
 =#
 dataset_init = @ccall libexos_api.exos_dataset_init(myint1::Ref{julia_exos_dataset_handle}, stringandarray::Ref{julia_exos_datamodel_handle}, "MyInt1"::Cstring, ptr_data::Ptr{Cvoid}, sizeof(data.MyInt1)::Csize_t)::Cint
 dataset_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_init)::EXOS_ERROR_CODE)::Ptr{Cchar})
-println("dataset_init\t\t\t-> ERROR_CODE: $dataset_init_string")
+println("dataset_init\t\t\t-> ERROR_CODE: $dataset_init: $dataset_init_string")
 
 myint1.user_context = C_NULL
 myint1.user_tag = 0
@@ -396,7 +415,7 @@ myint1.user_tag = 0
 =#
 dataset_init = @ccall libexos_api.exos_dataset_init(myint3::Ref{julia_exos_dataset_handle}, stringandarray::Ref{julia_exos_datamodel_handle}, "MyInt3"::Cstring, ptr_data::Ptr{Cvoid}, sizeof(data.MyInt3)::Csize_t)::Cint
 dataset_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_init)::EXOS_ERROR_CODE)::Ptr{Cchar})
-println("dataset_init\t\t\t-> ERROR_CODE: $dataset_init_string")
+println("dataset_init\t\t\t-> ERROR_CODE: $dataset_init: $dataset_init_string")
 
 myint3.user_context = C_NULL
 myint3.user_tag = 0
@@ -424,7 +443,7 @@ datasets = [julia_exos_dataset_info(myInt1_cstring, ptr_data, size, offset), jul
 
 datamodel_calc_dataset_info = @ccall libexos_api.exos_datamodel_calc_dataset_info(datasets::Ref{julia_exos_dataset_info}, sizeof(datasets)::Csize_t)::Cint
 datamodel_calc_dataset_info_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_calc_dataset_info)::EXOS_ERROR_CODE)::Ptr{Cchar})
-println("datamodel_calc_dataset_info\t-> ERROR_CODE: $datamodel_calc_dataset_info_string")
+println("datamodel_calc_dataset_info\t-> ERROR_CODE: $datamodel_calc_dataset_info: $datamodel_calc_dataset_info_string")
 
 #=
  * (internal) Connect a datamodel to the Dataset Message Router
@@ -439,7 +458,7 @@ println("datamodel_calc_dataset_info\t-> ERROR_CODE: $datamodel_calc_dataset_inf
 =#
 datamodel_connect = @ccall libexos_api.exos_datamodel_connect(stringandarray::Ref{julia_exos_datamodel_handle}, config_stringandarray::Cstring, datasets::Ref{julia_exos_dataset_info}, sizeof(datasets)::Csize_t, my_c_callback::Ptr{Cvoid})::Cint
 datamodel_connect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_connect)::EXOS_ERROR_CODE)::Ptr{Cchar})
-println("datamodel_connect\t\t-> ERROR_CODE: $datamodel_connect_string")
+println("datamodel_connect\t\t-> ERROR_CODE: $datamodel_connect: $datamodel_connect_string")
 
 #=
 * Set the datamodel into OPERATIONAL state
@@ -450,7 +469,7 @@ println("datamodel_connect\t\t-> ERROR_CODE: $datamodel_connect_string")
 =#
 datamodel_set_operational = @ccall libexos_api.exos_datamodel_set_operational(stringandarray::Ref{julia_exos_datamodel_handle})::Cint
 datamodel_set_operational_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_set_operational)::EXOS_ERROR_CODE)::Ptr{Cchar})
-println("datamodel_set_operational\t-> ERROR_CODE: $datamodel_set_operational_string")
+println("datamodel_set_operational\t-> ERROR_CODE: $datamodel_set_operational: $datamodel_set_operational_string")
 
 #=
  * Disconnect a datamodel from the Dataset Message Router
@@ -463,7 +482,7 @@ println("datamodel_set_operational\t-> ERROR_CODE: $datamodel_set_operational_st
 =#
 datamodel_disconnect = @ccall libexos_api.exos_datamodel_disconnect(stringandarray::Ref{julia_exos_datamodel_handle})::Cint
 datamodel_disconnect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_disconnect)::EXOS_ERROR_CODE)::Ptr{Cchar})
-println("datamodel_disconnect\t\t-> ERROR_CODE: $datamodel_disconnect_string")
+println("datamodel_disconnect\t\t-> ERROR_CODE: $datamodel_disconnect: $datamodel_disconnect_string")
 
 #=
  * Release all resources from a datamodel (and disconnect from the Dataset Message Router)
@@ -473,7 +492,7 @@ println("datamodel_disconnect\t\t-> ERROR_CODE: $datamodel_disconnect_string")
 =#
 datamodel_delete = @ccall libexos_api.exos_datamodel_disconnect(stringandarray::Ref{julia_exos_datamodel_handle})::Cint
 datamodel_delete_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_delete)::EXOS_ERROR_CODE)::Ptr{Cchar})
-println("datamodel_delete\t\t-> ERROR_CODE: $datamodel_delete_string")
+println("datamodel_delete\t\t-> ERROR_CODE: $datamodel_delete: $datamodel_delete_string")
 
 #=
  * Cyclic main function - poll datamodel for incoming messages
@@ -486,7 +505,7 @@ println("datamodel_delete\t\t-> ERROR_CODE: $datamodel_delete_string")
 =#
 datamodel_process = @ccall libexos_api.exos_datamodel_process(stringandarray::Ref{julia_exos_datamodel_handle})::Cint
 datamodel_process_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(datamodel_process)::EXOS_ERROR_CODE)::Ptr{Cchar})
-println("datamodel_process\t\t-> ERROR_CODE: $datamodel_process_string")
+println("datamodel_process\t\t-> ERROR_CODE: $datamodel_process: $datamodel_process_string")
 
 #=
  * Get the current AR NETTIME (synchronized)
@@ -500,18 +519,32 @@ println("datamodel_get_nettime\t\t-> AR NETTIME: $datamodel_get_nettime")
  * Initialize a dataset handle and attach it to a datamodel
  * 
  * This function initializes the `exos_dataset_handle_t` structure, meaning it zeroes all members and sets artefact, data and size members.
-=#
+
 dataset_init = @ccall libexos_api.exos_dataset_init(myint1::Ref{julia_exos_dataset_handle}, stringandarray::Ref{julia_exos_datamodel_handle}, "BROWSE_NAME"::Cstring, ptr_data::Ptr{Cvoid}, sizeof(data.MyInt1)::Csize_t)::Cint
 dataset_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_init)::EXOS_ERROR_CODE)::Ptr{Cchar})
 println("dataset_init\t\t\t-> ERROR_CODE: $dataset_init_string")
+=#
+#=
+ * Initialize a dataset handle and attach it to a datamodel
+ * 
+ * This function initializes the `exos_dataset_handle_t` structure, meaning it zeroes all members and sets artefact, data and size members.
 
+dataset_init = @ccall libexos_api.exos_dataset_init(myint3::Ref{julia_exos_dataset_handle}, stringandarray::Ref{julia_exos_datamodel_handle}, "BROWSE_NAME"::Cstring, ptr_data::Ptr{Cvoid}, sizeof(data.MyInt1)::Csize_t)::Cint
+dataset_init_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_init)::EXOS_ERROR_CODE)::Ptr{Cchar})
+println("dataset_init\t\t\t-> ERROR_CODE: $dataset_init_string")
+=#
 #=
  * Connect a dataset to the Dataset Message Router and register an event callback
 =#
 
 dataset_connect = @ccall libexos_api.exos_dataset_connect(myint1::Ref{julia_exos_dataset_handle}, type::EXOS_DATASET_TYPE, my_c_callback::Ptr{Cvoid})::Cint
 dataset_connect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_connect)::EXOS_ERROR_CODE)::Ptr{Cchar})
-println("dataset_connect\t\t\t-> ERROR_CODE: $dataset_connect_string")
+println("dataset_connect\t\t\t-> ERROR_CODE: $dataset_connect: $dataset_connect_string")
+
+dataset_connect = @ccall libexos_api.exos_dataset_connect(myint3::Ref{julia_exos_dataset_handle}, type::EXOS_DATASET_TYPE, my_c_callback::Ptr{Cvoid})::Cint
+dataset_connect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_connect)::EXOS_ERROR_CODE)::Ptr{Cchar})
+println("dataset_connect\t\t\t-> ERROR_CODE: $dataset_connect: $dataset_connect_string")
+
 #=
 dataset_publish = @ccall libexos_api.exos_dataset_publish(myint1::Ref{julia_exos_dataset_handle})::Cint
 dataset_publish_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_publish)::EXOS_ERROR_CODE)::Ptr{Cchar})
@@ -526,7 +559,7 @@ println("dataset_publish\t\t\t-> ERROR_CODE: $dataset_publish_string")
  =#
 dataset_disconnect = @ccall libexos_api.exos_dataset_disconnect(myint1::Ref{julia_exos_dataset_handle})::Cint
 dataset_disconnect_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_disconnect)::EXOS_ERROR_CODE)::Ptr{Cchar})
-println("dataset_disconnect\t\t-> ERROR_CODE: $dataset_disconnect_string")
+println("dataset_disconnect\t\t-> ERROR_CODE: $dataset_disconnect: $dataset_disconnect_string")
 
 #=
  * Release all resources from a dataset (and disconnect from the Dataset Message Router)
@@ -536,7 +569,7 @@ println("dataset_disconnect\t\t-> ERROR_CODE: $dataset_disconnect_string")
 =#
 dataset_delete = @ccall libexos_api.exos_dataset_delete(myint1::Ref{julia_exos_dataset_handle})::Cint
 dataset_delete_string = unsafe_string(@ccall libexos_api.exos_get_error_string(EXOS_ERROR_CODE(dataset_delete)::EXOS_ERROR_CODE)::Ptr{Cchar})
-println("dataset_delete\t\t\t-> ERROR_CODE: $dataset_delete_string")
+println("dataset_delete\t\t\t-> ERROR_CODE: $dataset_delete: $dataset_delete_string")
 println("----------------------------------------------------------------\n")
 
 end

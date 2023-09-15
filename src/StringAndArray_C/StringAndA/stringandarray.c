@@ -20,11 +20,7 @@ typedef struct
     exos_datamodel_handle_t stringandarray;
 
     exos_dataset_handle_t myint1;
-    exos_dataset_handle_t mystring;
-    exos_dataset_handle_t myint2;
-    exos_dataset_handle_t myintstruct;
-    exos_dataset_handle_t myintstruct1;
-    exos_dataset_handle_t myintstruct2;
+    exos_dataset_handle_t myint3;
 } StringAndArrayHandle_t;
 
 static void datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE event_type, void *info)
@@ -37,21 +33,9 @@ static void datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE
     case EXOS_DATASET_EVENT_UPDATED:
         VERBOSE("dataset %s updated! latency (us):%i", dataset->name, (exos_datamodel_get_nettime(dataset->datamodel) - dataset->nettime));
         //handle each subscription dataset separately
-        if(0 == strcmp(dataset->name, "MyInt2"))
+        if(0 == strcmp(dataset->name, "MyInt3"))
         {
-            memcpy(&inst->pStringAndArray->MyInt2, dataset->data, dataset->size);
-        }
-        else if(0 == strcmp(dataset->name, "MyIntStruct"))
-        {
-            memcpy(&inst->pStringAndArray->MyIntStruct, dataset->data, dataset->size);
-        }
-        else if(0 == strcmp(dataset->name, "MyIntStruct1"))
-        {
-            memcpy(&inst->pStringAndArray->MyIntStruct1, dataset->data, dataset->size);
-        }
-        else if(0 == strcmp(dataset->name, "MyIntStruct2"))
-        {
-            memcpy(&inst->pStringAndArray->MyIntStruct2, dataset->data, dataset->size);
+            memcpy(&inst->pStringAndArray->MyInt3, dataset->data, dataset->size);
         }
         break;
 
@@ -62,25 +46,9 @@ static void datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE
         {
             // UDINT *myint1 = (UDINT *)dataset->data;
         }
-        else if(0 == strcmp(dataset->name, "MyString"))
+        else if(0 == strcmp(dataset->name, "MyInt3"))
         {
-            // STRING *mystring = (STRING *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name, "MyInt2"))
-        {
-            // USINT *myint2 = (USINT *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name, "MyIntStruct"))
-        {
-            // IntStruct_typ *myintstruct = (IntStruct_typ *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name, "MyIntStruct1"))
-        {
-            // IntStruct1_typ *myintstruct1 = (IntStruct1_typ *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name, "MyIntStruct2"))
-        {
-            // IntStruct2_typ *myintstruct2 = (IntStruct2_typ *)dataset->data;
+            // USINT *myint3 = (USINT *)dataset->data;
         }
         break;
 
@@ -91,25 +59,9 @@ static void datasetEvent(exos_dataset_handle_t *dataset, EXOS_DATASET_EVENT_TYPE
         {
             // UDINT *myint1 = (UDINT *)dataset->data;
         }
-        else if(0 == strcmp(dataset->name, "MyString"))
+        else if(0 == strcmp(dataset->name, "MyInt3"))
         {
-            // STRING *mystring = (STRING *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name, "MyInt2"))
-        {
-            // USINT *myint2 = (USINT *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name, "MyIntStruct"))
-        {
-            // IntStruct_typ *myintstruct = (IntStruct_typ *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name, "MyIntStruct1"))
-        {
-            // IntStruct1_typ *myintstruct1 = (IntStruct1_typ *)dataset->data;
-        }
-        else if(0 == strcmp(dataset->name, "MyIntStruct2"))
-        {
-            // IntStruct2_typ *myintstruct2 = (IntStruct2_typ *)dataset->data;
+            // USINT *myint3 = (USINT *)dataset->data;
         }
         break;
 
@@ -199,19 +151,11 @@ _BUR_PUBLIC void StringAndArrayInit(struct StringAndArrayInit *inst)
     
     exos_datamodel_handle_t *stringandarray = &handle->stringandarray;
     exos_dataset_handle_t *myint1 = &handle->myint1;
-    exos_dataset_handle_t *mystring = &handle->mystring;
-    exos_dataset_handle_t *myint2 = &handle->myint2;
-    exos_dataset_handle_t *myintstruct = &handle->myintstruct;
-    exos_dataset_handle_t *myintstruct1 = &handle->myintstruct1;
-    exos_dataset_handle_t *myintstruct2 = &handle->myintstruct2;
+    exos_dataset_handle_t *myint3 = &handle->myint3;
     EXOS_ASSERT_OK(exos_datamodel_init(stringandarray, "StringAndArray_0", "gStringAndArray_0"));
 
     EXOS_ASSERT_OK(exos_dataset_init(myint1, stringandarray, "MyInt1", &handle->data.MyInt1, sizeof(handle->data.MyInt1)));
-    EXOS_ASSERT_OK(exos_dataset_init(mystring, stringandarray, "MyString", &handle->data.MyString, sizeof(handle->data.MyString)));
-    EXOS_ASSERT_OK(exos_dataset_init(myint2, stringandarray, "MyInt2", &handle->data.MyInt2, sizeof(handle->data.MyInt2)));
-    EXOS_ASSERT_OK(exos_dataset_init(myintstruct, stringandarray, "MyIntStruct", &handle->data.MyIntStruct, sizeof(handle->data.MyIntStruct)));
-    EXOS_ASSERT_OK(exos_dataset_init(myintstruct1, stringandarray, "MyIntStruct1", &handle->data.MyIntStruct1, sizeof(handle->data.MyIntStruct1)));
-    EXOS_ASSERT_OK(exos_dataset_init(myintstruct2, stringandarray, "MyIntStruct2", &handle->data.MyIntStruct2, sizeof(handle->data.MyIntStruct2)));
+    EXOS_ASSERT_OK(exos_dataset_init(myint3, stringandarray, "MyInt3", &handle->data.MyInt3, sizeof(handle->data.MyInt3)));
     
     inst->Handle = (UDINT)handle;
 }
@@ -254,49 +198,13 @@ _BUR_PUBLIC void StringAndArrayCyclic(struct StringAndArrayCyclic *inst)
         myint1->dataset_event_callback = datasetEvent;
     }
 
-    exos_dataset_handle_t *mystring = &handle->mystring;
-    mystring->user_context = NULL; //user defined
-    mystring->user_tag = 0; //user defined
+    exos_dataset_handle_t *myint3 = &handle->myint3;
+    myint3->user_context = NULL; //user defined
+    myint3->user_tag = 0; //user defined
     //handle online download of the library
-    if(NULL != mystring->dataset_event_callback && mystring->dataset_event_callback != datasetEvent)
+    if(NULL != myint3->dataset_event_callback && myint3->dataset_event_callback != datasetEvent)
     {
-        mystring->dataset_event_callback = datasetEvent;
-    }
-
-    exos_dataset_handle_t *myint2 = &handle->myint2;
-    myint2->user_context = NULL; //user defined
-    myint2->user_tag = 0; //user defined
-    //handle online download of the library
-    if(NULL != myint2->dataset_event_callback && myint2->dataset_event_callback != datasetEvent)
-    {
-        myint2->dataset_event_callback = datasetEvent;
-    }
-
-    exos_dataset_handle_t *myintstruct = &handle->myintstruct;
-    myintstruct->user_context = NULL; //user defined
-    myintstruct->user_tag = 0; //user defined
-    //handle online download of the library
-    if(NULL != myintstruct->dataset_event_callback && myintstruct->dataset_event_callback != datasetEvent)
-    {
-        myintstruct->dataset_event_callback = datasetEvent;
-    }
-
-    exos_dataset_handle_t *myintstruct1 = &handle->myintstruct1;
-    myintstruct1->user_context = NULL; //user defined
-    myintstruct1->user_tag = 0; //user defined
-    //handle online download of the library
-    if(NULL != myintstruct1->dataset_event_callback && myintstruct1->dataset_event_callback != datasetEvent)
-    {
-        myintstruct1->dataset_event_callback = datasetEvent;
-    }
-
-    exos_dataset_handle_t *myintstruct2 = &handle->myintstruct2;
-    myintstruct2->user_context = NULL; //user defined
-    myintstruct2->user_tag = 0; //user defined
-    //handle online download of the library
-    if(NULL != myintstruct2->dataset_event_callback && myintstruct2->dataset_event_callback != datasetEvent)
-    {
-        myintstruct2->dataset_event_callback = datasetEvent;
+        myint3->dataset_event_callback = datasetEvent;
     }
 
     //unregister on disable
@@ -327,11 +235,7 @@ _BUR_PUBLIC void StringAndArrayCyclic(struct StringAndArrayCyclic *inst)
         //connect the datamodel, then the datasets
         EXOS_ASSERT_OK(exos_datamodel_connect_stringandarray(stringandarray, datamodelEvent));
         EXOS_ASSERT_OK(exos_dataset_connect(myint1, EXOS_DATASET_PUBLISH, datasetEvent));
-        EXOS_ASSERT_OK(exos_dataset_connect(mystring, EXOS_DATASET_PUBLISH, datasetEvent));
-        EXOS_ASSERT_OK(exos_dataset_connect(myint2, EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, datasetEvent));
-        EXOS_ASSERT_OK(exos_dataset_connect(myintstruct, EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, datasetEvent));
-        EXOS_ASSERT_OK(exos_dataset_connect(myintstruct1, EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, datasetEvent));
-        EXOS_ASSERT_OK(exos_dataset_connect(myintstruct2, EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, datasetEvent));
+        EXOS_ASSERT_OK(exos_dataset_connect(myint3, EXOS_DATASET_PUBLISH + EXOS_DATASET_SUBSCRIBE, datasetEvent));
 
         inst->Active = true;
         break;
@@ -360,35 +264,11 @@ _BUR_PUBLIC void StringAndArrayCyclic(struct StringAndArrayCyclic *inst)
             data->MyInt1 = inst->pStringAndArray->MyInt1;
             exos_dataset_publish(myint1);
         }
-        //publish the mystring dataset as soon as there are changes
-        if (0 != memcmp(&inst->pStringAndArray->MyString, &data->MyString, sizeof(data->MyString)))
+        //publish the myint3 dataset as soon as there are changes
+        if (0 != memcmp(&inst->pStringAndArray->MyInt3, &data->MyInt3, sizeof(data->MyInt3)))
         {
-            memcpy(&data->MyString, &inst->pStringAndArray->MyString, sizeof(data->MyString));
-            exos_dataset_publish(mystring);
-        }
-        //publish the myint2 dataset as soon as there are changes
-        if (0 != memcmp(&inst->pStringAndArray->MyInt2, &data->MyInt2, sizeof(data->MyInt2)))
-        {
-            memcpy(&data->MyInt2, &inst->pStringAndArray->MyInt2, sizeof(data->MyInt2));
-            exos_dataset_publish(myint2);
-        }
-        //publish the myintstruct dataset as soon as there are changes
-        if (0 != memcmp(&inst->pStringAndArray->MyIntStruct, &data->MyIntStruct, sizeof(data->MyIntStruct)))
-        {
-            memcpy(&data->MyIntStruct, &inst->pStringAndArray->MyIntStruct, sizeof(data->MyIntStruct));
-            exos_dataset_publish(myintstruct);
-        }
-        //publish the myintstruct1 dataset as soon as there are changes
-        if (0 != memcmp(&inst->pStringAndArray->MyIntStruct1, &data->MyIntStruct1, sizeof(data->MyIntStruct1)))
-        {
-            memcpy(&data->MyIntStruct1, &inst->pStringAndArray->MyIntStruct1, sizeof(data->MyIntStruct1));
-            exos_dataset_publish(myintstruct1);
-        }
-        //publish the myintstruct2 dataset as soon as there are changes
-        if (0 != memcmp(&inst->pStringAndArray->MyIntStruct2, &data->MyIntStruct2, sizeof(data->MyIntStruct2)))
-        {
-            memcpy(&data->MyIntStruct2, &inst->pStringAndArray->MyIntStruct2, sizeof(data->MyIntStruct2));
-            exos_dataset_publish(myintstruct2);
+            memcpy(&data->MyInt3, &inst->pStringAndArray->MyInt3, sizeof(data->MyInt3));
+            exos_dataset_publish(myint3);
         }
 
         break;

@@ -1,0 +1,4 @@
+name = "HelloWorld"
+uuid = "425fc604-ee9f-45d0-9545-d2958267ac31"
+authors = ["jose.martinez <jose.martinez@cognibotics.com>"]
+version = "0.1.0"

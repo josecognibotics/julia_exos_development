@@ -45,6 +45,13 @@ const {GeneratedFileObj} = require('../../../datamodel')
  * @property {string} soFileName (read only) name of the generated .so file. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the {@link LinuxPackage}
  * @property {string} pyFileName (read only) name of the generated .py file. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the {@link LinuxPackage}
  * 
+ * @typedef {Object} BuildOptionsSWIGJulia
+ * @property {boolean} enable whether or not a SWIG python module should be created. mutually exclusive with `executable`, `js`, `python` and `napi`. default: `false`
+ * @property {string[]} sourceFiles list of source files used to build the module. default: [] 
+ * @property {string} moduleName name of the module that the sources are built into. default: `lib` + `Name`
+ * @property {string} soFileName (read only) name of the generated .so file. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the {@link LinuxPackage}
+ * @property {string} jlFileName (read only) name of the generated .py file. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the {@link LinuxPackage}
+ * 
  * @typedef {Object} BuildOptionsNAPI
  * @property {boolean} enable whether or not a N-API nodejs module should be created. mutually exclusive with `executable`, `js`, `python`, and `swigPython`. default: `false`
  * @property {boolean} includeNodeModules `true` if the `node_modules` folder should be added to the package. default: `true`
@@ -52,6 +59,9 @@ const {GeneratedFileObj} = require('../../../datamodel')
  * @property {string} nodeFileName (read only) name of the generated .node module. in case `debPackage`is disabled, this file is copied out and needs to be added as existing file to the LinuxPackage
  * 
  * @typedef {Object} BuildOptionsPython
+ * @property {boolean} enable whether or not a python module should be created. mutually exclusive with `executable`, `swigPython`, `js` , and `napi`. default: `false`
+ * 
+ * @typedef {Object} BuildOptionsJulia
  * @property {boolean} enable whether or not a python module should be created. mutually exclusive with `executable`, `swigPython`, `js` , and `napi`. default: `false`
  * 
  * @typedef {Object} BuildOptionsJS
@@ -64,8 +74,10 @@ const {GeneratedFileObj} = require('../../../datamodel')
  * @property {string} linkLibraries set which libraries to link .default `zmq exos-api`
  * @property {BuildOptionsExecutable} executable build options for creating an executable
  * @property {BuildOptionsSWIGPython} swigPython build options for creating a SWIG python module
+ * @property {BuildOptionsSWIGJulia} swigJulia build options for creating a SWIG python module
  * @property {BuildOptionsNAPI} napi build options for creating a nodejs module.
  * @property {BuildOptionsPython} python build options for creating a python module
+ * @property {BuildOptionsJulia} julia build options for creating a python module
  * @property {BuildOptionsJS} js build options for creating a nodejs module.
  * @property {BuildOptionsDebPackage} debPackage build options for creating a deb package, if enabled, all needed files will be added to the package
  * 
@@ -279,46 +291,7 @@ class TemplateLinuxBuild {
             this.options.swigJulia.soFileName = `_${this.options.swigJulia.moduleName}.so`;
             this.options.swigJulia.jlFileName = `${this.options.swigJulia.moduleName}.jl`;
 
-            out += `find_package(SWIG REQUIRED)\n`;
-            out += `include(\${SWIG_USE_FILE})\n`;
-            out += `\n`;
-            out += `# Load Python Libraries\n`;
-            out += `# ---------------------\n`;
-            out += `# a.) use Python 3 \n`;
-            out += `find_package(PythonLibs 3)\n`;
-            out += `# b.) use Python 2.7 (  change the Runtime service command to 'python2' in the .exospkg file)\n`;
-            out += `# - update the DEPENDS to python-dev\n`;
-            out += `# find_package(PythonLibs 2)\n`;
-            out += `# c.) use pyenv to manually install a version matching the Python version on the target distro https://realpython.com/intro-to-pyenv/\n`;
-            out += `# set(PYTHON_INCLUDE_PATH ~/.pyenv/versions/3.9-dev/include/python3.9)\n`;
-            out += `# set(PYTHON_LIBRARIES ~/.pyenv/versions/3.9-dev/lib/libpython3.9.so)\n`;
-            out += `\n`;
-            out += `include_directories(\${PYTHON_INCLUDE_PATH})\n`;
-            out += `\n`;
-            out += `include_directories(\${CMAKE_CURRENT_SOURCE_DIR})\n`;
-            out += `\n`;
-            out += `set(CMAKE_SWIG_FLAGS "")\n`;
-            out += `\n`;
-            out += `set(${this.name.toUpperCase()}_SOURCES\n`;
-            for (const source of this.options.swigJulia.sourceFiles) {
-                out += `    ${source}\n`;
-            }
-            out += `    )\n`;
-            out += `\n`;
-            out += `set_source_files_properties(\${${this.name.toUpperCase()}_SOURCES} PROPERTIES CPLUSPLUS ON)\n`;
-            out += `\n`;
-            out += `swig_add_module(${this.options.swigJulia.moduleName} python \${${this.name.toUpperCase()}_SOURCES})\n`;
-            out += `swig_link_libraries(${this.options.swigPytswigJuliahon.moduleName} \${PYTHON_LIBRARIES} zmq exos-api)\n`;
-
-            if(this.options.debPackage.enable) {
-                out += `\n`;
-                out += `set(${this.name.toUpperCase()}_MODULE_FILES\n`;
-                out += `    build/${this.options.swigJulia.soFileName}\n`;
-                out += `    build/${this.options.swigJulia.jlFileName}\n`;
-                out += `    )\n`;
-                out += `\n`;
-                out += `install(FILES \${${this.name.toUpperCase()}_MODULE_FILES} DESTINATION ${this.options.debPackage.destination})\n`;
-            }
+            out += `JULIA 1\n`;
         }
         else if(this.options.executable.enable) {
             if(this.options.executable.staticLibrary.enable) {
@@ -502,6 +475,7 @@ class TemplateLinuxBuild {
             out += `cp -f ${this.options.swigPython.pyFileName} ..\n\n`;
         }
         if(this.options.swigJulia.enable) {
+            out += `JULIA 2\n\n`;
             out += `cp -f ${this.options.swigJulia.soFileName} ..\n\n`;
             out += `cp -f ${this.options.swigJulia.jlFileName} ..\n\n`;
         }

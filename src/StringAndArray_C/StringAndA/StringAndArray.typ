@@ -16,10 +16,6 @@ TYPE
 	END_STRUCT;
 	StringAndArray : 	STRUCT 
 		MyInt1 : UDINT; (*PUB*)
-		MyString : ARRAY[0..2]OF STRING[80]; (*PUB*)
-		MyInt2 : ARRAY[0..4]OF USINT; (*PUB SUB*)
-		MyIntStruct : ARRAY[0..5]OF IntStruct_typ; (*PUB SUB*)
-		MyIntStruct1 : IntStruct1_typ; (*PUB SUB*)
-		MyIntStruct2 : IntStruct2_typ; (*PUB SUB*)
+		MyInt3 : ARRAY[0..4]OF USINT; (*PUB SUB*)
 	END_STRUCT;
 END_TYPE

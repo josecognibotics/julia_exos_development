@@ -7,15 +7,40 @@ const EXOS_ARRAY_DEPTH          = 10
 const EXOS_LOG_EXCLUDE_LIST_LEN = 20
 const EXOS_LOG_MAX_NAME_LENGTH  = 35
 const EXOS_LOG_MESSAGE_LENGTH   = 256
-const config_stringandarray = "{\"name\":\"struct\",\"attributes\":{\"name\":\"<NAME>\",\"dataType\":\"StringAndArray\",\"info\":\"<infoId0>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt1\",\"dataType\":\"UDINT\",\"comment\":\"PUB\",\"info\":\"<infoId1>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt3\",\"dataType\":\"USINT\",\"comment\":\"PUB SUB\",\"arraySize\":5,\"info\":\"<infoId2>\",\"info2\":\"<infoId3>\"}}]}"
+const config_stringandarray = "{\"name\":\"struct\",\"attributes\":{\"name\":\"<NAME>\",\"dataType\":\"StringAndArray\",\"info\":\"<infoId0>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt1\",\"dataType\":\"UDINT\",\"comment\":\"PUB\",\"info\":\"<infoId1>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyString\",\"dataType\":\"STRING\",\"stringLength\":81,\"comment\":\"PUB\",\"arraySize\":3,\"info\":\"<infoId2>\",\"info2\":\"<infoId3>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt2\",\"dataType\":\"USINT\",\"comment\":\"PUB SUB\",\"arraySize\":5,\"info\":\"<infoId4>\",\"info2\":\"<infoId5>\"}},{\"name\":\"struct\",\"attributes\":{\"name\":\"MyIntStruct\",\"dataType\":\"IntStruct_typ\",\"comment\":\"PUB SUB\",\"arraySize\":6,\"info\":\"<infoId6>\",\"info2\":\"<infoId7>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt13\",\"dataType\":\"UDINT\",\"info\":\"<infoId8>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt14\",\"dataType\":\"USINT\",\"arraySize\":3,\"info\":\"<infoId9>\",\"info2\":\"<infoId10>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt133\",\"dataType\":\"UDINT\",\"info\":\"<infoId11>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt124\",\"dataType\":\"USINT\",\"arraySize\":3,\"info\":\"<infoId12>\",\"info2\":\"<infoId13>\"}}]},{\"name\":\"struct\",\"attributes\":{\"name\":\"MyIntStruct1\",\"dataType\":\"IntStruct1_typ\",\"comment\":\"PUB SUB\",\"info\":\"<infoId14>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt13\",\"dataType\":\"UDINT\",\"info\":\"<infoId15>\"}}]},{\"name\":\"struct\",\"attributes\":{\"name\":\"MyIntStruct2\",\"dataType\":\"IntStruct2_typ\",\"comment\":\"PUB SUB\",\"info\":\"<infoId16>\"},\"children\":[{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt23\",\"dataType\":\"UDINT\",\"info\":\"<infoId17>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt24\",\"dataType\":\"USINT\",\"arraySize\":4,\"info\":\"<infoId18>\",\"info2\":\"<infoId19>\"}},{\"name\":\"variable\",\"attributes\":{\"name\":\"MyInt25\",\"dataType\":\"UDINT\",\"info\":\"<infoId20>\"}}]}]}"
 
 export
 	MyInt1,
-	MyInt3
+	MyString,
+	MyInt2,
+	MyIntStruct,
+	MyIntStruct1,
+	MyIntStruct2
+
+	struct IntStruct2_typ
+		MyInt23::UInt32
+		MyInt24::MVector{4, UInt8}
+		MyInt25::UInt32
+	end
+
+	struct IntStruct1_typ
+		MyInt13::UInt32
+	end
+
+	struct IntStruct_typ
+		MyInt13::UInt32
+		MyInt14::MVector{3, UInt8}
+		MyInt133::UInt32
+		MyInt124::MVector{3, UInt8}
+	end
 
 	struct StringAndArray
 		MyInt1::UInt32 #PUB
-		MyInt3::MVector{5, UInt8} #PUB SUB
+		MyString::MVector{3, String} #PUB
+		MyInt2::MVector{5, UInt8} #PUB SUB
+		MyIntStruct::MVector{6, IntStruct_typ} #PUB SUB
+		MyIntStruct1::IntStruct1_typ #PUB SUB
+		MyIntStruct2::IntStruct2_typ #PUB SUB
 	end
 
 function test()

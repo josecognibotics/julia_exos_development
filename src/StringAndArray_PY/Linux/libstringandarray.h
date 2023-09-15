@@ -15,44 +15,13 @@ typedef struct libStringAndArrayMyInt1
     uint32_t value;
 } libStringAndArrayMyInt1_t;
 
-typedef struct libStringAndArrayMyString
-{
-    libStringAndArray_event_cb on_change;
-    int32_t nettime;
-    char value[3][81];
-} libStringAndArrayMyString_t;
-
-typedef struct libStringAndArrayMyInt2
+typedef struct libStringAndArrayMyInt3
 {
     libStringAndArray_method_fn publish;
     libStringAndArray_event_cb on_change;
     int32_t nettime;
     uint8_t value[5];
-} libStringAndArrayMyInt2_t;
-
-typedef struct libStringAndArrayMyIntStruct
-{
-    libStringAndArray_method_fn publish;
-    libStringAndArray_event_cb on_change;
-    int32_t nettime;
-    IntStruct_typ value[6];
-} libStringAndArrayMyIntStruct_t;
-
-typedef struct libStringAndArrayMyIntStruct1
-{
-    libStringAndArray_method_fn publish;
-    libStringAndArray_event_cb on_change;
-    int32_t nettime;
-    IntStruct1_typ value;
-} libStringAndArrayMyIntStruct1_t;
-
-typedef struct libStringAndArrayMyIntStruct2
-{
-    libStringAndArray_method_fn publish;
-    libStringAndArray_event_cb on_change;
-    int32_t nettime;
-    IntStruct2_typ value;
-} libStringAndArrayMyIntStruct2_t;
+} libStringAndArrayMyInt3_t;
 
 typedef struct libStringAndArray_log
 {
@@ -79,11 +48,7 @@ typedef struct libStringAndArray
     bool is_connected;
     bool is_operational;
     libStringAndArrayMyInt1_t MyInt1;
-    libStringAndArrayMyString_t MyString;
-    libStringAndArrayMyInt2_t MyInt2;
-    libStringAndArrayMyIntStruct_t MyIntStruct;
-    libStringAndArrayMyIntStruct1_t MyIntStruct1;
-    libStringAndArrayMyIntStruct2_t MyIntStruct2;
+    libStringAndArrayMyInt3_t MyInt3;
 } libStringAndArray_t;
 
 #ifdef __cplusplus
