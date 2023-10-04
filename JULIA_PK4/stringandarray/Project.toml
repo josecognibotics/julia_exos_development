@@ -1,0 +1,7 @@
+name = "stringandarray"
+uuid = "fcfe8463-8ff1-4385-9028-edad0f7084f8"
+authors = ["jose.martinez <jose.martinez@cognibotics.com>"]
+version = "0.1.0"
+
+[deps]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

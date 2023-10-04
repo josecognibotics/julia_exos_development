@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "*.py": "python",
+        "*.js": "javascript",
+        "*.jl": "julia",
+        "exos_stringandarray.h": "c",
+        "exos_api.h": "c"
+    }
+}
